@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
@@ -9,11 +9,11 @@ const ACCOUNT_ICONS = ['wallet-outline', 'card-outline', 'business-outline', 'ca
 const ACCOUNT_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#607D8B'];
 
 const QUICK_BANKS = [
-  { name: 'Nubank', color: '#8A05BE', icon: 'card-outline' },
-  { name: 'Inter', color: '#FF7A00', icon: 'card-outline' },
-  { name: 'Itaú', color: '#EC7000', icon: 'business-outline' },
-  { name: 'Santander', color: '#CC0000', icon: 'business-outline' },
-  { name: 'Mercado Pago', color: '#00B1EA', icon: 'card-outline' },
+  { name: 'Nubank', color: '#8A05BE', icon: 'https://www.google.com/s2/favicons?domain=nubank.com.br&sz=128' },
+  { name: 'Inter', color: '#FF7A00', icon: 'https://www.google.com/s2/favicons?domain=bancointer.com.br&sz=128' },
+  { name: 'Itaú', color: '#EC7000', icon: 'https://www.google.com/s2/favicons?domain=itau.com.br&sz=128' },
+  { name: 'Santander', color: '#CC0000', icon: 'https://www.google.com/s2/favicons?domain=santander.com.br&sz=128' },
+  { name: 'Mercado Pago', color: '#00B1EA', icon: 'https://www.google.com/s2/favicons?domain=mercadopago.com.br&sz=128' },
   { name: 'Dinheiro', color: '#4CAF50', icon: 'wallet-outline' }
 ];
 
@@ -109,7 +109,11 @@ export default function AccountsConfigScreen({ onBack }) {
           ]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <View style={[styles.iconBox, { backgroundColor: acc.color + '20' }]}>
-                <Ionicons name={acc.icon || 'wallet-outline'} size={20} color={acc.color || activeTheme.text} />
+                {acc.icon && acc.icon.startsWith('http') ? (
+                  <Image source={{ uri: acc.icon }} style={{ width: 20, height: 20, borderRadius: 4 }} />
+                ) : (
+                  <Ionicons name={acc.icon || 'wallet-outline'} size={20} color={acc.color || activeTheme.text} />
+                )}
               </View>
               <View style={{ marginLeft: 12 }}>
                 <Text style={[styles.accName, { color: activeTheme.text }]}>{acc.name}</Text>
@@ -158,7 +162,11 @@ export default function AccountsConfigScreen({ onBack }) {
                         setIcon(bank.icon);
                       }}
                     >
-                      <Ionicons name={bank.icon} size={14} color={bank.color} style={{ marginRight: 6 }} />
+                      {bank.icon.startsWith('http') ? (
+                        <Image source={{ uri: bank.icon }} style={{ width: 14, height: 14, borderRadius: 2, marginRight: 6 }} />
+                      ) : (
+                        <Ionicons name={bank.icon} size={14} color={bank.color} style={{ marginRight: 6 }} />
+                      )}
                       <Text style={[styles.quickBankText, { color: bank.color }]}>{bank.name}</Text>
                     </TouchableOpacity>
                   ))}
@@ -186,6 +194,12 @@ export default function AccountsConfigScreen({ onBack }) {
             />
 
             <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Ícone</Text>
+            {icon && icon.startsWith('http') && (
+               <View style={{ marginBottom: 12, alignItems: 'center' }}>
+                 <Image source={{ uri: icon }} style={{ width: 40, height: 40, borderRadius: 8 }} />
+                 <Text style={{ fontSize: 12, color: activeTheme.textSecondary, marginTop: 4 }}>Logo via Web</Text>
+               </View>
+            )}
             <View style={styles.pickerRow}>
               {ACCOUNT_ICONS.map(i => (
                 <TouchableOpacity 

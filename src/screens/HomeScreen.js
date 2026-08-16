@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -128,7 +128,11 @@ export default function HomeScreen() {
                     ]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
-                          <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
+                          {acc.icon && acc.icon.startsWith('http') ? (
+                            <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
+                          ) : (
+                            <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
+                          )}
                         </View>
                         <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
                       </View>
