@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal,
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import ColorPicker from 'react-native-wheel-color-picker';
+import { getZoomFactor } from '../utils/scaler';
 
 export default function ThemeConfigScreen({ onBack }) {
   const { activeTheme, customThemes, saveSetting } = useContext(SettingsContext);
@@ -15,7 +16,7 @@ export default function ThemeConfigScreen({ onBack }) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempColor, setTempColor] = useState('#ffffff');
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 

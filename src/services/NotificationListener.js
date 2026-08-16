@@ -11,78 +11,95 @@ export const headlessNotificationListener = async ({ notification }) => {
     
     const parsed = typeof notification === 'string' ? JSON.parse(notification) : notification;
     
-    const appName = parsed.app || '';
+    const appName = parsed.app ? parsed.app.toLowerCase() : '';
     const title = parsed.title || '';
     const text = parsed.text || '';
     
     console.log(`Notificação recebida do app ${appName}: ${title}`);
     
-    // Filtro mais robusto de apps financeiros e de bancos
-    const bankApps = [
-      'nubank', 'inter', 'itau', 'bradesco', 'santander', 'picpay', 'mercadopago', 
-      'c6', 'bb', 'bancodobrasil', 'caixa', 'btg', 'xp', 'neon', 'next', 'sicoob', 
-      'sicredi', 'pagbank', 'willbank', 'original'
-    ];
-    const isBank = bankApps.some(bank => appName.toLowerCase().includes(bank));
+    // Mapeamento de bancos para o nome da conta e validação de pacotes
+    const bankMap = {
+      'nubank': 'Nubank',
+      'inter': 'Inter',
+      'itau': 'Itaú',
+      'itaú': 'Itaú',
+      'bradesco': 'Bradesco',
+      'santander': 'Santander',
+      'bb': 'Banco do Brasil',
+      'bancodobrasil': 'Banco do Brasil',
+      'caixa': 'Caixa Econômica',
+      'picpay': 'PicPay',
+      'mercadopago': 'Mercado Pago',
+      'c6': 'C6 Bank',
+      'btg': 'BTG Pactual',
+      'xp': 'XP Investimentos',
+      'neon': 'Neon',
+      'next': 'Next',
+      'sicoob': 'Sicoob',
+      'sicredi': 'Sicredi',
+      'pagbank': 'PagBank',
+      'willbank': 'Will Bank',
+      'original': 'Banco Original'
+    };
     
-    if (!isBank) return;
+    const matchedBankKey = Object.keys(bankMap).find(key => appName.includes(key));
+    if (!matchedBankKey) return; // Ignora se não for app de banco conhecido
     
+    const accountName = bankMap[matchedBankKey];
     const content = `${title} ${text}`.toLowerCase();
     
     // Mostra TUDO que vier de banco no log do Metro
     console.log(`[BANCO DETECTADO] Texto bruto: ${content}`);
     
-    // Tenta descobrir se é entrada ou saída
-    const isExpense = content.includes('enviad') || content.includes('pagamento') || content.includes('compra') || content.includes('aprovada');
-    const type = isExpense ? 'expense' : 'income'; // Por padrão, se não tiver certeza, assume que é dinheiro entrando.
+    // Palavras-chave de Receita (Income) e Despesa (Expense)
+    const isIncome = ['recebid', 'recebeu', 'estorno', 'reembolso', 'salário', 'salario', 'depósito', 'deposito', 'entrou', 'rendend', 'rendimento'].some(kw => content.includes(kw));
+    const isExplicitExpense = ['enviad', 'compra', 'pagamento', 'aprovada', 'débito', 'debito', 'transferência realizada', 'ted enviado', 'saiu', 'gasto'].some(kw => content.includes(kw));
+    
+    // Default agora é DESPESA, a não ser que tenha palavras claras de RECEITA
+    const type = isIncome ? 'income' : 'expense';
     
     // Regex flexível: R$ 150,00 ou R$150.00 ou R$ 1.500,00
+    // Lida com espaços opcionais e aceita pontos e vírgulas livremente
     const amountMatch = content.match(/r\$\s*([\d.,]+)/);
     if (!amountMatch) {
        console.log(`Ignorado: Não encontrou valor em Reais na string.`);
        return;
     }
     
-    // Converte "1.500,00" ou "1500.00" para float
     let amountStr = amountMatch[1].replace(/[^\d.,]/g, '');
-    // Se o último separador for vírgula, troca por ponto
-    if (amountStr.includes(',') && amountStr.indexOf(',') > amountStr.length - 4) {
+    
+    // Se não tiver nem ponto nem vírgula, é um número inteiro direto
+    // Lida com casos como "1.500,00" ou "1500,00" ou "1500.00"
+    const lastCommaIndex = amountStr.lastIndexOf(',');
+    const lastDotIndex = amountStr.lastIndexOf('.');
+    
+    let amount = 0;
+    if (lastCommaIndex > lastDotIndex) {
+      // Vírgula atua como separador decimal
       amountStr = amountStr.replace(/\./g, '').replace(',', '.');
+    } else if (lastDotIndex > lastCommaIndex) {
+      // Ponto atua como separador decimal
+      amountStr = amountStr.replace(/,/g, '');
     }
     
-    const amount = parseFloat(amountStr);
+    amount = parseFloat(amountStr);
     
     if (isNaN(amount) || amount <= 0) {
        console.log(`Ignorado: Valor inválido -> ${amountStr}`);
        return;
     }
     
-    // Identificar banco para a conta (nomes comuns de pacotes)
-    let accountName = 'Outros Bancos';
-    const pkg = appName.toLowerCase();
-    if (pkg.includes('nubank')) accountName = 'Nubank';
-    else if (pkg.includes('inter')) accountName = 'Inter';
-    else if (pkg.includes('itau') || pkg.includes('itaú')) accountName = 'Itaú';
-    else if (pkg.includes('bradesco')) accountName = 'Bradesco';
-    else if (pkg.includes('santander')) accountName = 'Santander';
-    else if (pkg.includes('bb') || pkg.includes('bancodobrasil')) accountName = 'Banco do Brasil';
-    else if (pkg.includes('caixa')) accountName = 'Caixa Econômica';
-    else if (pkg.includes('picpay')) accountName = 'PicPay';
-    else if (pkg.includes('mercadopago')) accountName = 'Mercado Pago';
-    else if (pkg.includes('c6')) accountName = 'C6 Bank';
-    else if (pkg.includes('btg')) accountName = 'BTG Pactual';
-    else if (pkg.includes('xp')) accountName = 'XP Investimentos';
-    else if (pkg.includes('neon')) accountName = 'Neon';
-    else if (pkg.includes('next')) accountName = 'Next';
-    else if (pkg.includes('sicoob')) accountName = 'Sicoob';
-    else if (pkg.includes('sicredi')) accountName = 'Sicredi';
-    
-    // Identificar o meio de pagamento para colocar como descrição temporária
+    // Identificar o meio de pagamento para descrição temporária
     let txDesc = 'Transação Pendente';
-    if (content.includes('pix')) txDesc = 'Pix Recebido';
-    else if (content.includes('cartão') || content.includes('cartao') || content.includes('compra')) txDesc = 'Compra no Cartão';
-    else if (content.includes('transferência') || content.includes('ted') || content.includes('doc')) txDesc = 'Transferência';
-    else if (content.includes('boleto') || content.includes('pagamento')) txDesc = 'Pagamento de Boleto';
+    if (content.includes('pix')) {
+      txDesc = type === 'income' ? 'Pix Recebido' : 'Pix Enviado';
+    } else if (content.includes('cartão') || content.includes('cartao') || content.includes('compra')) {
+      txDesc = 'Compra no Cartão';
+    } else if (content.includes('transferência') || content.includes('ted') || content.includes('doc')) {
+      txDesc = type === 'income' ? 'Transferência Recebida' : 'Transferência Enviada';
+    } else if (content.includes('boleto') || content.includes('pagamento')) {
+      txDesc = 'Pagamento de Boleto';
+    }
     
     txDesc = `${txDesc} - ${accountName}`;
     
@@ -93,21 +110,20 @@ export const headlessNotificationListener = async ({ notification }) => {
       date: Date.now(),
       category_id: null,
       account: accountName,
-      isPending: 1, // Marcar como pendente para aprovação do usuário!
+      isPending: 1, // Pendente para aprovação
       note: text.substring(0, 100)
     };
     
     await db.insert(transactions).values(newTx);
     console.log(`Transação pendente salva: R$ ${amount} (${type})`);
     
-    // Dispara a notificação local para avisar o usuário
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${txDesc}`,
         body: `Pendência de R$ ${amount.toFixed(2)} salva. Toque para aprovar!`,
         sound: true,
       },
-      trigger: null, // dispara imediatamente
+      trigger: null,
     });
     
   } catch (error) {

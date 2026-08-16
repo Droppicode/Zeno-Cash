@@ -169,6 +169,9 @@ export const SettingsProvider = ({ children }) => {
     'Outros': 0
   });
 
+  const [macroOptions, setMacroOptions] = useState(['Essenciais', 'Estilo de Vida', 'Investimento']);
+  const [macroMapping, setMacroMapping] = useState({});
+
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -197,6 +200,8 @@ export const SettingsProvider = ({ children }) => {
           if (item.key === 'llmKey') setLlmKey(item.value);
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
+          if (item.key === 'macroMapping') setMacroMapping(JSON.parse(item.value));
+          if (item.key === 'macroOptions') setMacroOptions(JSON.parse(item.value));
         });
         
         // Inject extra presets only ONCE when they haven't been initialized yet
@@ -246,11 +251,11 @@ export const SettingsProvider = ({ children }) => {
 
   return (
     <SettingsContext.Provider value={{ 
-      activeTheme, customThemes, defaultPeriod, llmKey, uiConfig,        macroTargets,
-        isLoaded,
-        saveSetting
-      }}
-    >
+      activeTheme, customThemes, defaultPeriod, llmKey, uiConfig, macroTargets,
+      macroOptions, macroMapping,
+      isLoaded,
+      saveSetting
+    }}>
       {children}
     </SettingsContext.Provider>
   );

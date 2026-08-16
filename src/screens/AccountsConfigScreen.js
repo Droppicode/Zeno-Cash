@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
+import { getZoomFactor } from '../utils/scaler';
 
 const ACCOUNT_ICONS = ['wallet-outline', 'card-outline', 'business-outline', 'cash-outline', 'logo-bitcoin', 'bar-chart-outline'];
 const ACCOUNT_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#607D8B'];
@@ -20,7 +21,7 @@ export default function AccountsConfigScreen({ onBack }) {
   const [icon, setIcon] = useState(ACCOUNT_ICONS[0]);
   const [color, setColor] = useState(ACCOUNT_COLORS[0]);
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 

@@ -6,6 +6,7 @@ import { useCategories } from '../hooks/useCategories';
 import { categorizeTransaction } from '../services/categorizer';
 import { DateUtils } from '../utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
+import { getZoomFactor } from '../utils/scaler';
 
 export default function TransactionModal({ visible, onClose, onSave, initialData }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -21,7 +22,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 

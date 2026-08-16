@@ -9,6 +9,7 @@ import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
+import { getZoomFactor } from '../utils/scaler';
 
 export default function SettingsScreen() {
   const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
@@ -20,7 +21,7 @@ export default function SettingsScreen() {
     Alert.alert('Backup Local', 'Funcionalidade de backup será integrada com Google Drive na Fase 4.');
   };
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 

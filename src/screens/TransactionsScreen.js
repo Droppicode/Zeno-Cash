@@ -11,6 +11,7 @@ import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
 import { Swipeable } from 'react-native-gesture-handler';
 import TransactionModal from '../components/TransactionModal';
+import { getZoomFactor } from '../utils/scaler';
 
 export default function TransactionsScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -305,7 +306,7 @@ export default function TransactionsScreen() {
 }
 
 const getStyles = (theme) => {
-  const z = 0.8 * (theme.zoom || 1);
+  const z = getZoomFactor(theme);
   const f = theme.fontFamily || 'monospace';
   
   return StyleSheet.create({

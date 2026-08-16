@@ -10,6 +10,7 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import TransactionModal from '../components/TransactionModal';
+import { getZoomFactor } from '../utils/scaler';
 
 export default function HomeScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -69,17 +70,17 @@ export default function HomeScreen() {
 
   const renderRightActions = (tx) => (
     <TouchableOpacity 
-      style={[styles.approveAction, { backgroundColor: activeTheme.expense }]}
+      style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
       onPress={() => removeTransaction(tx.id)}
     >
       <Ionicons name="trash" size={24} color="#fff" />
-      <Text style={styles.approveActionText}>Apagar</Text>
+      <Text style={styles.deleteActionText}>Apagar</Text>
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 * 0.8 * (activeTheme.zoom || 1) }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 * getZoomFactor(activeTheme) }}>
         {/* Filtro Temporal na Home */}
         <View style={styles.headerRow}>
           <Text style={[styles.headerTitle, { color: activeTheme.text }]}>Visão Geral</Text>
@@ -242,7 +243,7 @@ export default function HomeScreen() {
 }
 
 const getStyles = (theme) => {
-  const z = 0.8 * (theme.zoom || 1);
+  const z = getZoomFactor(theme);
   const f = theme.fontFamily || 'monospace';
   
   return StyleSheet.create({
@@ -270,8 +271,8 @@ const getStyles = (theme) => {
     groupedText: { fontSize: 16 * z, fontWeight: '600', fontFamily: f },
     groupedAmount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
-    approveAction: { justifyContent: 'center', alignItems: 'center', width: 80 * z, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
-    approveActionText: { color: '#fff', fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
+    deleteAction: { justifyContent: 'center', alignItems: 'center', width: 80 * z, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
+    deleteActionText: { color: '#fff', fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
     fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 30 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     modalContent: { borderTopLeftRadius: 20 * z, borderTopRightRadius: 20 * z, padding: 24 * z, minHeight: 300 * z },

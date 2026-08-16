@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert,
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { useCategories } from '../hooks/useCategories';
+import { getZoomFactor } from '../utils/scaler';
 
 const CATEGORY_ICONS = ['cash', 'car', 'restaurant', 'cart', 'play-circle', 'medkit', 'home', 'book', 'fitness', 'airplane', 'bulb', 'gift', 'game-controller'];
 const CATEGORY_COLORS = ['#4CAF50', '#FF9800', '#F44336', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548', '#607D8B', '#3F51B5'];
@@ -21,7 +22,7 @@ export default function CategoriesConfigScreen({ onBack }) {
   const [color, setColor] = useState(CATEGORY_COLORS[0]);
   const [macro, setMacro] = useState(MACRO_OPTIONS[0]);
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 

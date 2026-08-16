@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
+import { getZoomFactor } from '../utils/scaler';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -9,7 +10,7 @@ const MacroRow = ({ macro, target, onUpdateName, onUpdateTarget, onRemove, theme
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(macro);
 
-  const z = 0.8 * (theme.zoom || 1);
+  const z = getZoomFactor(theme);
   const f = theme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 
@@ -72,7 +73,7 @@ export default function ModuleConfigScreen({ onBack }) {
   const [newMacroName, setNewMacroName] = useState('');
   const [showMappingModal, setShowMappingModal] = useState(false);
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 

@@ -3,12 +3,13 @@ import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert, AppState } fro
 import { Ionicons } from '@expo/vector-icons';
 import RNAndroidNotificationListener from 'react-native-android-notification-listener';
 import { SettingsContext } from '../context/SettingsContext';
+import { getZoomFactor } from '../utils/scaler';
 
 export default function AutomationsConfigScreen({ onBack }) {
   const { activeTheme } = useContext(SettingsContext);
   const [hasPermission, setHasPermission] = useState(false);
 
-  const z = 0.8 * (activeTheme.zoom || 1);
+  const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 
