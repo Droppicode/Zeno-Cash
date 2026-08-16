@@ -12,7 +12,7 @@ export default function TransactionsScreen() {
   const [txList, setTxList] = useState([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // all, income, expense
-  const [period, setPeriod] = useState('all'); // 30d, 90d, all
+  const [period, setPeriod] = useState('30d'); // 30d, 90d, all
   
   // Advanced Filters
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -153,36 +153,39 @@ export default function TransactionsScreen() {
           />
         </View>
         
-        <View style={styles.filterRow}>
-          {/* Tipos */}
-          <View style={styles.filterGroup}>
-            <TouchableOpacity style={[styles.filterBtn, filter === 'all' && styles.filterBtnActive]} onPress={() => setFilter('all')}>
-              <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>Tudo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterBtn, filter === 'income' && styles.filterBtnActive]} onPress={() => setFilter('income')}>
-              <Text style={[styles.filterText, filter === 'income' && styles.filterTextActive]}>Receitas</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && styles.filterBtnActive]} onPress={() => setFilter('expense')}>
-              <Text style={[styles.filterText, filter === 'expense' && styles.filterTextActive]}>Despesas</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Tempos e Advanced Toggle */}
-          <View style={styles.filterGroup}>
-            <TouchableOpacity style={[styles.periodBtn, period === '30d' && styles.periodBtnActive]} onPress={() => setPeriod('30d')}>
-              <Text style={[styles.periodText, period === '30d' && styles.periodTextActive]}>30D</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.periodBtn, period === '90d' && styles.periodBtnActive]} onPress={() => setPeriod('90d')}>
-              <Text style={[styles.periodText, period === '90d' && styles.periodTextActive]}>90D</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.periodBtn, period === 'all' && styles.periodBtnActive]} onPress={() => setPeriod('all')}>
-              <Text style={[styles.periodText, period === 'all' && styles.periodTextActive]}>Tudo</Text>
-            </TouchableOpacity>
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
+            {/* Tipos */}
+            <View style={styles.filterGroup}>
+              <TouchableOpacity style={[styles.filterBtn, filter === 'all' && styles.filterBtnActive]} onPress={() => setFilter('all')}>
+                <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>Tudo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.filterBtn, filter === 'income' && styles.filterBtnActive]} onPress={() => setFilter('income')}>
+                <Text style={[styles.filterText, filter === 'income' && styles.filterTextActive]}>Receitas</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && styles.filterBtnActive]} onPress={() => setFilter('expense')}>
+                <Text style={[styles.filterText, filter === 'expense' && styles.filterTextActive]}>Despesas</Text>
+              </TouchableOpacity>
+            </View>
             
-            <TouchableOpacity style={styles.advancedToggleBtn} onPress={() => setShowAdvanced(!showAdvanced)}>
-              <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={18} color="#888" />
-            </TouchableOpacity>
-          </View>
+            {/* Tempos */}
+            <View style={styles.filterGroup}>
+              <TouchableOpacity style={[styles.periodBtn, period === '30d' && styles.periodBtnActive]} onPress={() => setPeriod('30d')}>
+                <Text style={[styles.periodText, period === '30d' && styles.periodTextActive]}>30D</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.periodBtn, period === '90d' && styles.periodBtnActive]} onPress={() => setPeriod('90d')}>
+                <Text style={[styles.periodText, period === '90d' && styles.periodTextActive]}>90D</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.periodBtn, period === 'all' && styles.periodBtnActive]} onPress={() => setPeriod('all')}>
+                <Text style={[styles.periodText, period === 'all' && styles.periodTextActive]}>Sempre</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+
+          {/* Botão Fixo à Direita para Filtros Avançados */}
+          <TouchableOpacity style={styles.advancedToggleBtn} onPress={() => setShowAdvanced(!showAdvanced)}>
+            <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color="#BB86FC" />
+          </TouchableOpacity>
         </View>
 
         {showAdvanced && (
@@ -256,17 +259,23 @@ const styles = StyleSheet.create({
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2C', borderRadius: 12, paddingHorizontal: 12, height: 44, marginBottom: 16 },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, color: '#fff', fontSize: 16 },
-  filterRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  
+  filterContainer: { flexDirection: 'row', alignItems: 'center' },
+  filterScroll: { flex: 1, marginRight: 8 },
+  filterScrollContent: { gap: 8, paddingBottom: 4 },
+  
   filterGroup: { flexDirection: 'row', backgroundColor: '#2C2C2C', borderRadius: 20, padding: 4, alignItems: 'center' },
   filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   filterBtnActive: { backgroundColor: '#BB86FC' },
   filterText: { color: '#888', fontWeight: 'bold', fontSize: 12 },
   filterTextActive: { color: '#121212' },
+  
   periodBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16 },
   periodBtnActive: { backgroundColor: '#BB86FC' },
   periodText: { color: '#888', fontWeight: 'bold', fontSize: 12 },
   periodTextActive: { color: '#121212' },
-  advancedToggleBtn: { paddingHorizontal: 8, paddingVertical: 6, marginLeft: 4, borderLeftWidth: 1, borderLeftColor: '#333' },
+  
+  advancedToggleBtn: { width: 40, height: 40, backgroundColor: '#2C2C2C', borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   
   advancedPanel: { marginTop: 16, padding: 12, backgroundColor: '#252525', borderRadius: 12 },
   advancedTitle: { color: '#fff', fontWeight: 'bold', marginBottom: 12 },
