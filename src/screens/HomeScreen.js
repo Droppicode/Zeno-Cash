@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { db } from '../database/db';
 import { transactions } from '../database/schema';
 import { desc, eq } from 'drizzle-orm';
@@ -12,6 +13,7 @@ export default function HomeScreen() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [txType, setTxType] = useState('expense');
+  const [period, setPeriod] = useState('30d'); // Adicionado o state
   
   // Estado real do Banco de Dados
   const [txList, setTxList] = useState([]);
@@ -21,11 +23,25 @@ export default function HomeScreen() {
     try {
       // Busca no DB nativo via Drizzle ORM
       const data = await db.select().from(transactions).orderBy(desc(transactions.date));
+      
+      const now = new Date().getTime();
+      let limitDate = 0;
+      
+      if (period === '30d') {
+        limitDate = now - (30 * 24 * 60 * 60 * 1000);
+      } else if (period === '90d') {
+        limitDate = now - (90 * 24 * 60 * 60 * 1000);
+      }
+
+      // Filtra de acordo com o período
+      const filteredData = data.filter(t => t.date >= limitDate);
+      
+      // A lista principal sempre terá todos os dados (para pegar as 5 últimas)
       setTxList(data);
       
       let inTotal = 0;
       let outTotal = 0;
-      data.forEach(t => {
+      filteredData.forEach(t => {
         if (t.type === 'income') inTotal += t.amount;
         else outTotal += t.amount;
       });
@@ -38,7 +54,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [period]); // Recarrega se o período mudar
 
   const saveTransaction = async () => {
     if (!amount || !description.trim()) return;
@@ -91,8 +107,24 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+        {/* Filtro Temporal na Home */}
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Visão Geral</Text>
+          <View style={styles.periodBox}>
+            <TouchableOpacity onPress={() => setPeriod('30d')}>
+              <Text style={[styles.periodText, period === '30d' && styles.periodTextActive]}>30D</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setPeriod('90d')}>
+              <Text style={[styles.periodText, period === '90d' && styles.periodTextActive]}>90D</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setPeriod('all')}>
+              <Text style={[styles.periodText, period === 'all' && styles.periodTextActive]}>Tudo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Resumo Dinâmico */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Saldo Total</Text>
@@ -112,13 +144,13 @@ export default function HomeScreen() {
 
         {/* Lista Real conectada no Banco */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Últimas Transações ({txList.length})</Text>
+          <Text style={styles.sectionTitle}>Últimas 5 Transações</Text>
           
           {txList.length === 0 && (
             <Text style={{ color: '#888' }}>Nenhuma transação ainda. Adicione uma no botão +</Text>
           )}
 
-          {txList.map(item => {
+          {txList.slice(0, 5).map(item => {
             const catInfo = categorizeTransaction(item.description, item.amount);
             
             return (
@@ -200,12 +232,17 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  headerTitle: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+  periodBox: { flexDirection: 'row', backgroundColor: '#2C2C2C', borderRadius: 20, padding: 4 },
+  periodText: { color: '#888', paddingHorizontal: 12, paddingVertical: 6, fontWeight: 'bold' },
+  periodTextActive: { color: '#fff', backgroundColor: '#BB86FC', borderRadius: 16 },
   summaryCard: { backgroundColor: '#1E1E1E', borderRadius: 16, padding: 24, marginBottom: 24 },
   summaryTitle: { color: '#888', fontSize: 16 },
   summaryAmount: { color: '#fff', fontSize: 36, fontWeight: 'bold', marginVertical: 8 },

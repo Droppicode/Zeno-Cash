@@ -23,8 +23,7 @@ export default function AppNavigator() {
         },
         tabBarActiveTintColor: '#BB86FC', // Cor primária dark mode
         tabBarInactiveTintColor: '#888',
-        headerStyle: { backgroundColor: '#121212', shadowColor: 'transparent' },
-        headerTintColor: '#fff',
+        headerShown: false, // Esconde a barra de título superior
         tabBarStyle: { backgroundColor: '#1E1E1E', borderTopWidth: 0 },
         sceneStyle: { backgroundColor: '#121212' }
       })}

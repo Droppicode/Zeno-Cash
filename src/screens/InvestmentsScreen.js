@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function InvestmentsScreen() {
   const assets = [
@@ -12,7 +13,7 @@ export default function InvestmentsScreen() {
   const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>Meus Investimentos</Text>
         <Text style={styles.subtitle}>Patrimônio Acumulado</Text>
@@ -52,7 +53,7 @@ export default function InvestmentsScreen() {
           </View>
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
