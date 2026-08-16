@@ -1,5 +1,14 @@
 import { sqliteTable, text, real, integer } from 'drizzle-orm/sqlite-core';
 
+export const accounts = sqliteTable('accounts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  type: text('type').default('checking'), // checking, credit, cash
+  balance: real('balance').default(0), // Initial balance, calculated on the fly usually
+  icon: text('icon'),
+  color: text('color'),
+});
+
 export const transactions = sqliteTable('transactions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   amount: real('amount').notNull(),

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,76 +9,13 @@ import { categorizeTransaction } from '../services/categorizer';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { SettingsContext } from '../context/SettingsContext';
 
-const INITIAL_MAPPING = {
-  'Alimentação': 'Essenciais', 'Supermercado': 'Essenciais', 'Restaurante': 'Essenciais', 'Ifood': 'Essenciais', 'Padaria': 'Essenciais',
-  'Transporte': 'Essenciais', 'Gasolina': 'Essenciais', 'Uber': 'Essenciais', 'Passagem': 'Essenciais', 'Pedágio': 'Essenciais',
-  'Moradia': 'Essenciais', 'Aluguel': 'Essenciais', 'Luz': 'Essenciais', 'Água': 'Essenciais', 'Internet': 'Essenciais',
-  'Saúde': 'Essenciais', 'Farmácia': 'Essenciais', 'Médico': 'Essenciais',
-  'Educação': 'Essenciais', 'Cursos': 'Essenciais', 'Livros': 'Essenciais',
-  'Lazer': 'Estilo de Vida', 'Cinema': 'Estilo de Vida', 'Shows': 'Estilo de Vida', 'Jogos': 'Estilo de Vida',
-  'Investimento': 'Investimento', 'Ações': 'Investimento', 'FIIs': 'Investimento', 'Tesouro': 'Investimento',
-  'Outros': 'Outros', 'Transferência': 'Outros'
-};
-
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
-// Componente para a linha editável do Macro
-const MacroRow = ({ macro, target, onUpdateName, onUpdateTarget, onRemove }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempName, setTempName] = useState(macro);
-
-  const handleSaveName = () => {
-    if (tempName.trim() === '') {
-      setTempName(macro);
-      setIsEditing(false);
-      return;
-    }
-    onUpdateName(macro, tempName.trim());
-    setIsEditing(false);
-  };
-
-  return (
-    <View style={styles.goalInputRow}>
-      {isEditing ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <TextInput 
-            style={[styles.goalInput, { flex: 1, textAlign: 'left' }]} 
-            value={tempName} 
-            onChangeText={setTempName} 
-            autoFocus 
-          />
-          <TouchableOpacity onPress={handleSaveName} style={{ marginLeft: 8 }}>
-            <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={{ padding: 4, marginRight: 4 }}>
-            <Ionicons name="pencil" size={16} color="#888" />
-          </TouchableOpacity>
-          <Text style={styles.goalLabel} numberOfLines={1}>{macro}</Text>
-        </View>
-      )}
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 16 }}>
-        <TextInput
-          style={styles.goalInput}
-          keyboardType="numeric"
-          value={String(target)}
-          onChangeText={(val) => onUpdateTarget(macro, val)}
-        />
-        <Text style={{ color: '#fff', marginLeft: 8 }}>%</Text>
-        
-        <TouchableOpacity onPress={() => onRemove(macro)} style={{ marginLeft: 16, padding: 4 }}>
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
-
 export default function AnalyticsScreen() {
-  const { accentColor, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
+  const { 
+    activeTheme, uiConfig, defaultPeriod, 
+    macroTargets, macroMapping, macroOptions 
+  } = React.useContext(SettingsContext);
 
   const [analyticsData, setAnalyticsData] = useState([]);
   const [totalExpense, setTotalExpense] = useState(0);
@@ -88,82 +25,6 @@ export default function AnalyticsScreen() {
   const [monthlyData, setMonthlyData] = useState([]);
   const [topExpenses, setTopExpenses] = useState([]);
 
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [showMappingModal, setShowMappingModal] = useState(false);
-  
-  const [macroOptions, setMacroOptions] = useState(['Essenciais', 'Estilo de Vida', 'Investimento']);
-  const [newMacroName, setNewMacroName] = useState('');
-  
-  const [macroTargets, setMacroTargets] = useState({
-    'Essenciais': 50,
-    'Estilo de Vida': 30,
-    'Investimento': 20,
-    'Outros': 0
-  });
-
-  const [macroMapping, setMacroMapping] = useState(INITIAL_MAPPING);
-
-  // Mutações de Macros Dinâmicos
-  const updateMacroName = (oldName, newName) => {
-    if (oldName === newName) return;
-    if (macroOptions.includes(newName)) return; // Evita duplicatas
-    
-    setMacroOptions(prev => prev.map(m => m === oldName ? newName : m));
-    
-    setMacroTargets(prev => {
-      const next = { ...prev };
-      next[newName] = next[oldName];
-      delete next[oldName];
-      return next;
-    });
-
-    setMacroMapping(prev => {
-      const next = { ...prev };
-      Object.keys(next).forEach(micro => {
-        if (next[micro] === oldName) next[micro] = newName;
-      });
-      return next;
-    });
-  };
-
-  const updateTarget = (cat, val) => {
-    setMacroTargets(prev => ({ ...prev, [cat]: Number(val) }));
-  };
-
-  const removeMacro = (macro) => {
-    setMacroOptions(prev => prev.filter(m => m !== macro));
-    setMacroTargets(prev => {
-      const next = { ...prev };
-      delete next[macro];
-      return next;
-    });
-    setMacroMapping(prev => {
-      const next = { ...prev };
-      Object.keys(next).forEach(micro => {
-        if (next[micro] === macro) next[micro] = 'Outros';
-      });
-      return next;
-    });
-  };
-
-  const addMacro = () => {
-    const name = newMacroName.trim();
-    if (name && !macroOptions.includes(name) && name !== 'Outros') {
-      setMacroOptions([...macroOptions, name]);
-      setMacroTargets(prev => ({ ...prev, [name]: 0 }));
-      setNewMacroName('');
-    }
-  };
-
-  const cycleMacroMapping = (microCat) => {
-    const availableMacros = [...macroOptions, 'Outros'];
-    setMacroMapping(prev => {
-      const current = prev[microCat] || 'Outros';
-      const nextIdx = (availableMacros.indexOf(current) + 1) % availableMacros.length;
-      return { ...prev, [microCat]: availableMacros[nextIdx] };
-    });
-  };
-
   const loadData = async () => {
     try {
       const data = await db.select().from(transactions);
@@ -172,19 +33,6 @@ export default function AnalyticsScreen() {
       let limitDate = 0;
       if (period === '30d') limitDate = now - (30 * 24 * 60 * 60 * 1000);
       else if (period === '90d') limitDate = now - (90 * 24 * 60 * 60 * 1000);
-
-      const uniqueCatsFromTx = Array.from(new Set(data.map(t => categorizeTransaction(t.description, t.amount).categoryName)));
-      setMacroMapping(prev => {
-        let updated = { ...prev };
-        let changed = false;
-        uniqueCatsFromTx.forEach(cat => {
-          if (!updated[cat]) {
-            updated[cat] = 'Outros';
-            changed = true;
-          }
-        });
-        return changed ? updated : prev;
-      });
 
       const last6Months = {};
       for (let i = 5; i >= 0; i--) {
@@ -208,12 +56,12 @@ export default function AnalyticsScreen() {
       Object.values(last6Months).forEach(item => {
         barData.push({ 
           value: item.income, 
-          frontColor: '#4CAF50', 
+          frontColor: activeTheme.income, 
           label: item.label, 
           spacing: 2, 
-          labelTextStyle: { color: '#888', fontSize: 10 } 
+          labelTextStyle: { color: activeTheme.textSecondary, fontSize: 10 } 
         });
-        barData.push({ value: item.expense, frontColor: '#F44336' });
+        barData.push({ value: item.expense, frontColor: activeTheme.expense });
       });
       setMonthlyData(barData);
 
@@ -231,9 +79,9 @@ export default function AnalyticsScreen() {
 
       if (isMacro) {
         macroOptions.forEach(key => {
-          grouped[key] = { name: key, total: 0, color: '#333' };
+          grouped[key] = { name: key, total: 0, color: activeTheme.cardSecondary };
         });
-        grouped['Outros'] = { name: 'Outros', total: 0, color: '#888' };
+        grouped['Outros'] = { name: 'Outros', total: 0, color: activeTheme.textSecondary };
       }
 
       expenses.forEach(tx => {
@@ -257,8 +105,8 @@ export default function AnalyticsScreen() {
       
       if (isMacro) {
         sorted.forEach((item, idx) => {
-          if (item.name === 'Outros') item.color = '#888888';
-          else item.color = COLORS_PALETTE[idx % COLORS_PALETTE.length];
+          if (item.name === 'Outros') item.color = activeTheme.textSecondary;
+          else item.color = COLORS_PALETTE[idx % COLORS_PALETTE.length] || activeTheme.textSecondary;
         });
       }
 
@@ -272,7 +120,7 @@ export default function AnalyticsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [period, isMacro, macroTargets, macroMapping, macroOptions])
+    }, [period, isMacro, macroTargets, macroMapping, macroOptions, activeTheme])
   );
 
   const pieData = analyticsData.filter(i => i.total > 0).map(item => ({
@@ -281,118 +129,122 @@ export default function AnalyticsScreen() {
     text: totalExpense > 0 ? `${((item.total / totalExpense) * 100).toFixed(0)}%` : '0%'
   }));
 
+  const z = 0.8 * (activeTheme.zoom || 1);
+  const f = activeTheme.fontFamily || 'monospace';
+  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Análise Avançada</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]} edges={['top']}>
+      <View style={[styles.header, { borderBottomColor: 'transparent', backgroundColor: activeTheme.card }]}>
+        <Text style={[styles.title, { color: activeTheme.text }]}>Análise Avançada</Text>
         <View style={styles.periodRow}>
-          <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('30d')}>
-            <Text style={[styles.periodText, period === '30d' && { color: '#121212' }]}>30 Dias</Text>
+          <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, period === '30d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('30d')}>
+            <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '30d' && { color: '#121212' }]}>30 Dias</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('90d')}>
-            <Text style={[styles.periodText, period === '90d' && { color: '#121212' }]}>90 Dias</Text>
+          <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, period === '90d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('90d')}>
+            <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '90d' && { color: '#121212' }]}>90 Dias</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: accentColor }]} onPress={() => setPeriod('all')}>
-            <Text style={[styles.periodText, period === 'all' && { color: '#121212' }]}>Sempre</Text>
+          <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, period === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('all')}>
+            <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212' }]}>Sempre</Text>
           </TouchableOpacity>
         </View>
       </View>
 
+      <View style={{ flex: 1, backgroundColor: activeTheme.background }}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         
         {/* Gráfico 1: Barras 6 Meses */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Evolução de 6 Meses</Text>
-          <Text style={styles.cardSubtitle}>Receitas (Verde) vs Despesas (Vermelho)</Text>
-          <View style={{ marginTop: 20, alignItems: 'center' }}>
-            {monthlyData.length > 0 ? (
-              <BarChart
-                data={monthlyData}
-                barWidth={12}
-                spacing={16}
-                roundedTop
-                roundedBottom
-                hideRules
-                xAxisThickness={0}
-                yAxisThickness={0}
-                yAxisTextStyle={{ color: '#888', fontSize: 10 }}
-                noOfSections={4}
-                barBorderRadius={6}
-                frontColor="lightgray"
-                height={150}
-              />
-            ) : <Text style={styles.emptyText}>Carregando...</Text>}
+        {uiConfig.analyticsShowCharts !== false && (
+          <View style={[styles.card, { backgroundColor: activeTheme.card }]}>
+            <Text style={[styles.cardTitle, { color: activeTheme.text }]}>Evolução de 6 Meses</Text>
+            <Text style={[styles.cardSubtitle, { color: activeTheme.textSecondary }]}>Receitas vs Despesas</Text>
+            <View style={{ marginTop: 20, alignItems: 'center' }}>
+              {monthlyData.length > 0 ? (
+                <BarChart
+                  data={monthlyData}
+                  barWidth={12}
+                  spacing={16}
+                  roundedTop
+                  roundedBottom
+                  hideRules
+                  xAxisThickness={0}
+                  yAxisThickness={0}
+                  yAxisTextStyle={{ color: activeTheme.textSecondary, fontSize: 10 }}
+                  noOfSections={4}
+                  barBorderRadius={6}
+                  frontColor="lightgray"
+                  height={150 * z}
+                />
+              ) : <Text style={[styles.emptyText, { color: activeTheme.textSecondary }]}>Carregando...</Text>}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Resumo Financeiro */}
         <View style={{ alignItems: 'center', marginVertical: 24 }}>
-          <Text style={styles.subtitle}>Gasto Total no Período Selecionado</Text>
-          <Text style={styles.totalValue}>R$ {totalExpense.toFixed(2)}</Text>
+          <Text style={[styles.subtitle, { color: activeTheme.textSecondary }]}>Gasto Total no Período Selecionado</Text>
+          <Text style={[styles.totalValue, { color: activeTheme.expense }]}>R$ {totalExpense.toFixed(2)}</Text>
         </View>
 
         {/* Gráfico 2: Composição (Donut) */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: activeTheme.card }]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Composição</Text>
+            <Text style={[styles.cardTitle, { color: activeTheme.text }]}>Composição</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              {isMacro && (
-                <TouchableOpacity style={styles.iconBtn} onPress={() => setShowGoalModal(true)}>
-                  <Ionicons name="options-outline" size={16} color="#fff" />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity style={styles.toggleBtn} onPress={() => setIsMacro(!isMacro)}>
-                <Text style={[styles.toggleText, { color: accentColor }]}>{isMacro ? 'Ver Detalhado' : 'Agrupar Macro'}</Text>
+              <TouchableOpacity style={[styles.toggleBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setIsMacro(!isMacro)}>
+                <Text style={[styles.toggleText, { color: activeTheme.accent }]}>{isMacro ? 'Ver Detalhado' : 'Agrupar Macro'}</Text>
               </TouchableOpacity>
             </View>
           </View>
           
           {isMacro && (
-            <Text style={styles.cardSubtitle}>Baseado nas suas metas de orçamento (%)</Text>
+            <Text style={[styles.cardSubtitle, { color: activeTheme.textSecondary }]}>Baseado nas suas metas de orçamento (%)</Text>
           )}
 
-          {pieData.length === 0 ? (
-            <Text style={styles.emptyText}>Sem despesas neste período.</Text>
-          ) : (
-            <View style={{ alignItems: 'center', marginVertical: 20 }}>
-              <PieChart
-                donut
-                data={pieData}
-                innerRadius={60}
-                radius={90}
-                textColor="white"
-                textSize={12}
-                showTextBackground
-                textBackgroundRadius={14}
-              />
-            </View>
+          {uiConfig.analyticsShowCharts !== false && (
+            pieData.length === 0 ? (
+              <Text style={[styles.emptyText, { color: activeTheme.textSecondary }]}>Sem despesas neste período.</Text>
+            ) : (
+              <View style={{ alignItems: 'center', marginVertical: 20 }}>
+                <PieChart
+                  donut
+                  data={pieData}
+                  innerRadius={60 * z}
+                  radius={90 * z}
+                  textColor="white"
+                  textSize={12 * z}
+                  showTextBackground
+                  textBackgroundRadius={14 * z}
+                />
+              </View>
+            )
           )}
 
           {analyticsData.map((item, index) => {
-            if (item.total === 0 && item.name === 'Outros') return null; // Esconder "Outros" se for 0
+            if (item.total === 0 && item.name === 'Outros') return null; 
             
             const actualPercent = totalExpense > 0 ? (item.total / totalExpense) * 100 : 0;
             const targetPercent = macroTargets[item.name] || 0;
             const diffPercent = actualPercent - targetPercent;
             
-            let statusColor = '#888';
+            let statusColor = activeTheme.textSecondary;
             let statusText = '';
             
             if (isMacro && targetPercent > 0 && item.name !== 'Outros') {
               if (item.name.toLowerCase().includes('invest')) {
                 if (actualPercent >= targetPercent) {
-                  statusColor = '#4CAF50';
+                  statusColor = activeTheme.income;
                   statusText = `Meta atingida! (+${diffPercent.toFixed(1)}%)`;
                 } else {
-                  statusColor = '#F44336';
+                  statusColor = activeTheme.expense;
                   statusText = `Abaixo da meta (${Math.abs(diffPercent).toFixed(1)}% faltando)`;
                 }
               } else {
                 if (actualPercent <= targetPercent) {
-                  statusColor = '#4CAF50';
+                  statusColor = activeTheme.income;
                   statusText = `Dentro da meta (${Math.abs(diffPercent).toFixed(1)}% de sobra)`;
                 } else {
-                  statusColor = '#F44336';
+                  statusColor = activeTheme.expense;
                   statusText = `Acima do limite (+${diffPercent.toFixed(1)}%)`;
                 }
               }
@@ -403,11 +255,11 @@ export default function AnalyticsScreen() {
                 <View style={styles.catHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                    <Text style={styles.catName}>{item.name}</Text>
+                    <Text style={[styles.catName, { color: activeTheme.text }]}>{item.name}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.catAmount}>R$ {item.total.toFixed(2)}</Text>
-                    <Text style={styles.catPercent}>
+                    <Text style={[styles.catAmount, { color: activeTheme.text }]}>R$ {item.total.toFixed(2)}</Text>
+                    <Text style={[styles.catPercent, { color: activeTheme.textSecondary }]}>
                       {isMacro && item.name !== 'Outros' ? `${actualPercent.toFixed(1)}% (Meta: ${targetPercent}%)` : `${actualPercent.toFixed(1)}%`}
                     </Text>
                   </View>
@@ -419,7 +271,7 @@ export default function AnalyticsScreen() {
                   </View>
                 )}
 
-                <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarBg, { backgroundColor: activeTheme.cardSecondary }]}>
                   <View style={[styles.progressBarFill, { width: `${Math.min(actualPercent, 100)}%`, backgroundColor: item.color }]} />
                   {isMacro && targetPercent > 0 && item.name !== 'Outros' && (
                     <View style={[styles.targetMarker, { left: `${Math.min(targetPercent, 100)}%` }]} />
@@ -432,24 +284,24 @@ export default function AnalyticsScreen() {
 
         {/* Top 3 Vilões */}
         {uiConfig.analyticsShowVilao !== false && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Top 3 Vilões</Text>
-            <Text style={styles.cardSubtitle}>As maiores despesas isoladas do período</Text>
+          <View style={[styles.card, { backgroundColor: activeTheme.card }]}>
+            <Text style={[styles.cardTitle, { color: activeTheme.text }]}>Top 3 Vilões</Text>
+            <Text style={[styles.cardSubtitle, { color: activeTheme.textSecondary }]}>As maiores despesas isoladas do período</Text>
             
             <View style={{ marginTop: 16 }}>
               {topExpenses.length === 0 ? (
-                <Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>
+                <Text style={[styles.emptyText, { color: activeTheme.textSecondary }]}>Nenhuma transação encontrada.</Text>
               ) : (
                 topExpenses.map((item, idx) => {
                   const catInfo = categorizeTransaction(item.description, item.amount);
                   return (
-                    <View key={item.id} style={styles.vilaoCard}>
-                      <Text style={[styles.vilaoRank, { color: accentColor }]}>#{idx + 1}</Text>
+                    <View key={item.id} style={[styles.vilaoCard, { backgroundColor: activeTheme.cardSecondary }]}>
+                      <Text style={[styles.vilaoRank, { color: activeTheme.accent }]}>#{idx + 1}</Text>
                       <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.vilaoDesc}>{item.description}</Text>
-                        <Text style={styles.vilaoCat}>{catInfo.categoryName}</Text>
+                        <Text style={[styles.vilaoDesc, { color: activeTheme.text }]}>{item.description}</Text>
+                        <Text style={[styles.vilaoCat, { color: activeTheme.textSecondary }]}>{catInfo.categoryName}</Text>
                       </View>
-                      <Text style={[styles.vilaoAmount, { color: accentColor }]}>- R$ {item.amount.toFixed(2)}</Text>
+                      <Text style={[styles.vilaoAmount, { color: activeTheme.expense }]}>- R$ {item.amount.toFixed(2)}</Text>
                     </View>
                   );
                 })
@@ -460,150 +312,46 @@ export default function AnalyticsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* MODAL CONFIGURAÇÃO DE METAS E MACROS */}
-      <Modal visible={showGoalModal} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={styles.modalContainerBig}>
-            <Text style={styles.modalTitle}>Gerenciar Macros</Text>
-            <Text style={styles.modalSub}>Edite nomes, metas ou adicione novos grupos.</Text>
-            
-            <ScrollView style={{ marginBottom: 16, maxHeight: 250 }}>
-              {macroOptions.map(cat => (
-                <MacroRow 
-                  key={cat} 
-                  macro={cat} 
-                  target={macroTargets[cat] || 0} 
-                  onUpdateName={updateMacroName}
-                  onUpdateTarget={updateTarget}
-                  onRemove={removeMacro}
-                />
-              ))}
-              
-              {/* Adicionar Novo Macro */}
-              <View style={styles.addMacroRow}>
-                <TextInput
-                  style={[styles.goalInput, { flex: 1, textAlign: 'left', marginRight: 12 }]}
-                  placeholder="Novo Grupo Macro..."
-                  placeholderTextColor="#888"
-                  value={newMacroName}
-                  onChangeText={setNewMacroName}
-                />
-                <TouchableOpacity style={styles.iconBtnAdd} onPress={addMacro}>
-                  <Ionicons name="add" size={24} color="#121212" />
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity style={[styles.outlineBtn, { borderColor: accentColor }]} onPress={() => { setShowGoalModal(false); setShowMappingModal(true); }}>
-              <Text style={[styles.outlineBtnText, { color: accentColor }]}>Mapear Categorias para os Macros</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: accentColor }]} onPress={() => setShowGoalModal(false)}>
-              <Text style={[styles.saveBtnText, { color: '#121212' }]}>Concluir</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL MAPEAMENTO DE CATEGORIAS */}
-      <Modal visible={showMappingModal} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={styles.modalContainerBig}>
-            <Text style={styles.modalTitle}>Mapeamento Macro</Text>
-            <Text style={styles.modalSub}>Toque no botão à direita para trocar o grupo macro da categoria.</Text>
-            
-            <ScrollView style={{ maxHeight: 400, marginBottom: 16 }}>
-              {Object.keys(macroMapping).sort().map(microCat => {
-                const currentMacro = macroMapping[microCat];
-                const macroIdx = macroOptions.indexOf(currentMacro);
-                const macroColor = currentMacro === 'Outros' ? '#888' : COLORS_PALETTE[macroIdx % COLORS_PALETTE.length] || '#888';
-
-                return (
-                  <View key={microCat} style={styles.mapRow}>
-                    <Text style={styles.mapMicro}>{microCat}</Text>
-                    <TouchableOpacity 
-                      style={[styles.mapToggleBtn, { borderColor: macroColor }]}
-                      onPress={() => cycleMacroMapping(microCat)}
-                    >
-                      <Text style={[styles.mapToggleText, { color: macroColor }]}>{currentMacro}</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: accentColor }]} onPress={() => setShowMappingModal(false)}>
-              <Text style={[styles.saveBtnText, { color: '#121212' }]}>Voltar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
-  header: { padding: 16, backgroundColor: '#1E1E1E', borderBottomWidth: 1, borderBottomColor: '#333' },
-  title: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 16, marginTop: 16 },
-  periodRow: { flexDirection: 'row', gap: 8 },
-  periodBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, backgroundColor: '#2C2C2C' },
-  periodBtnActive: { backgroundColor: '#BB86FC' },
-  periodText: { color: '#888', fontWeight: 'bold' },
-  periodTextActive: { color: '#121212' },
-  scroll: { padding: 16 },
-  subtitle: { color: '#888', fontSize: 14, textAlign: 'center' },
-  totalValue: { color: '#F44336', fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginTop: 4 },
+const getStyles = (z, f) => StyleSheet.create({
+  container: { flex: 1 },
+  header: { padding: 16 * z, borderBottomWidth: 1 },
+  title: { fontSize: 24 * z, fontWeight: 'bold', marginBottom: 16 * z, marginTop: 16 * z, fontFamily: f },
+  periodRow: { flexDirection: 'row', gap: 8 * z },
+  periodBtn: { flex: 1, paddingVertical: 8 * z, alignItems: 'center', borderRadius: 8 * z },
+  periodText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
+  scroll: { padding: 16 * z },
+  subtitle: { fontSize: 14 * z, textAlign: 'center', fontFamily: f },
+  totalValue: { fontSize: 36 * z, fontWeight: 'bold', textAlign: 'center', marginTop: 4 * z, fontFamily: f },
   
-  card: { backgroundColor: '#1E1E1E', borderRadius: 16, padding: 20, marginBottom: 20 },
+  card: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  cardSubtitle: { color: '#888', fontSize: 12, marginTop: 4 },
+  cardTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
+  cardSubtitle: { fontSize: 12 * z, marginTop: 4 * z, fontFamily: f },
   
-  toggleBtn: { backgroundColor: '#2C2C2C', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  iconBtn: { backgroundColor: '#2C2C2C', padding: 6, borderRadius: 12, justifyContent: 'center' },
-  toggleText: { color: '#BB86FC', fontSize: 12, fontWeight: 'bold' },
+  toggleBtn: { paddingHorizontal: 12 * z, paddingVertical: 6 * z, borderRadius: 12 * z },
+  toggleText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
   
-  categoryRow: { marginBottom: 16 },
-  catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 8 },
-  catName: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  catAmount: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  catPercent: { color: '#888', fontSize: 12 },
+  categoryRow: { marginBottom: 16 * z },
+  catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 * z },
+  colorDot: { width: 12 * z, height: 12 * z, borderRadius: 6 * z, marginRight: 8 * z },
+  catName: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
+  catAmount: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
+  catPercent: { fontSize: 12 * z, fontFamily: f },
   
-  progressBarBg: { height: 8, backgroundColor: '#333', borderRadius: 4, overflow: 'hidden', position: 'relative' },
-  progressBarFill: { height: '100%', borderRadius: 4 },
-  targetMarker: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: '#fff', zIndex: 10 },
+  progressBarBg: { height: 8 * z, borderRadius: 4 * z, overflow: 'hidden', position: 'relative' },
+  progressBarFill: { height: '100%', borderRadius: 4 * z },
+  targetMarker: { position: 'absolute', top: 0, bottom: 0, width: 2 * z, backgroundColor: '#fff', zIndex: 10 },
   
-  vilaoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#252525', padding: 12, borderRadius: 12, marginBottom: 8 },
-  vilaoRank: { color: '#F44336', fontSize: 20, fontWeight: 'bold' },
-  vilaoDesc: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  vilaoCat: { color: '#888', fontSize: 12 },
-  vilaoAmount: { color: '#F44336', fontSize: 14, fontWeight: 'bold' },
+  vilaoCard: { flexDirection: 'row', alignItems: 'center', padding: 12 * z, borderRadius: 12 * z, marginBottom: 8 * z },
+  vilaoRank: { fontSize: 20 * z, fontWeight: 'bold', fontFamily: f },
+  vilaoDesc: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
+  vilaoCat: { fontSize: 12 * z, fontFamily: f },
+  vilaoAmount: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
   
-  emptyText: { color: '#888', textAlign: 'center', padding: 20 },
-
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 24 },
-  modalContainer: { backgroundColor: '#1E1E1E', borderRadius: 16, padding: 24 },
-  modalContainerBig: { backgroundColor: '#1E1E1E', borderRadius: 16, padding: 24, flex: 0.8 },
-  modalTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  modalSub: { color: '#888', fontSize: 14, marginBottom: 24 },
-  
-  goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, backgroundColor: '#252525', padding: 8, borderRadius: 12 },
-  addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: '#2C2C2C', padding: 8, borderRadius: 12 },
-  goalLabel: { color: '#fff', fontSize: 14, fontWeight: 'bold', flexShrink: 1 },
-  goalInput: { backgroundColor: '#333', color: '#fff', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, width: 60, textAlign: 'center' },
-  iconBtnAdd: { backgroundColor: '#BB86FC', padding: 8, borderRadius: 8 },
-  
-  mapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#333' },
-  mapMicro: { color: '#fff', fontSize: 14 },
-  mapToggleBtn: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  mapToggleText: { fontSize: 12, fontWeight: 'bold' },
-
-  saveBtn: { backgroundColor: '#BB86FC', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16 },
-  saveBtnText: { color: '#121212', fontWeight: 'bold', fontSize: 16 },
-  outlineBtn: { borderWidth: 1, borderColor: '#BB86FC', padding: 12, borderRadius: 12, alignItems: 'center', marginTop: 8 },
-  outlineBtnText: { color: '#BB86FC', fontWeight: 'bold', fontSize: 14 }
+  emptyText: { textAlign: 'center', padding: 20 * z, fontFamily: f, fontSize: 14 * z }
 });

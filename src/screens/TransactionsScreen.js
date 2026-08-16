@@ -10,17 +10,18 @@ import { categorizeTransaction } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
 
 export default function TransactionsScreen() {
-  const { accentColor, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
+  const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [txList, setTxList] = useState([]);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all'); // all, income, expense
-  const [period, setPeriod] = useState(defaultPeriod || '30d'); // 30d, 90d, all
+  const [filter, setFilter] = useState('all'); 
+  const [period, setPeriod] = useState(defaultPeriod || '30d'); 
   
-  // Advanced Filters
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
   const loadData = async () => {
     try {
@@ -45,27 +46,22 @@ export default function TransactionsScreen() {
   };
 
   const filteredList = txList.filter(item => {
-    // 1. Filtro de Período Rápido
     const now = new Date().getTime();
     if (period === '30d' && item.date < now - (30 * 24 * 60 * 60 * 1000)) return false;
     if (period === '90d' && item.date < now - (90 * 24 * 60 * 60 * 1000)) return false;
 
-    // 2. Filtro de Tipo
     if (filter === 'income' && item.type !== 'income') return false;
     if (filter === 'expense' && item.type !== 'expense') return false;
     
-    // 3. Filtro de Categorias Múltiplas
     const catInfo = categorizeTransaction(item.description, item.amount);
     if (selectedCats.length > 0 && !selectedCats.includes(catInfo.categoryName)) {
       return false;
     }
     
-    // 4. Filtro de Busca
     if (search.trim() !== '' && !item.description.toLowerCase().includes(search.toLowerCase())) {
       return false;
     }
 
-    // 5. Filtro de Datas Customizadas
     if (startDate.length === 10) {
       const sDate = parseDateStr(startDate);
       if (sDate && item.date < sDate) return false;
@@ -73,13 +69,12 @@ export default function TransactionsScreen() {
     
     if (endDate.length === 10) {
       const eDate = parseDateStr(endDate);
-      if (eDate && item.date > (eDate + 86400000)) return false; // Inclui o final do dia
+      if (eDate && item.date > (eDate + 86400000)) return false; 
     }
 
     return true;
   });
 
-  // Extrair categorias únicas de TODOS os itens (para montar a UI)
   const uniqueCategories = Array.from(new Set(txList.map(item => categorizeTransaction(item.description, item.amount).categoryName)));
 
   const toggleCategory = (cat) => {
@@ -112,24 +107,33 @@ export default function TransactionsScreen() {
     data: groupedData[key]
   }));
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item, index, section }) => {
     const catInfo = categorizeTransaction(item.description, item.amount);
     const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
     
+    const isFirst = index === 0;
+    const isLast = index === section.data.length - 1;
+    
     return (
-      <View style={styles.card}>
+      <View style={[
+        styles.card, 
+        { backgroundColor: activeTheme.card },
+        isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+        isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+        !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
+      ]}>
         <View style={styles.cardLeft}>
           <View style={[styles.iconBox, { backgroundColor: catInfo.color + '20' }]}>
             <Ionicons name={catInfo.icon} size={20} color={catInfo.color} />
           </View>
           <View>
-            <Text style={styles.desc}>{item.description}</Text>
-            <Text style={styles.date}>{dateStr} • {catInfo.categoryName}</Text>
+            <Text style={[styles.desc, { color: activeTheme.text }]}>{item.description}</Text>
+            <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName}</Text>
           </View>
         </View>
         <Text style={[
           styles.amount, 
-          { color: item.type === 'income' ? '#4CAF50' : '#F44336' }
+          { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }
         ]}>
           {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
         </Text>
@@ -137,19 +141,15 @@ export default function TransactionsScreen() {
     );
   };
 
-  const renderSectionHeader = ({ section: { title } }) => (
-    <Text style={styles.sectionHeader}>{title}</Text>
-  );
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: activeTheme.card }]}>
+        <View style={[styles.searchBox, { backgroundColor: activeTheme.cardSecondary }]}>
+          <Ionicons name="search" size={20} color={activeTheme.textSecondary} style={styles.searchIcon} />
           <TextInput 
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: activeTheme.text }]}
             placeholder="Buscar transação..."
-            placeholderTextColor="#888"
+            placeholderTextColor={activeTheme.textSecondary}
             value={search}
             onChangeText={setSearch}
           />
@@ -158,52 +158,49 @@ export default function TransactionsScreen() {
         {uiConfig.transactionsShowFilters !== false && (
           <View style={styles.filterContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
-              {/* Tipos */}
-              <View style={styles.filterGroup}>
-                <TouchableOpacity style={[styles.filterBtn, filter === 'all' && { backgroundColor: accentColor }]} onPress={() => setFilter('all')}>
-                  <Text style={[styles.filterText, filter === 'all' && { color: '#121212' }]}>Tudo</Text>
+              
+              <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
+                <TouchableOpacity style={[styles.filterBtn, filter === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('all')}>
+                  <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'all' && { color: '#121212' }]}>Tudo</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.filterBtn, filter === 'income' && { backgroundColor: accentColor }]} onPress={() => setFilter('income')}>
-                  <Text style={[styles.filterText, filter === 'income' && { color: '#121212' }]}>Receitas</Text>
+                <TouchableOpacity style={[styles.filterBtn, filter === 'income' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('income')}>
+                  <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'income' && { color: '#121212' }]}>Receitas</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && { backgroundColor: accentColor }]} onPress={() => setFilter('expense')}>
-                  <Text style={[styles.filterText, filter === 'expense' && { color: '#121212' }]}>Despesas</Text>
+                <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('expense')}>
+                  <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'expense' && { color: '#121212' }]}>Despesas</Text>
                 </TouchableOpacity>
               </View>
               
-              {/* Tempos */}
-              <View style={styles.filterGroup}>
-                <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('30d')}>
-                  <Text style={[styles.periodText, period === '30d' && { color: '#121212' }]}>30D</Text>
+              <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
+                <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('30d')}>
+                  <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '30d' && { color: '#121212' }]}>30D</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('90d')}>
-                  <Text style={[styles.periodText, period === '90d' && { color: '#121212' }]}>90D</Text>
+                <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('90d')}>
+                  <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '90d' && { color: '#121212' }]}>90D</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: accentColor }]} onPress={() => setPeriod('all')}>
-                  <Text style={[styles.periodText, period === 'all' && { color: '#121212' }]}>Sempre</Text>
+                <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('all')}>
+                  <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212' }]}>Sempre</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
 
-            {/* Botão Fixo à Direita para Filtros Avançados */}
-            <TouchableOpacity style={styles.advancedToggleBtn} onPress={() => setShowAdvanced(!showAdvanced)}>
-              <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={accentColor} />
+            <TouchableOpacity style={[styles.advancedToggleBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setShowAdvanced(!showAdvanced)}>
+              <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.accent} />
             </TouchableOpacity>
           </View>
         )}
 
         {showAdvanced && (
-          <View style={styles.advancedPanel}>
-            <Text style={styles.advancedTitle}>Filtros Específicos</Text>
+          <View style={[styles.advancedPanel, { backgroundColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.advancedTitle, { color: activeTheme.text }]}>Filtros Específicos</Text>
             
-            {/* Filtro de Data */}
             <View style={styles.dateInputsRow}>
               <View style={styles.dateInputContainer}>
-                <Text style={styles.dateLabel}>Data Inicial</Text>
+                <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Inicial</Text>
                 <TextInput 
-                  style={styles.dateInput}
+                  style={[styles.dateInput, { backgroundColor: activeTheme.card, color: activeTheme.text }]}
                   placeholder="DD/MM/AAAA"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={activeTheme.textSecondary}
                   keyboardType="numeric"
                   value={startDate}
                   onChangeText={(text) => setStartDate(formatDateInput(text))}
@@ -211,11 +208,11 @@ export default function TransactionsScreen() {
                 />
               </View>
               <View style={styles.dateInputContainer}>
-                <Text style={styles.dateLabel}>Data Final</Text>
+                <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Final</Text>
                 <TextInput 
-                  style={styles.dateInput}
+                  style={[styles.dateInput, { backgroundColor: activeTheme.card, color: activeTheme.text }]}
                   placeholder="DD/MM/AAAA"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={activeTheme.textSecondary}
                   keyboardType="numeric"
                   value={endDate}
                   onChangeText={(text) => setEndDate(formatDateInput(text))}
@@ -224,16 +221,15 @@ export default function TransactionsScreen() {
               </View>
             </View>
 
-            {/* Categorias (Múltipla Escolha) */}
-            <Text style={styles.dateLabel}>Categorias</Text>
+            <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Categorias</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScrollContent}>
               {uniqueCategories.map(cat => (
                 <TouchableOpacity 
                   key={cat} 
-                  style={[styles.catBtn, selectedCats.includes(cat) && { backgroundColor: accentColor }]}
+                  style={[styles.catBtn, { backgroundColor: activeTheme.card }, selectedCats.includes(cat) && { backgroundColor: activeTheme.accent }]}
                   onPress={() => toggleCategory(cat)}
                 >
-                  <Text style={[styles.catText, selectedCats.includes(cat) && { color: '#121212' }]}>
+                  <Text style={[styles.catText, { color: activeTheme.textSecondary }, selectedCats.includes(cat) && { color: '#121212' }]}>
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -244,65 +240,67 @@ export default function TransactionsScreen() {
 
       </View>
 
-      <SectionList 
-        sections={sections}
-        keyExtractor={item => item.id.toString()}
-        renderItem={renderItem}
-        renderSectionHeader={({ section: { title } }) => (
-          <Text style={[styles.sectionHeader, { color: accentColor }]}>{title}</Text>
-        )}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>}
-        stickySectionHeadersEnabled={false}
-      />
+      <View style={{ flex: 1, backgroundColor: activeTheme.background }}>
+        <SectionList 
+          sections={sections}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderItem}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={[styles.sectionHeader, { color: activeTheme.accent }]}>{title}</Text>
+          )}
+          renderSectionFooter={() => <View style={{ height: 16 }} />}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={<Text style={[styles.emptyText, { color: activeTheme.textSecondary }]}>Nenhuma transação encontrada.</Text>}
+          stickySectionHeadersEnabled={false}
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
-  header: { padding: 16, backgroundColor: '#1E1E1E', borderBottomWidth: 1, borderBottomColor: '#333' },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2C2C2C', borderRadius: 12, paddingHorizontal: 12, height: 44, marginBottom: 16 },
-  searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, color: '#fff', fontSize: 16 },
+const getStyles = (theme) => {
+  const z = 0.8 * (theme.zoom || 1);
+  const f = theme.fontFamily || 'monospace';
   
-  filterContainer: { flexDirection: 'row', alignItems: 'center' },
-  filterScroll: { flex: 1, marginRight: 8 },
-  filterScrollContent: { gap: 8, paddingBottom: 4 },
-  
-  filterGroup: { flexDirection: 'row', backgroundColor: '#2C2C2C', borderRadius: 20, padding: 4, alignItems: 'center' },
-  filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-  filterBtnActive: { backgroundColor: '#BB86FC' },
-  filterText: { color: '#888', fontWeight: 'bold', fontSize: 12 },
-  filterTextActive: { color: '#121212' },
-  
-  periodBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16 },
-  periodBtnActive: { backgroundColor: '#BB86FC' },
-  periodText: { color: '#888', fontWeight: 'bold', fontSize: 12 },
-  periodTextActive: { color: '#121212' },
-  
-  advancedToggleBtn: { width: 40, height: 40, backgroundColor: '#2C2C2C', borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  
-  advancedPanel: { marginTop: 16, padding: 12, backgroundColor: '#252525', borderRadius: 12 },
-  advancedTitle: { color: '#fff', fontWeight: 'bold', marginBottom: 12 },
-  dateInputsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  dateInputContainer: { flex: 1 },
-  dateLabel: { color: '#888', fontSize: 12, marginBottom: 4 },
-  dateInput: { backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8 },
-  
-  catScrollContent: { gap: 8, flexDirection: 'row' },
-  catBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#333' },
-  catBtnActive: { backgroundColor: '#BB86FC' },
-  catText: { color: '#888', fontWeight: 'bold', fontSize: 12 },
-  catTextActive: { color: '#121212' },
-  
-  listContent: { padding: 16 },
-  sectionHeader: { color: '#BB86FC', fontSize: 18, fontWeight: 'bold', marginTop: 16, marginBottom: 12 },
-  card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1E1E1E', padding: 16, borderRadius: 12, marginBottom: 12 },
-  cardLeft: { flexDirection: 'row', alignItems: 'center' },
-  iconBox: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  desc: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  date: { color: '#888', fontSize: 12 },
-  amount: { fontSize: 16, fontWeight: 'bold' },
-  emptyText: { color: '#888', textAlign: 'center', marginTop: 40, fontSize: 16 }
-});
+  return StyleSheet.create({
+    container: { flex: 1 },
+    header: { padding: 16 * z, borderBottomWidth: 1, borderBottomColor: 'transparent' },
+    searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 12 * z, paddingHorizontal: 12 * z, height: 44 * z, marginBottom: 16 * z },
+    searchIcon: { marginRight: 8 * z },
+    searchInput: { flex: 1, fontSize: 16 * z, fontFamily: f },
+    
+    filterContainer: { flexDirection: 'row', alignItems: 'center' },
+    filterScroll: { flex: 1, marginRight: 8 * z },
+    filterScrollContent: { gap: 8 * z, paddingBottom: 4 * z },
+    
+    filterGroup: { flexDirection: 'row', borderRadius: 20 * z, padding: 4 * z, alignItems: 'center' },
+    filterBtn: { paddingHorizontal: 12 * z, paddingVertical: 6 * z, borderRadius: 16 * z },
+    filterText: { fontWeight: 'bold', fontSize: 12 * z, fontFamily: f },
+    
+    periodBtn: { paddingHorizontal: 10 * z, paddingVertical: 6 * z, borderRadius: 16 * z },
+    periodText: { fontWeight: 'bold', fontSize: 12 * z, fontFamily: f },
+    
+    advancedToggleBtn: { width: 40 * z, height: 40 * z, borderRadius: 20 * z, justifyContent: 'center', alignItems: 'center' },
+    
+    advancedPanel: { marginTop: 16 * z, padding: 12 * z, borderRadius: 12 * z },
+    advancedTitle: { fontWeight: 'bold', marginBottom: 12 * z, fontFamily: f },
+    dateInputsRow: { flexDirection: 'row', gap: 12 * z, marginBottom: 16 * z },
+    dateInputContainer: { flex: 1 },
+    dateLabel: { fontSize: 12 * z, marginBottom: 4 * z, fontFamily: f },
+    dateInput: { padding: 10 * z, borderRadius: 8 * z, fontFamily: f },
+    
+    catScrollContent: { gap: 8 * z, flexDirection: 'row' },
+    catBtn: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z },
+    catText: { fontWeight: 'bold', fontSize: 12 * z, fontFamily: f },
+    
+    listContent: { padding: 16 * z, paddingBottom: 40 * z },
+    sectionHeader: { fontSize: 16 * z, fontWeight: '700', marginTop: 12 * z, marginBottom: 12 * z, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: f },
+    card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, marginBottom: 0 },
+    cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    iconBox: { width: 44 * z, height: 44 * z, borderRadius: 22 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },
+    desc: { fontSize: 16 * z, fontWeight: '600', marginBottom: 4 * z, fontFamily: f },
+    date: { fontSize: 13 * z, fontFamily: f },
+    amount: { fontSize: 16 * z, fontWeight: '700', marginLeft: 8 * z, fontFamily: f },
+    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f }
+  });
+};

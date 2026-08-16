@@ -1,104 +1,94 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 
-const THEME_COLORS = ['#BB86FC', '#03DAC6', '#CF6679', '#F44336', '#4CAF50', '#2196F3', '#FF9800'];
+import ThemeConfigScreen from './ThemeConfigScreen';
+import ModuleConfigScreen from './ModuleConfigScreen';
+import AccountsConfigScreen from './AccountsConfigScreen';
 
 export default function SettingsScreen() {
-  const { accentColor, defaultPeriod, llmKey, uiConfig, saveSetting } = useContext(SettingsContext);
+  const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
+  
+  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts'
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
-
-  useEffect(() => {
-    setLlmKeyLocal(llmKey || '');
-  }, [llmKey]);
-
-  const handleToggleUi = (key) => {
-    const newConfig = { ...uiConfig, [key]: !uiConfig[key] };
-    saveSetting('uiConfig', newConfig);
-  };
 
   const handleBackup = () => {
     Alert.alert('Backup Local', 'Funcionalidade de backup será integrada com Google Drive na Fase 4.');
   };
 
+  const z = 0.8 * (activeTheme.zoom || 1);
+  const f = activeTheme.fontFamily || 'monospace';
+  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+
+  if (currentScreen === 'theme') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+        <ThemeConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
+  if (currentScreen === 'module') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+        <ModuleConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
+  if (currentScreen === 'accounts') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+        <AccountsConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Configurações Globais</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]} edges={['top']}>
+      <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary, backgroundColor: activeTheme.card }]}>
+        <Text style={[styles.title, { color: activeTheme.text }]}>Configurações Globais</Text>
       </View>
 
+      <View style={{ flex: 1, backgroundColor: activeTheme.background }}>
       <ScrollView contentContainerStyle={styles.scroll}>
         
-        {/* Seção Temas e Cores */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Aparência (Tema)</Text>
-          <Text style={styles.sectionDesc}>Escolha a cor de destaque do aplicativo.</Text>
-          <View style={styles.colorPaletteRow}>
-            {THEME_COLORS.map(color => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorCircle,
-                  { backgroundColor: color },
-                  accentColor === color && styles.colorCircleActive
-                ]}
-                onPress={() => {
-                  saveSetting('accentColor', color);
-                }}
-              >
-                {accentColor === color && <Ionicons name="checkmark" size={20} color="#121212" />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <View style={styles.menuGrid}>
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('theme')}>
+            <Ionicons name="color-palette" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Temas</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Cores e visual</Text>
+          </TouchableOpacity>
 
-        {/* Modularidade de Tela */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Modularidade de Interface</Text>
-          <Text style={styles.sectionDesc}>Ligue ou desligue módulos das telas.</Text>
-          
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>[Home] Mostrar Pendências</Text>
-            <Switch
-              value={uiConfig.homeShowPending}
-              onValueChange={() => handleToggleUi('homeShowPending')}
-              trackColor={{ false: '#333', true: accentColor }}
-            />
-          </View>
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>[Home] Mostrar Contas/Bancos</Text>
-            <Switch
-              value={uiConfig.homeShowAccounts}
-              onValueChange={() => handleToggleUi('homeShowAccounts')}
-              trackColor={{ false: '#333', true: accentColor }}
-            />
-          </View>
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>[Análise] Top 3 Vilões</Text>
-            <Switch
-              value={uiConfig.analyticsShowVilao}
-              onValueChange={() => handleToggleUi('analyticsShowVilao')}
-              trackColor={{ false: '#333', true: accentColor }}
-            />
-          </View>
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('accounts')}>
+            <Ionicons name="wallet" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Contas</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Saldos e bancos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('module')}>
+            <Ionicons name="construct" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Módulos</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Funções do app</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Comportamento Padrão */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Comportamento Padrão</Text>
-          <Text style={styles.sectionDesc}>Período padrão ao abrir o app.</Text>
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Comportamento Padrão</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Período padrão ao abrir o app.</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
             {['30d', '90d', 'all'].map(p => (
               <TouchableOpacity
                 key={p}
-                style={[styles.chip, defaultPeriod === p && { backgroundColor: accentColor }]}
+                style={[styles.chip, { backgroundColor: activeTheme.cardSecondary }, defaultPeriod === p && { backgroundColor: activeTheme.accent }]}
                 onPress={() => {
                   saveSetting('defaultPeriod', p);
                 }}
               >
-                <Text style={[styles.chipText, defaultPeriod === p && { color: '#121212' }]}>
+                <Text style={[styles.chipText, { color: activeTheme.textSecondary }, defaultPeriod === p && { color: '#121212' }]}>
                   {p === '30d' ? '30 Dias' : p === '90d' ? '90 Dias' : 'Sempre'}
                 </Text>
               </TouchableOpacity>
@@ -107,13 +97,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Integrações LLM (Futuro) */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Integração LLM (Beta)</Text>
-          <Text style={styles.sectionDesc}>Cole sua chave da OpenAI para habilitar a leitura de extratos em PDF no futuro.</Text>
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Integração LLM (Beta)</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Cole sua chave da OpenAI para habilitar a leitura de extratos em PDF no futuro.</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
             placeholder="sk-proj-..."
-            placeholderTextColor="#888"
+            placeholderTextColor={activeTheme.textSecondary}
             secureTextEntry
             value={llmKeyLocal}
             onChangeText={setLlmKeyLocal}
@@ -122,43 +112,42 @@ export default function SettingsScreen() {
         </View>
 
         {/* Backup */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Segurança e Backup</Text>
-          <Text style={styles.sectionDesc}>Gere cópias de segurança do seu banco SQLite.</Text>
-          <TouchableOpacity style={[styles.backupBtn, { borderColor: accentColor }]} onPress={handleBackup}>
-            <Ionicons name="cloud-download-outline" size={20} color={accentColor} style={{ marginRight: 8 }} />
-            <Text style={[styles.backupText, { color: accentColor }]}>Exportar Banco de Dados</Text>
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Segurança e Backup</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Gere cópias de segurança do seu banco SQLite.</Text>
+          <TouchableOpacity style={[styles.backupBtn, { borderColor: activeTheme.accent }]} onPress={handleBackup}>
+            <Ionicons name="cloud-download-outline" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
+            <Text style={[styles.backupText, { color: activeTheme.accent }]}>Exportar Banco de Dados</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
-  header: { padding: 16, backgroundColor: '#1E1E1E', borderBottomWidth: 1, borderBottomColor: '#333' },
-  title: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginTop: 16 },
-  scroll: { padding: 16 },
+const getStyles = (z, f) => StyleSheet.create({
+  container: { flex: 1 },
+  header: { padding: 16 * z, borderBottomWidth: 1 },
+  title: { fontSize: 24 * z, fontWeight: 'bold', marginTop: 16 * z, fontFamily: f },
+  scroll: { padding: 16 * z },
   
-  section: { backgroundColor: '#1E1E1E', borderRadius: 16, padding: 20, marginBottom: 20 },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  sectionDesc: { color: '#888', fontSize: 14, marginTop: 4, marginBottom: 16 },
+  menuGrid: { flexDirection: 'row', gap: 12 * z, marginBottom: 20 * z },
+  menuCard: { flex: 1, padding: 16 * z, borderRadius: 16 * z, alignItems: 'flex-start' },
+  menuTitle: { fontSize: 16 * z, fontWeight: 'bold', marginTop: 12 * z, marginBottom: 4 * z, fontFamily: f },
+  menuDesc: { fontSize: 12 * z, fontFamily: f },
+
+  section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+  sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
+  sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
   
-  colorPaletteRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  colorCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  colorCircleActive: { borderWidth: 2, borderColor: '#fff' },
+  chip: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z },
+  chipText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
   
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#333' },
-  switchLabel: { color: '#fff', fontSize: 16 },
+  input: { padding: 16 * z, borderRadius: 12 * z, fontSize: 16 * z, fontFamily: f },
   
-  chip: { backgroundColor: '#2C2C2C', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  chipText: { color: '#888', fontWeight: 'bold' },
-  
-  input: { backgroundColor: '#2C2C2C', color: '#fff', padding: 16, borderRadius: 12, fontSize: 16 },
-  
-  backupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, padding: 16, borderRadius: 12, marginTop: 8 },
-  backupText: { fontWeight: 'bold', fontSize: 16 }
+  backupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, padding: 16 * z, borderRadius: 12 * z, marginTop: 8 * z },
+  backupText: { fontWeight: 'bold', fontSize: 16 * z, fontFamily: f }
 });

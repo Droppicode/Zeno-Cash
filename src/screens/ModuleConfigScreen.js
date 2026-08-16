@@ -1,0 +1,294 @@
+import React, { useState, useContext } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SettingsContext } from '../context/SettingsContext';
+
+const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
+
+const MacroRow = ({ macro, target, onUpdateName, onUpdateTarget, onRemove, theme }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState(macro);
+
+  const z = 0.8 * (theme.zoom || 1);
+  const f = theme.fontFamily || 'monospace';
+  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+
+  const handleSaveName = () => {
+    if (tempName.trim() === '') {
+      setTempName(macro);
+      setIsEditing(false);
+      return;
+    }
+    onUpdateName(macro, tempName.trim());
+    setIsEditing(false);
+  };
+
+  return (
+    <View style={[styles.goalInputRow, { backgroundColor: theme.cardSecondary }]}>
+      {isEditing ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <TextInput 
+            style={[styles.goalInput, { flex: 1, textAlign: 'left', backgroundColor: theme.card, color: theme.text }]} 
+            value={tempName} 
+            onChangeText={setTempName} 
+            autoFocus 
+          />
+          <TouchableOpacity onPress={handleSaveName} style={{ marginLeft: 8 }}>
+            <Ionicons name="checkmark-circle" size={24} color={theme.income} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <TouchableOpacity onPress={() => setIsEditing(true)} style={{ padding: 4, marginRight: 4 }}>
+            <Ionicons name="pencil" size={16} color={theme.textSecondary} />
+          </TouchableOpacity>
+          <Text style={[styles.goalLabel, { color: theme.text }]} numberOfLines={1}>{macro}</Text>
+        </View>
+      )}
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 16 }}>
+        <TextInput
+          style={[styles.goalInput, { backgroundColor: theme.card, color: theme.text }]}
+          keyboardType="numeric"
+          value={String(target)}
+          onChangeText={(val) => onUpdateTarget(macro, val)}
+        />
+        <Text style={{ color: theme.text, marginLeft: 8 }}>%</Text>
+        
+        <TouchableOpacity onPress={() => onRemove(macro)} style={{ marginLeft: 16, padding: 4 }}>
+          <Ionicons name="trash-outline" size={20} color={theme.expense} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export default function ModuleConfigScreen({ onBack }) {
+  const { 
+    activeTheme, uiConfig, saveSetting,
+    macroTargets, macroMapping, macroOptions 
+  } = useContext(SettingsContext);
+
+  const [newMacroName, setNewMacroName] = useState('');
+  const [showMappingModal, setShowMappingModal] = useState(false);
+
+  const z = 0.8 * (activeTheme.zoom || 1);
+  const f = activeTheme.fontFamily || 'monospace';
+  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+
+  const handleToggleUi = (key) => {
+    const newConfig = { ...uiConfig, [key]: !uiConfig[key] };
+    saveSetting('uiConfig', newConfig);
+  };
+
+  // Mutações de Macros Dinâmicos (agora salvam no Contexto/DB)
+  const updateMacroName = (oldName, newName) => {
+    if (oldName === newName) return;
+    if (macroOptions.includes(newName)) return;
+    
+    const newOptions = macroOptions.map(m => m === oldName ? newName : m);
+    saveSetting('macroOptions', newOptions);
+    
+    const newTargets = { ...macroTargets };
+    newTargets[newName] = newTargets[oldName];
+    delete newTargets[oldName];
+    saveSetting('macroTargets', newTargets);
+
+    const newMapping = { ...macroMapping };
+    Object.keys(newMapping).forEach(micro => {
+      if (newMapping[micro] === oldName) newMapping[micro] = newName;
+    });
+    saveSetting('macroMapping', newMapping);
+  };
+
+  const updateTarget = (cat, val) => {
+    saveSetting('macroTargets', { ...macroTargets, [cat]: Number(val) });
+  };
+
+  const removeMacro = (macro) => {
+    const newOptions = macroOptions.filter(m => m !== macro);
+    saveSetting('macroOptions', newOptions);
+    
+    const newTargets = { ...macroTargets };
+    delete newTargets[macro];
+    saveSetting('macroTargets', newTargets);
+    
+    const newMapping = { ...macroMapping };
+    Object.keys(newMapping).forEach(micro => {
+      if (newMapping[micro] === macro) newMapping[micro] = 'Outros';
+    });
+    saveSetting('macroMapping', newMapping);
+  };
+
+  const addMacro = () => {
+    const name = newMacroName.trim();
+    if (name && !macroOptions.includes(name) && name !== 'Outros') {
+      saveSetting('macroOptions', [...macroOptions, name]);
+      saveSetting('macroTargets', { ...macroTargets, [name]: 0 });
+      setNewMacroName('');
+    }
+  };
+
+  const cycleMacroMapping = (microCat) => {
+    const availableMacros = [...macroOptions, 'Outros'];
+    const current = macroMapping[microCat] || 'Outros';
+    const nextIdx = (availableMacros.indexOf(current) + 1) % availableMacros.length;
+    saveSetting('macroMapping', { ...macroMapping, [microCat]: availableMacros[nextIdx] });
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: activeTheme.text }]}>Módulos e Macros</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scroll}>
+        
+        {/* MODULARIDADE DE UI */}
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Visibilidade de Módulos</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Ligue ou desligue recursos inteiros do app.</Text>
+          
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Geral] Aba Investimentos</Text>
+            <Switch value={uiConfig.showInvestmentsTab} onValueChange={() => handleToggleUi('showInvestmentsTab')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Pendências</Text>
+            <Switch value={uiConfig.homeShowPending} onValueChange={() => handleToggleUi('homeShowPending')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Contas</Text>
+            <Switch value={uiConfig.homeShowAccounts} onValueChange={() => handleToggleUi('homeShowAccounts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Análise] Mostrar Gráficos</Text>
+            <Switch value={uiConfig.analyticsShowCharts} onValueChange={() => handleToggleUi('analyticsShowCharts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Análise] Top 3 Vilões</Text>
+            <Switch value={uiConfig.analyticsShowVilao} onValueChange={() => handleToggleUi('analyticsShowVilao')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Transações] Filtros</Text>
+            <Switch value={uiConfig.transactionsShowFilters} onValueChange={() => handleToggleUi('transactionsShowFilters')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+        </View>
+
+        {/* METAS MACRO */}
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Metas e Macros</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Crie grandes grupos de categorias e defina uma meta % para o orçamento.</Text>
+          
+          <View style={{ marginBottom: 16 }}>
+            {macroOptions.map(cat => (
+              <MacroRow 
+                key={cat} 
+                macro={cat} 
+                target={macroTargets[cat] || 0} 
+                onUpdateName={updateMacroName}
+                onUpdateTarget={updateTarget}
+                onRemove={removeMacro}
+                theme={activeTheme}
+              />
+            ))}
+            
+            <View style={[styles.addMacroRow, { backgroundColor: activeTheme.cardSecondary }]}>
+              <TextInput
+                style={[styles.goalInput, { flex: 1, textAlign: 'left', marginRight: 12, backgroundColor: activeTheme.card, color: activeTheme.text }]}
+                placeholder="Novo Grupo Macro..."
+                placeholderTextColor={activeTheme.textSecondary}
+                value={newMacroName}
+                onChangeText={setNewMacroName}
+              />
+              <TouchableOpacity style={[styles.iconBtnAdd, { backgroundColor: activeTheme.accent }]} onPress={addMacro}>
+                <Ionicons name="add" size={24} color="#121212" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity style={[styles.outlineBtn, { borderColor: activeTheme.accent }]} onPress={() => setShowMappingModal(true)}>
+            <Text style={[styles.outlineBtnText, { color: activeTheme.accent }]}>Mapear Categorias para Macros</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {/* MODAL MAPEAMENTO DE CATEGORIAS */}
+      <Modal visible={showMappingModal} transparent animationType="slide">
+        <View style={styles.modalBg}>
+          <View style={[styles.modalContainerBig, { backgroundColor: activeTheme.background }]}>
+            <Text style={[styles.modalTitle, { color: activeTheme.text }]}>Mapeamento Macro</Text>
+            <Text style={[styles.modalSub, { color: activeTheme.textSecondary }]}>Toque no botão à direita para trocar o grupo macro da categoria.</Text>
+            
+            <ScrollView style={{ maxHeight: '70%', marginBottom: 16 }}>
+              {Object.keys(macroMapping).sort().map(microCat => {
+                const currentMacro = macroMapping[microCat];
+                const macroIdx = macroOptions.indexOf(currentMacro);
+                const macroColor = currentMacro === 'Outros' ? activeTheme.textSecondary : COLORS_PALETTE[macroIdx % COLORS_PALETTE.length] || activeTheme.textSecondary;
+
+                return (
+                  <View key={microCat} style={[styles.mapRow, { borderBottomColor: activeTheme.card }]}>
+                    <Text style={[styles.mapMicro, { color: activeTheme.text }]}>{microCat}</Text>
+                    <TouchableOpacity 
+                      style={[styles.mapToggleBtn, { borderColor: macroColor }]}
+                      onPress={() => cycleMacroMapping(microCat)}
+                    >
+                      <Text style={[styles.mapToggleText, { color: macroColor }]}>{currentMacro}</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: activeTheme.accent }]} onPress={() => setShowMappingModal(false)}>
+              <Text style={[styles.saveBtnText, { color: '#121212' }]}>Voltar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+    </View>
+  );
+}
+
+const getStyles = (z, f) => StyleSheet.create({
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16 * z, paddingTop: 24 * z, paddingBottom: 16 * z },
+  backBtn: { marginRight: 16 * z },
+  title: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
+  scroll: { padding: 16 * z },
+  
+  section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+  sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
+  sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
+  
+  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
+  switchLabel: { fontSize: 16 * z, fontFamily: f },
+  
+  goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 12 * z },
+  addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 12 * z },
+  goalLabel: { fontSize: 14 * z, fontWeight: 'bold', flexShrink: 1, fontFamily: f },
+  goalInput: { borderRadius: 8 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, width: 60 * z, textAlign: 'center', fontFamily: f },
+  iconBtnAdd: { padding: 8 * z, borderRadius: 8 * z },
+
+  outlineBtn: { borderWidth: 1, padding: 12 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 8 * z },
+  outlineBtnText: { fontWeight: 'bold', fontSize: 14 * z, fontFamily: f },
+
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 24 * z },
+  modalContainerBig: { borderRadius: 16 * z, padding: 24 * z, flex: 0.9 },
+  modalTitle: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
+  modalSub: { fontSize: 14 * z, marginBottom: 24 * z, fontFamily: f },
+  
+  mapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
+  mapMicro: { fontSize: 14 * z, fontFamily: f },
+  mapToggleBtn: { borderWidth: 1, borderRadius: 12 * z, paddingHorizontal: 10 * z, paddingVertical: 4 * z },
+  mapToggleText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
+
+  saveBtn: { padding: 16 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 16 * z },
+  saveBtnText: { fontWeight: 'bold', fontSize: 16 * z, fontFamily: f },
+});
