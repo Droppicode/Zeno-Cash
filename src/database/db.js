@@ -22,6 +22,11 @@ expoDb.execSync(`
     icon TEXT,
     color TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 // Envelopa a conexão com o Drizzle ORM

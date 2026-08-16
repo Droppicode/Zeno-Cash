@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
 import { seedDatabase } from './src/database/seed';
+import { SettingsProvider } from './src/context/SettingsContext';
 
 export default function App() {
   useEffect(() => {
@@ -14,10 +15,12 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <AppNavigator />
-        <StatusBar style="light" />
-      </NavigationContainer>
+      <SettingsProvider>
+        <NavigationContainer>
+          <AppNavigator />
+          <StatusBar style="light" />
+        </NavigationContainer>
+      </SettingsProvider>
     </GestureHandlerRootView>
   );
 }

@@ -7,6 +7,7 @@ import { db } from '../database/db';
 import { transactions } from '../database/schema';
 import { categorizeTransaction } from '../services/categorizer';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
+import { SettingsContext } from '../context/SettingsContext';
 
 const INITIAL_MAPPING = {
   'Alimentação': 'Essenciais', 'Supermercado': 'Essenciais', 'Restaurante': 'Essenciais', 'Ifood': 'Essenciais', 'Padaria': 'Essenciais',
@@ -77,10 +78,12 @@ const MacroRow = ({ macro, target, onUpdateName, onUpdateTarget, onRemove }) => 
 };
 
 export default function AnalyticsScreen() {
+  const { accentColor, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
+
   const [analyticsData, setAnalyticsData] = useState([]);
   const [totalExpense, setTotalExpense] = useState(0);
   const [totalIncome, setTotalIncome] = useState(0);
-  const [period, setPeriod] = useState('30d');
+  const [period, setPeriod] = useState(defaultPeriod || '30d');
   const [isMacro, setIsMacro] = useState(true);
   const [monthlyData, setMonthlyData] = useState([]);
   const [topExpenses, setTopExpenses] = useState([]);
@@ -283,14 +286,14 @@ export default function AnalyticsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Análise Avançada</Text>
         <View style={styles.periodRow}>
-          <TouchableOpacity style={[styles.periodBtn, period === '30d' && styles.periodBtnActive]} onPress={() => setPeriod('30d')}>
-            <Text style={[styles.periodText, period === '30d' && styles.periodTextActive]}>30 Dias</Text>
+          <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('30d')}>
+            <Text style={[styles.periodText, period === '30d' && { color: '#121212' }]}>30 Dias</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.periodBtn, period === '90d' && styles.periodBtnActive]} onPress={() => setPeriod('90d')}>
-            <Text style={[styles.periodText, period === '90d' && styles.periodTextActive]}>90 Dias</Text>
+          <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('90d')}>
+            <Text style={[styles.periodText, period === '90d' && { color: '#121212' }]}>90 Dias</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.periodBtn, period === 'all' && styles.periodBtnActive]} onPress={() => setPeriod('all')}>
-            <Text style={[styles.periodText, period === 'all' && styles.periodTextActive]}>Sempre</Text>
+          <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: accentColor }]} onPress={() => setPeriod('all')}>
+            <Text style={[styles.periodText, period === 'all' && { color: '#121212' }]}>Sempre</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -339,7 +342,7 @@ export default function AnalyticsScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.toggleBtn} onPress={() => setIsMacro(!isMacro)}>
-                <Text style={styles.toggleText}>{isMacro ? 'Ver Detalhado' : 'Agrupar Macro'}</Text>
+                <Text style={[styles.toggleText, { color: accentColor }]}>{isMacro ? 'Ver Detalhado' : 'Agrupar Macro'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -428,30 +431,32 @@ export default function AnalyticsScreen() {
         </View>
 
         {/* Top 3 Vilões */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Top 3 Vilões</Text>
-          <Text style={styles.cardSubtitle}>As maiores despesas isoladas do período</Text>
-          
-          <View style={{ marginTop: 16 }}>
-            {topExpenses.length === 0 ? (
-              <Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>
-            ) : (
-              topExpenses.map((item, idx) => {
-                const catInfo = categorizeTransaction(item.description, item.amount);
-                return (
-                  <View key={item.id} style={styles.vilaoCard}>
-                    <Text style={styles.vilaoRank}>#{idx + 1}</Text>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={styles.vilaoDesc}>{item.description}</Text>
-                      <Text style={styles.vilaoCat}>{catInfo.categoryName}</Text>
+        {uiConfig.analyticsShowVilao !== false && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Top 3 Vilões</Text>
+            <Text style={styles.cardSubtitle}>As maiores despesas isoladas do período</Text>
+            
+            <View style={{ marginTop: 16 }}>
+              {topExpenses.length === 0 ? (
+                <Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>
+              ) : (
+                topExpenses.map((item, idx) => {
+                  const catInfo = categorizeTransaction(item.description, item.amount);
+                  return (
+                    <View key={item.id} style={styles.vilaoCard}>
+                      <Text style={[styles.vilaoRank, { color: accentColor }]}>#{idx + 1}</Text>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.vilaoDesc}>{item.description}</Text>
+                        <Text style={styles.vilaoCat}>{catInfo.categoryName}</Text>
+                      </View>
+                      <Text style={[styles.vilaoAmount, { color: accentColor }]}>- R$ {item.amount.toFixed(2)}</Text>
                     </View>
-                    <Text style={styles.vilaoAmount}>- R$ {item.amount.toFixed(2)}</Text>
-                  </View>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -490,12 +495,12 @@ export default function AnalyticsScreen() {
               </View>
             </ScrollView>
 
-            <TouchableOpacity style={styles.outlineBtn} onPress={() => { setShowGoalModal(false); setShowMappingModal(true); }}>
-              <Text style={styles.outlineBtnText}>Mapear Categorias para os Macros</Text>
+            <TouchableOpacity style={[styles.outlineBtn, { borderColor: accentColor }]} onPress={() => { setShowGoalModal(false); setShowMappingModal(true); }}>
+              <Text style={[styles.outlineBtnText, { color: accentColor }]}>Mapear Categorias para os Macros</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setShowGoalModal(false)}>
-              <Text style={styles.saveBtnText}>Concluir</Text>
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: accentColor }]} onPress={() => setShowGoalModal(false)}>
+              <Text style={[styles.saveBtnText, { color: '#121212' }]}>Concluir</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -528,8 +533,8 @@ export default function AnalyticsScreen() {
               })}
             </ScrollView>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setShowMappingModal(false)}>
-              <Text style={styles.saveBtnText}>Voltar</Text>
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: accentColor }]} onPress={() => setShowMappingModal(false)}>
+              <Text style={[styles.saveBtnText, { color: '#121212' }]}>Voltar</Text>
             </TouchableOpacity>
           </View>
         </View>

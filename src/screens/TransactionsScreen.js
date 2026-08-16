@@ -7,12 +7,14 @@ import { db } from '../database/db';
 import { transactions } from '../database/schema';
 import { desc } from 'drizzle-orm';
 import { categorizeTransaction } from '../services/categorizer';
+import { SettingsContext } from '../context/SettingsContext';
 
 export default function TransactionsScreen() {
+  const { accentColor, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [txList, setTxList] = useState([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // all, income, expense
-  const [period, setPeriod] = useState('30d'); // 30d, 90d, all
+  const [period, setPeriod] = useState(defaultPeriod || '30d'); // 30d, 90d, all
   
   // Advanced Filters
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -153,40 +155,42 @@ export default function TransactionsScreen() {
           />
         </View>
         
-        <View style={styles.filterContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
-            {/* Tipos */}
-            <View style={styles.filterGroup}>
-              <TouchableOpacity style={[styles.filterBtn, filter === 'all' && styles.filterBtnActive]} onPress={() => setFilter('all')}>
-                <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>Tudo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.filterBtn, filter === 'income' && styles.filterBtnActive]} onPress={() => setFilter('income')}>
-                <Text style={[styles.filterText, filter === 'income' && styles.filterTextActive]}>Receitas</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && styles.filterBtnActive]} onPress={() => setFilter('expense')}>
-                <Text style={[styles.filterText, filter === 'expense' && styles.filterTextActive]}>Despesas</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Tempos */}
-            <View style={styles.filterGroup}>
-              <TouchableOpacity style={[styles.periodBtn, period === '30d' && styles.periodBtnActive]} onPress={() => setPeriod('30d')}>
-                <Text style={[styles.periodText, period === '30d' && styles.periodTextActive]}>30D</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.periodBtn, period === '90d' && styles.periodBtnActive]} onPress={() => setPeriod('90d')}>
-                <Text style={[styles.periodText, period === '90d' && styles.periodTextActive]}>90D</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.periodBtn, period === 'all' && styles.periodBtnActive]} onPress={() => setPeriod('all')}>
-                <Text style={[styles.periodText, period === 'all' && styles.periodTextActive]}>Sempre</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+        {uiConfig.transactionsShowFilters !== false && (
+          <View style={styles.filterContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
+              {/* Tipos */}
+              <View style={styles.filterGroup}>
+                <TouchableOpacity style={[styles.filterBtn, filter === 'all' && { backgroundColor: accentColor }]} onPress={() => setFilter('all')}>
+                  <Text style={[styles.filterText, filter === 'all' && { color: '#121212' }]}>Tudo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.filterBtn, filter === 'income' && { backgroundColor: accentColor }]} onPress={() => setFilter('income')}>
+                  <Text style={[styles.filterText, filter === 'income' && { color: '#121212' }]}>Receitas</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && { backgroundColor: accentColor }]} onPress={() => setFilter('expense')}>
+                  <Text style={[styles.filterText, filter === 'expense' && { color: '#121212' }]}>Despesas</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {/* Tempos */}
+              <View style={styles.filterGroup}>
+                <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('30d')}>
+                  <Text style={[styles.periodText, period === '30d' && { color: '#121212' }]}>30D</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: accentColor }]} onPress={() => setPeriod('90d')}>
+                  <Text style={[styles.periodText, period === '90d' && { color: '#121212' }]}>90D</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: accentColor }]} onPress={() => setPeriod('all')}>
+                  <Text style={[styles.periodText, period === 'all' && { color: '#121212' }]}>Sempre</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
 
-          {/* Botão Fixo à Direita para Filtros Avançados */}
-          <TouchableOpacity style={styles.advancedToggleBtn} onPress={() => setShowAdvanced(!showAdvanced)}>
-            <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color="#BB86FC" />
-          </TouchableOpacity>
-        </View>
+            {/* Botão Fixo à Direita para Filtros Avançados */}
+            <TouchableOpacity style={styles.advancedToggleBtn} onPress={() => setShowAdvanced(!showAdvanced)}>
+              <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={accentColor} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {showAdvanced && (
           <View style={styles.advancedPanel}>
@@ -226,10 +230,10 @@ export default function TransactionsScreen() {
               {uniqueCategories.map(cat => (
                 <TouchableOpacity 
                   key={cat} 
-                  style={[styles.catBtn, selectedCats.includes(cat) && styles.catBtnActive]}
+                  style={[styles.catBtn, selectedCats.includes(cat) && { backgroundColor: accentColor }]}
                   onPress={() => toggleCategory(cat)}
                 >
-                  <Text style={[styles.catText, selectedCats.includes(cat) && styles.catTextActive]}>
+                  <Text style={[styles.catText, selectedCats.includes(cat) && { color: '#121212' }]}>
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -244,7 +248,9 @@ export default function TransactionsScreen() {
         sections={sections}
         keyExtractor={item => item.id.toString()}
         renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={[styles.sectionHeader, { color: accentColor }]}>{title}</Text>
+        )}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>}
         stickySectionHeadersEnabled={false}

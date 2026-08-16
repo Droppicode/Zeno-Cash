@@ -7,13 +7,15 @@ import { db } from '../database/db';
 import { transactions } from '../database/schema';
 import { desc, eq } from 'drizzle-orm';
 import { categorizeTransaction } from '../services/categorizer';
+import { SettingsContext } from '../context/SettingsContext';
 
 export default function HomeScreen() {
+  const { accentColor, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [txType, setTxType] = useState('expense');
-  const [period, setPeriod] = useState('30d'); // Adicionado o state
+  const [period, setPeriod] = useState(defaultPeriod || '30d');
   
   // Estado real do Banco de Dados
   const [txList, setTxList] = useState([]);
@@ -114,13 +116,13 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>Visão Geral</Text>
           <View style={styles.periodBox}>
             <TouchableOpacity onPress={() => setPeriod('30d')}>
-              <Text style={[styles.periodText, period === '30d' && styles.periodTextActive]}>30D</Text>
+              <Text style={[styles.periodText, period === '30d' && { color: '#fff', backgroundColor: accentColor, borderRadius: 16 }]}>30D</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setPeriod('90d')}>
-              <Text style={[styles.periodText, period === '90d' && styles.periodTextActive]}>90D</Text>
+              <Text style={[styles.periodText, period === '90d' && { color: '#fff', backgroundColor: accentColor, borderRadius: 16 }]}>90D</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setPeriod('all')}>
-              <Text style={[styles.periodText, period === 'all' && styles.periodTextActive]}>Tudo</Text>
+              <Text style={[styles.periodText, period === 'all' && { color: '#fff', backgroundColor: accentColor, borderRadius: 16 }]}>Tudo</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -178,8 +180,8 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-        <Ionicons name="add" size={32} color="#fff" />
+      <TouchableOpacity style={[styles.fab, { backgroundColor: accentColor }]} onPress={() => setModalVisible(true)}>
+        <Ionicons name="add" size={32} color="#121212" />
       </TouchableOpacity>
 
       {/* Modal Real de Cadastro */}
@@ -225,8 +227,8 @@ export default function HomeScreen() {
               <TouchableOpacity style={styles.btnCancel} onPress={() => setModalVisible(false)}>
                 <Text style={styles.btnText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.btnSave} onPress={saveTransaction}>
-                <Text style={styles.btnText}>Salvar</Text>
+              <TouchableOpacity style={[styles.btnSave, { backgroundColor: accentColor }]} onPress={saveTransaction}>
+                <Text style={[styles.btnText, { color: '#121212' }]}>Salvar</Text>
               </TouchableOpacity>
             </View>
           </View>

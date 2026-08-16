@@ -16,3 +16,8 @@ export const categories = sqliteTable('categories', {
   icon: text('icon'),
   color: text('color'),
 });
+
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
