@@ -1,5 +1,6 @@
 import { AppRegistry } from 'react-native';
 import RNAndroidNotificationListener from 'react-native-android-notification-listener';
+import * as Notifications from 'expo-notifications';
 
 import { db } from '../database/db';
 import { transactions } from '../database/schema';
@@ -78,10 +79,12 @@ export const headlessNotificationListener = async ({ notification }) => {
     
     // Identificar o meio de pagamento para colocar como descrição temporária
     let txDesc = 'Transação Pendente';
-    if (content.includes('pix')) txDesc = 'Pix Pendente';
+    if (content.includes('pix')) txDesc = 'Pix Recebido';
     else if (content.includes('cartão') || content.includes('cartao') || content.includes('compra')) txDesc = 'Compra no Cartão';
     else if (content.includes('transferência') || content.includes('ted') || content.includes('doc')) txDesc = 'Transferência';
     else if (content.includes('boleto') || content.includes('pagamento')) txDesc = 'Pagamento de Boleto';
+    
+    txDesc = `${txDesc} - ${accountName}`;
     
     const newTx = {
       amount,
@@ -97,8 +100,17 @@ export const headlessNotificationListener = async ({ notification }) => {
     await db.insert(transactions).values(newTx);
     console.log(`Transação pendente salva: R$ ${amount} (${type})`);
     
+    // Dispara a notificação local para avisar o usuário
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `${txDesc}`,
+        body: `Pendência de R$ ${amount.toFixed(2)} salva. Toque para aprovar!`,
+        sound: true,
+      },
+      trigger: null, // dispara imediatamente
+    });
+    
   } catch (error) {
-    console.error('Erro ao processar notificação no Headless Task', error);
+    console.error('Erro ao processar notificação headless:', error);
   }
 };
-
