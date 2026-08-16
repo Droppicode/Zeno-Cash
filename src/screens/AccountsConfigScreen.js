@@ -8,6 +8,15 @@ import { getZoomFactor } from '../utils/scaler';
 const ACCOUNT_ICONS = ['wallet-outline', 'card-outline', 'business-outline', 'cash-outline', 'logo-bitcoin', 'bar-chart-outline'];
 const ACCOUNT_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#607D8B'];
 
+const QUICK_BANKS = [
+  { name: 'Nubank', color: '#8A05BE', icon: 'card-outline' },
+  { name: 'Inter', color: '#FF7A00', icon: 'card-outline' },
+  { name: 'Itaú', color: '#EC7000', icon: 'business-outline' },
+  { name: 'Santander', color: '#CC0000', icon: 'business-outline' },
+  { name: 'Mercado Pago', color: '#00B1EA', icon: 'card-outline' },
+  { name: 'Dinheiro', color: '#4CAF50', icon: 'wallet-outline' }
+];
+
 export default function AccountsConfigScreen({ onBack }) {
   const { activeTheme } = useContext(SettingsContext);
   const { accountList, loadAccounts, saveAccount: saveAcc, deleteAccount: delAcc } = useAccounts();
@@ -135,7 +144,29 @@ export default function AccountsConfigScreen({ onBack }) {
               <Text style={{ color: activeTheme.expense, marginBottom: 12, fontWeight: 'bold' }}>{errorMsg}</Text>
             ) : null}
 
-            <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Nome da Conta</Text>
+            {!editingId && (
+              <View>
+                <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: 0 }]}>Bancos Rápidos</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                  {QUICK_BANKS.map(bank => (
+                    <TouchableOpacity 
+                      key={bank.name}
+                      style={[styles.quickBankPill, { borderColor: bank.color, backgroundColor: bank.color + '15' }]}
+                      onPress={() => {
+                        setName(bank.name);
+                        setColor(bank.color);
+                        setIcon(bank.icon);
+                      }}
+                    >
+                      <Ionicons name={bank.icon} size={14} color={bank.color} style={{ marginRight: 6 }} />
+                      <Text style={[styles.quickBankText, { color: bank.color }]}>{bank.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: editingId ? 12 : 0 }]}>Nome da Conta</Text>
             <TextInput
               style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
               value={name}
@@ -222,5 +253,8 @@ const getStyles = (z, f) => StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: 12 * z, marginTop: 32 * z },
   btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
   btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
-  btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f }
+  btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+  
+  quickBankPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 * z, paddingVertical: 8 * z, borderRadius: 16 * z, borderWidth: 1, marginRight: 8 * z },
+  quickBankText: { fontSize: 13 * z, fontWeight: 'bold', fontFamily: f }
 });
