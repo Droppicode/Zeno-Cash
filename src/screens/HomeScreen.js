@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { db } from '../database/db';
-import { transactions, accounts } from '../database/schema';
-import { desc, eq } from 'drizzle-orm';
 import { categorizeTransaction } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTransactions } from '../hooks/useTransactions';
+import { useAccounts } from '../hooks/useAccounts';
 
 export default function HomeScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -18,86 +17,71 @@ export default function HomeScreen() {
   const [txType, setTxType] = useState('expense');
   const [period, setPeriod] = useState(defaultPeriod || '30d');
   
-  // Estado real do Banco de Dados
-  const [txList, setTxList] = useState([]);
-  const [balance, setBalance] = useState({ total: 0, income: 0, expense: 0 });
-  const [accountBalances, setAccountBalances] = useState([]);
+  const [errorMsg, setErrorMsg] = useState('');
+  
+  const { txList, loadTransactions, addTransaction, removeTransaction, filterByPeriod } = useTransactions();
+  const { accountList, loadAccounts } = useAccounts();
   const [selectedAccountId, setSelectedAccountId] = useState(null);
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
-  const loadData = async () => {
-    try {
-      const allTx = await db.select().from(transactions).orderBy(desc(transactions.date));
-      const accData = await db.select().from(accounts);
-      
-      // Calculate current balances for accounts based on ALL transactions
-      const calculatedAccounts = accData.map(acc => {
-        let current = acc.balance || 0;
-        allTx.forEach(tx => {
-          if (tx.accountId === acc.id) {
-             if (tx.type === 'income') current += tx.amount;
-             else current -= tx.amount;
-          }
-        });
-        return { ...acc, currentBalance: current };
-      });
-      
-      setAccountBalances(calculatedAccounts);
-      if (accData.length > 0 && !selectedAccountId) {
-        setSelectedAccountId(accData[0].id);
-      }
-      
-      const now = new Date().getTime();
-      let limitDate = 0;
-      
-      if (period === '30d') {
-        limitDate = now - (30 * 24 * 60 * 60 * 1000);
-      } else if (period === '90d') {
-        limitDate = now - (90 * 24 * 60 * 60 * 1000);
-      }
-
-      const filteredData = allTx.filter(t => t.date >= limitDate);
-      
-      setTxList(allTx);
-      
-      let inTotal = 0;
-      let outTotal = 0;
-      filteredData.forEach(t => {
-        if (t.type === 'income') inTotal += t.amount;
-        else outTotal += t.amount;
-      });
-      
-      setBalance({ total: inTotal - outTotal, income: inTotal, expense: outTotal });
-    } catch (err) {
-      console.log('Erro db:', err);
-    }
-  };
-
   useFocusEffect(
-    React.useCallback(() => {
-      loadData();
-    }, [period])
+    useCallback(() => {
+      loadTransactions();
+      loadAccounts();
+    }, [])
   );
 
+  useEffect(() => {
+    if (accountList.length > 0 && !selectedAccountId) {
+      setSelectedAccountId(accountList[0].id);
+    }
+  }, [accountList, selectedAccountId]);
+
+  const accountBalances = useMemo(() => {
+    return accountList.map(acc => {
+      let current = acc.balance || 0;
+      txList.forEach(tx => {
+        if (tx.accountId === acc.id) {
+           if (tx.type === 'income') current += tx.amount;
+           else current -= tx.amount;
+        }
+      });
+      return { ...acc, currentBalance: current };
+    });
+  }, [accountList, txList]);
+
+  const filteredTxList = useMemo(() => filterByPeriod(txList, period), [txList, period, filterByPeriod]);
+  
+  const balance = useMemo(() => {
+    let inTotal = 0;
+    let outTotal = 0;
+    filteredTxList.forEach(t => {
+      if (t.type === 'income') inTotal += t.amount;
+      else outTotal += t.amount;
+    });
+    return { total: inTotal - outTotal, income: inTotal, expense: outTotal };
+  }, [filteredTxList]);
+
   const saveTransaction = async () => {
-    if (!amount || !description.trim()) return;
+    setErrorMsg('');
+    if (!amount || !description.trim()) {
+      setErrorMsg('Preencha o valor e a descrição.');
+      return;
+    }
     
     let rawAmount = amount.replace(',', '.').replace(/[^0-9.]/g, '');
     let numAmount = parseFloat(rawAmount);
     
     if (isNaN(numAmount) || numAmount <= 0) {
-      alert('Por favor, insira um valor numérico válido maior que zero.');
+      setErrorMsg('Insira um valor numérico válido maior que zero.');
       return;
     }
     
-    const finalType = txType;
-    
-    await db.insert(transactions).values({
+    await addTransaction({
       amount: numAmount,
       description: description.trim(),
-      type: finalType,
-      date: Date.now(),
+      type: txType,
       accountId: selectedAccountId
     });
     
@@ -105,18 +89,12 @@ export default function HomeScreen() {
     setAmount('');
     setDescription('');
     setTxType('expense');
-    loadData();
-  };
-
-  const approvePending = async (tx) => {
-    await db.delete(transactions).where(eq(transactions.id, tx.id));
-    loadData();
   };
 
   const renderRightActions = (tx) => (
     <TouchableOpacity 
       style={[styles.approveAction, { backgroundColor: activeTheme.expense }]}
-      onPress={() => approvePending(tx)}
+      onPress={() => removeTransaction(tx.id)}
     >
       <Ionicons name="trash" size={24} color="#fff" />
       <Text style={styles.approveActionText}>Apagar</Text>
@@ -245,6 +223,10 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
             <Text style={[styles.modalTitle, { color: activeTheme.text }]}>Nova Transação</Text>
+            
+            {errorMsg ? (
+              <Text style={{ color: activeTheme.expense, marginBottom: 12, fontWeight: 'bold' }}>{errorMsg}</Text>
+            ) : null}
             
             <View style={[styles.toggleContainer, { backgroundColor: activeTheme.cardSecondary }]}>
               <TouchableOpacity 

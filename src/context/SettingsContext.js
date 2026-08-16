@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { db } from '../database/db';
 import { settings } from '../database/schema';
 import { eq } from 'drizzle-orm';
+import { Logger } from '../utils/logger';
 
 export const SettingsContext = createContext();
 
@@ -222,7 +223,7 @@ export const SettingsProvider = ({ children }) => {
         
         setCustomThemes(loadedThemes);
       } catch (err) {
-        console.log('Erro loadSettingsContext:', err);
+        Logger.error('SettingsContext.loadSettings', err);
       } finally {
         setIsLoaded(true);
       }
@@ -240,7 +241,7 @@ export const SettingsProvider = ({ children }) => {
         await db.insert(settings).values({ key, value: strValue });
       }
     } catch (err) {
-      console.log('Erro saveSettingContext:', err);
+      Logger.error('SettingsContext.saveSettingInternal', err);
     }
   };
 

@@ -1,13 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { db } from '../database/db';
-import { transactions } from '../database/schema';
 import { categorizeTransaction } from '../services/categorizer';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { SettingsContext } from '../context/SettingsContext';
+import { useTransactions } from '../hooks/useTransactions';
+import { DateUtils } from '../utils/dateUtils';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -17,22 +17,21 @@ export default function AnalyticsScreen() {
     macroTargets, macroMapping, macroOptions 
   } = React.useContext(SettingsContext);
 
-  const [analyticsData, setAnalyticsData] = useState([]);
-  const [totalExpense, setTotalExpense] = useState(0);
-  const [totalIncome, setTotalIncome] = useState(0);
-  const [period, setPeriod] = useState(defaultPeriod || '30d');
   const [isMacro, setIsMacro] = useState(true);
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [topExpenses, setTopExpenses] = useState([]);
+  const [period, setPeriod] = useState(defaultPeriod || '30d');
 
-  const loadData = async () => {
-    try {
-      const data = await db.select().from(transactions);
+  const { txList, loadTransactions } = useTransactions();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions();
+    }, [loadTransactions])
+  );
+
+  const { analyticsData, totalExpense, totalIncome, topExpenses, monthlyData } = useMemo(() => {
+      const data = txList;
       
-      const now = new Date().getTime();
-      let limitDate = 0;
-      if (period === '30d') limitDate = now - (30 * 24 * 60 * 60 * 1000);
-      else if (period === '90d') limitDate = now - (90 * 24 * 60 * 60 * 1000);
+      const limitDate = DateUtils.getLimitDateForPeriod(period);
 
       const last6Months = {};
       for (let i = 5; i >= 0; i--) {
@@ -63,16 +62,13 @@ export default function AnalyticsScreen() {
         });
         barData.push({ value: item.expense, frontColor: activeTheme.expense });
       });
-      setMonthlyData(barData);
 
       const expenses = data.filter(t => t.type === 'expense' && t.date >= limitDate);
       const incomes = data.filter(t => t.type === 'income' && t.date >= limitDate);
       
       const sumIncome = incomes.reduce((acc, t) => acc + t.amount, 0);
-      setTotalIncome(sumIncome);
 
       const top3 = [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 3);
-      setTopExpenses(top3);
       
       let sum = 0;
       const grouped = {};
@@ -110,18 +106,14 @@ export default function AnalyticsScreen() {
         });
       }
 
-      setTotalExpense(sum);
-      setAnalyticsData(sorted);
-    } catch (err) {
-      console.log('Erro db:', err);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [period, isMacro, macroTargets, macroMapping, macroOptions, activeTheme])
-  );
+      return {
+        analyticsData: sorted,
+        totalExpense: sum,
+        totalIncome: sumIncome,
+        topExpenses: top3,
+        monthlyData: barData
+      };
+  }, [txList, period, isMacro, macroTargets, macroMapping, macroOptions, activeTheme]);
 
   const pieData = analyticsData.filter(i => i.total > 0).map(item => ({
     value: item.total,

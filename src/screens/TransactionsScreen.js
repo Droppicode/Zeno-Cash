@@ -1,17 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { db } from '../database/db';
-import { transactions } from '../database/schema';
-import { desc } from 'drizzle-orm';
 import { categorizeTransaction } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
+import { useTransactions } from '../hooks/useTransactions';
+import { DateUtils } from '../utils/dateUtils';
 
 export default function TransactionsScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
-  const [txList, setTxList] = useState([]);
+  const { txList, loadTransactions } = useTransactions();
+
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); 
   const [period, setPeriod] = useState(defaultPeriod || '30d'); 
@@ -23,57 +23,42 @@ export default function TransactionsScreen() {
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
-  const loadData = async () => {
-    try {
-      const data = await db.select().from(transactions).orderBy(desc(transactions.date));
-      setTxList(data);
-    } catch (err) {
-      console.log('Erro db:', err);
-    }
-  };
-
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [])
+      loadTransactions();
+    }, [loadTransactions])
   );
 
-  const parseDateStr = (dateStr) => {
-    if (dateStr.length !== 10) return null;
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return null;
-    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`).getTime();
-  };
+  const filteredList = useMemo(() => {
+    return txList.filter(item => {
+      const limit = DateUtils.getLimitDateForPeriod(period);
+      if (item.date < limit) return false;
 
-  const filteredList = txList.filter(item => {
-    const now = new Date().getTime();
-    if (period === '30d' && item.date < now - (30 * 24 * 60 * 60 * 1000)) return false;
-    if (period === '90d' && item.date < now - (90 * 24 * 60 * 60 * 1000)) return false;
+      if (filter === 'income' && item.type !== 'income') return false;
+      if (filter === 'expense' && item.type !== 'expense') return false;
+      
+      const catInfo = categorizeTransaction(item.description, item.amount);
+      if (selectedCats.length > 0 && !selectedCats.includes(catInfo.categoryName)) {
+        return false;
+      }
+      
+      if (search.trim() !== '' && !item.description.toLowerCase().includes(search.toLowerCase())) {
+        return false;
+      }
 
-    if (filter === 'income' && item.type !== 'income') return false;
-    if (filter === 'expense' && item.type !== 'expense') return false;
-    
-    const catInfo = categorizeTransaction(item.description, item.amount);
-    if (selectedCats.length > 0 && !selectedCats.includes(catInfo.categoryName)) {
-      return false;
-    }
-    
-    if (search.trim() !== '' && !item.description.toLowerCase().includes(search.toLowerCase())) {
-      return false;
-    }
+      if (startDate.length === 10) {
+        const sDate = DateUtils.parseDateInput(startDate);
+        if (sDate && item.date < sDate) return false;
+      }
+      
+      if (endDate.length === 10) {
+        const eDate = DateUtils.parseDateInput(endDate);
+        if (eDate && item.date > (eDate + 86400000)) return false; 
+      }
 
-    if (startDate.length === 10) {
-      const sDate = parseDateStr(startDate);
-      if (sDate && item.date < sDate) return false;
-    }
-    
-    if (endDate.length === 10) {
-      const eDate = parseDateStr(endDate);
-      if (eDate && item.date > (eDate + 86400000)) return false; 
-    }
-
-    return true;
-  });
+      return true;
+    });
+  }, [txList, period, filter, selectedCats, search, startDate, endDate]);
 
   const uniqueCategories = Array.from(new Set(txList.map(item => categorizeTransaction(item.description, item.amount).categoryName)));
 
@@ -85,12 +70,7 @@ export default function TransactionsScreen() {
     }
   };
 
-  const formatDateInput = (text) => {
-    let v = text.replace(/\D/g, '').slice(0, 8);
-    if (v.length >= 5) return `${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;
-    if (v.length >= 3) return `${v.slice(0,2)}/${v.slice(2)}`;
-    return v;
-  };
+
 
   const groupedData = filteredList.reduce((acc, tx) => {
     const d = new Date(tx.date);
@@ -203,7 +183,7 @@ export default function TransactionsScreen() {
                   placeholderTextColor={activeTheme.textSecondary}
                   keyboardType="numeric"
                   value={startDate}
-                  onChangeText={(text) => setStartDate(formatDateInput(text))}
+                  onChangeText={(text) => setStartDate(DateUtils.formatDateInput(text))}
                   maxLength={10}
                 />
               </View>
@@ -215,7 +195,7 @@ export default function TransactionsScreen() {
                   placeholderTextColor={activeTheme.textSecondary}
                   keyboardType="numeric"
                   value={endDate}
-                  onChangeText={(text) => setEndDate(formatDateInput(text))}
+                  onChangeText={(text) => setEndDate(DateUtils.formatDateInput(text))}
                   maxLength={10}
                 />
               </View>

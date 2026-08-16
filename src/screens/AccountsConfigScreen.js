@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { db } from '../database/db';
-import { accounts } from '../database/schema';
-import { eq } from 'drizzle-orm';
 import { SettingsContext } from '../context/SettingsContext';
+import { useAccounts } from '../hooks/useAccounts';
 
 const ACCOUNT_ICONS = ['wallet-outline', 'card-outline', 'business-outline', 'cash-outline', 'logo-bitcoin', 'bar-chart-outline'];
 const ACCOUNT_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#607D8B'];
 
 export default function AccountsConfigScreen({ onBack }) {
   const { activeTheme } = useContext(SettingsContext);
-  const [accountList, setAccountList] = useState([]);
+  const { accountList, loadAccounts, saveAccount: saveAcc, deleteAccount: delAcc } = useAccounts();
   const [showEditor, setShowEditor] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
   
   // Form State
   const [name, setName] = useState('');
@@ -25,18 +24,9 @@ export default function AccountsConfigScreen({ onBack }) {
   const f = activeTheme.fontFamily || 'monospace';
   const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 
-  const loadAccounts = async () => {
-    try {
-      const data = await db.select().from(accounts);
-      setAccountList(data);
-    } catch (err) {
-      console.log('Erro loadAccounts:', err);
-    }
-  };
-
   useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [loadAccounts]);
 
   const openNew = () => {
     setEditingId(null);
@@ -44,6 +34,7 @@ export default function AccountsConfigScreen({ onBack }) {
     setBalance('0');
     setIcon(ACCOUNT_ICONS[0]);
     setColor(ACCOUNT_COLORS[0]);
+    setErrorMsg('');
     setShowEditor(true);
   };
 
@@ -53,52 +44,36 @@ export default function AccountsConfigScreen({ onBack }) {
     setBalance(acc.balance.toString());
     setIcon(acc.icon || ACCOUNT_ICONS[0]);
     setColor(acc.color || ACCOUNT_COLORS[0]);
+    setErrorMsg('');
     setShowEditor(true);
   };
 
   const saveAccount = async () => {
+    setErrorMsg('');
     if (!name.trim()) {
-      Alert.alert('Erro', 'O nome da conta é obrigatório.');
+      setErrorMsg('O nome da conta é obrigatório.');
       return;
     }
     
     let numBalance = parseFloat(balance.replace(',', '.'));
     if (isNaN(numBalance)) numBalance = 0;
 
-    try {
-      if (editingId) {
-        await db.update(accounts).set({
-          name: name.trim(),
-          balance: numBalance,
-          icon,
-          color
-        }).where(eq(accounts.id, editingId));
-      } else {
-        await db.insert(accounts).values({
-          name: name.trim(),
-          balance: numBalance,
-          type: 'checking',
-          icon,
-          color
-        });
-      }
-      setShowEditor(false);
-      loadAccounts();
-    } catch (err) {
-      console.log('Erro saveAccount:', err);
-    }
+    await saveAcc(editingId, {
+      name: name.trim(),
+      balance: numBalance,
+      icon,
+      color,
+      type: 'checking'
+    });
+    
+    setShowEditor(false);
   };
 
   const deleteAccount = (id) => {
     Alert.alert('Apagar Conta', 'Tem certeza? As transações atreladas a ela podem ficar sem referência.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Apagar', style: 'destructive', onPress: async () => {
-        try {
-          await db.delete(accounts).where(eq(accounts.id, id));
-          loadAccounts();
-        } catch (err) {
-          console.log('Erro deleteAccount:', err);
-        }
+        await delAcc(id);
       }}
     ]);
   };
@@ -154,6 +129,10 @@ export default function AccountsConfigScreen({ onBack }) {
             <Text style={[styles.modalTitle, { color: activeTheme.text }]}>
               {editingId ? 'Editar Conta' : 'Nova Conta'}
             </Text>
+
+            {errorMsg ? (
+              <Text style={{ color: activeTheme.expense, marginBottom: 12, fontWeight: 'bold' }}>{errorMsg}</Text>
+            ) : null}
 
             <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Nome da Conta</Text>
             <TextInput
