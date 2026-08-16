@@ -18,6 +18,7 @@ export const transactions = sqliteTable('transactions', {
   date: integer('date').notNull(), // unix timestamp
   accountId: integer('account_id'),
   note: text('note'),
+  isPending: integer('is_pending').default(0),
 });
 
 export const categories = sqliteTable('categories', {

@@ -44,6 +44,7 @@ expoDb.execSync(`
 `);
 
 try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN note TEXT;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_pending INTEGER DEFAULT 0;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE categories ADD COLUMN macro TEXT;'); } catch (e) {}
 
 expoDb.execSync(`
