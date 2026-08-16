@@ -101,6 +101,8 @@ export default function TransactionsScreen() {
   }));
 
   const handleSave = async (data) => {
+    // Se a transação for salva/editada, ela deixa de ser pendente
+    data.isPending = 0;
     await saveTransaction(data.id, data);
     setModalVisible(false);
     setEditingTx(null);
@@ -134,13 +136,24 @@ export default function TransactionsScreen() {
             !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
           ]}>
         <View style={styles.cardLeft}>
-          <View style={[styles.iconBox, { backgroundColor: catInfo.color + '20' }]}>
-            <Ionicons name={catInfo.icon} size={20} color={catInfo.color} />
+          <View style={[styles.iconBox, { backgroundColor: item.isPending ? activeTheme.expense + '20' : catInfo.color + '20' }]}>
+            {item.isPending ? (
+              <Ionicons name="time" size={20} color={activeTheme.expense} />
+            ) : (
+              <Ionicons name={catInfo.icon} size={20} color={catInfo.color} />
+            )}
           </View>
-          <View>
-            <Text style={[styles.desc, { color: activeTheme.text }]}>{item.description}</Text>
-            {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]}>{item.note}</Text> : null}
-            <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName}</Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+              <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+              {item.isPending === 1 && (
+                <View style={[styles.pendingBadge, { backgroundColor: activeTheme.expense + '30' }]}>
+                  <Text style={[styles.pendingText, { color: activeTheme.expense }]}>PENDENTE</Text>
+                </View>
+              )}
+            </View>
+            {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
+            <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {item.account}</Text>
           </View>
         </View>
         <Text style={[

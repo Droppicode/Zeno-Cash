@@ -1,6 +1,5 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import * as SecureStore from 'expo-secure-store';
-import { Logger } from './logger';
 
 export const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 export const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID;
@@ -29,13 +28,13 @@ export const GoogleAuth = {
       return { success: true, user: userInfo.user };
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        Logger.info('User cancelled the login flow');
+        console.log('User cancelled the login flow');
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        Logger.info('Sign in is in progress already');
+        console.log('Sign in is in progress already');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Logger.error('Play services not available or outdated');
+        console.error('Play services not available or outdated');
       } else {
-        Logger.error('GoogleAuth.signIn error', error);
+        console.error('GoogleAuth.signIn error', error);
       }
       return { success: false, error };
     }
@@ -47,7 +46,7 @@ export const GoogleAuth = {
       await SecureStore.deleteItemAsync('google_access_token');
       return true;
     } catch (error) {
-      Logger.error('GoogleAuth.signOut error', error);
+      console.error('GoogleAuth.signOut error', error);
       return false;
     }
   },

@@ -14,6 +14,7 @@ import TransactionModal from '../components/TransactionModal';
 export default function HomeScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingTx, setEditingTx] = useState(null);
   const [period, setPeriod] = useState(defaultPeriod || '30d');
   
   const { txList, loadTransactions, saveTransaction: saveTx, removeTransaction, filterByPeriod } = useTransactions();
@@ -55,9 +56,15 @@ export default function HomeScreen() {
     return { total: inTotal - outTotal, income: inTotal, expense: outTotal };
   }, [filteredTxList]);
 
+  const pendingTxList = txList.filter(t => t.isPending === 1);
+  const recentTxList = txList.filter(t => t.isPending !== 1);
+  const homeOrder = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
+
   const saveTransaction = async (data) => {
-    await saveTx(null, data);
+    data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente
+    await saveTx(data.id, data);
     setModalVisible(false);
+    setEditingTx(null);
   };
 
   const renderRightActions = (tx) => (
@@ -106,94 +113,129 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Saldos das Contas (Novo Layout Agrupado) */}
-        {accountBalances.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Suas Contas</Text>
-            <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-              {accountBalances.map((acc, idx) => (
-                <View key={acc.id} style={[
-                  styles.groupedItem, 
-                  idx !== accountBalances.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
-                ]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
-                      <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
-                    </View>
-                    <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
-                  </View>
-                  <Text style={[styles.groupedAmount, { color: activeTheme.text }]}>R$ {acc.currentBalance.toFixed(2)}</Text>
-                </View>
-              ))}
-              <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
-                <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Geral</Text>
-                <Text style={[styles.groupedAmount, { color: activeTheme.text, fontWeight: 'bold' }]}>
-                  R$ {accountBalances.reduce((acc, curr) => acc + curr.currentBalance, 0).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Lista Real conectada no Banco (Layout Agrupado) */}
-        {uiConfig.homeShowPending !== false && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Últimas Transações</Text>
-            
-            {txList.length === 0 && (
-              <Text style={{ color: activeTheme.textSecondary }}>Nenhuma transação ainda. Adicione uma no botão +</Text>
-            )}
-
-            {txList.length > 0 && (
-              <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                {txList.slice(0, 5).map((item, idx) => {
-                  const catInfo = resolveCategory(item, categoryList);
-                  const isLast = idx === Math.min(txList.length, 5) - 1;
-                  
-                  return (
-                    <Swipeable
-                      key={item.id}
-                      renderRightActions={() => renderRightActions(item)}
-                      overshootRight={false}
-                    >
-                      <View style={[
-                        styles.groupedItem,
-                        !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
-                      ]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <View style={[styles.groupedIcon, { backgroundColor: catInfo.color + '20' }]}>
-                            <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
-                          </View>
-                          <View>
-                            <Text style={[styles.groupedText, { color: activeTheme.text }]}>{item.description}</Text>
-                            {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11, marginLeft: 12 }]}>{item.note}</Text> : null}
-                          </View>
+        {/* Renderização Dinâmica dos Módulos baseada na Ordem */}
+        {homeOrder.map((modKey) => {
+          if (modKey === 'accounts' && uiConfig.homeShowAccounts !== false && accountBalances.length > 0) {
+            return (
+              <View key="accounts" style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Suas Contas</Text>
+                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
+                  {accountBalances.map((acc, idx) => (
+                    <View key={acc.id} style={[
+                      styles.groupedItem, 
+                      idx !== accountBalances.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
+                    ]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
+                          <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
                         </View>
-                        <Text style={[
-                          styles.groupedAmount, 
-                          { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }
-                        ]}>
-                          {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
-                        </Text>
+                        <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
                       </View>
-                    </Swipeable>
-                  );
-                })}
+                      <Text style={[styles.groupedAmount, { color: activeTheme.text }]}>R$ {acc.currentBalance.toFixed(2)}</Text>
+                    </View>
+                  ))}
+                  <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
+                    <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Geral</Text>
+                    <Text style={[styles.groupedAmount, { color: activeTheme.text, fontWeight: 'bold' }]}>
+                      R$ {accountBalances.reduce((acc, curr) => acc + curr.currentBalance, 0).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
               </View>
-            )}
-          </View>
-        )}
+            );
+          }
+          
+          if (modKey === 'pending' && uiConfig.homeShowPending !== false && pendingTxList.length > 0) {
+            return (
+              <View key="pending" style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: activeTheme.expense }]}>Transações Pendentes</Text>
+                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
+                  {pendingTxList.map((item, idx) => {
+                    const catInfo = resolveCategory(item, categoryList);
+                    const isLast = idx === pendingTxList.length - 1;
+                    
+                    return (
+                      <Swipeable key={item.id} renderRightActions={() => renderRightActions(item)} overshootRight={false}>
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
+                          <View style={[styles.groupedItem, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                              <View style={[styles.groupedIcon, { backgroundColor: activeTheme.expense + '20' }]}>
+                                <Ionicons name="time" size={18} color={activeTheme.expense} />
+                              </View>
+                              <View style={{ flex: 1, paddingRight: 8 }}>
+                                <Text style={[styles.groupedText, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+                                {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
+                              </View>
+                            </View>
+                            <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
+                              {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </Swipeable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          }
+
+          if (modKey === 'recent' && uiConfig.homeShowRecent !== false) {
+            return (
+              <View key="recent" style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Últimas Transações</Text>
+                
+                {recentTxList.length === 0 && (
+                  <Text style={{ color: activeTheme.textSecondary }}>Nenhuma transação confirmada ainda.</Text>
+                )}
+
+                {recentTxList.length > 0 && (
+                  <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
+                    {recentTxList.slice(0, 5).map((item, idx) => {
+                      const catInfo = resolveCategory(item, categoryList);
+                      const isLast = idx === Math.min(recentTxList.length, 5) - 1;
+                      
+                      return (
+                        <Swipeable key={item.id} renderRightActions={() => renderRightActions(item)} overshootRight={false}>
+                          <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
+                            <View style={[styles.groupedItem, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={[styles.groupedIcon, { backgroundColor: catInfo.color + '20' }]}>
+                                  <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
+                                </View>
+                                <View style={{ flex: 1, paddingRight: 8 }}>
+                                  <Text style={[styles.groupedText, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+                                  {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
+                                </View>
+                              </View>
+                              <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
+                                {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        </Swipeable>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          }
+          
+          return null;
+        })}
       </ScrollView>
 
       {/* FAB */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: activeTheme.accent }]} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: activeTheme.accent }]} onPress={() => { setEditingTx(null); setModalVisible(true); }}>
         <Ionicons name="add" size={32} color="#121212" />
       </TouchableOpacity>
 
       <TransactionModal 
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => { setModalVisible(false); setEditingTx(null); }}
         onSave={saveTransaction}
+        initialData={editingTx}
       />
     </SafeAreaView>
   );

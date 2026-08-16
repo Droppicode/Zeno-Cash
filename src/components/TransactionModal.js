@@ -53,12 +53,16 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
   }, [visible, initialData, accountList]);
 
   // Auto-categorize only if the user hasn't manually selected a category and we are not editing
+  // Auto-categorize only if the user hasn't manually selected a category and we are not editing (or if editing a pending tx and title changed)
   useEffect(() => {
-    if (visible && !initialData && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {
-      const match = categorizeTransaction(description, parseFloat(amount || 0));
-      if (match) {
-        const cat = categoryList.find(c => c.name.toLowerCase() === match.categoryName.toLowerCase());
-        if (cat) setSelectedCategoryId(cat.id);
+    if (visible && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {
+      // Evita re-categorizar uma transação oficial editada, mas permite para as pendentes
+      if (!initialData || initialData.isPending === 1) {
+        const match = categorizeTransaction(description, parseFloat(amount || 0));
+        if (match) {
+          const cat = categoryList.find(c => c.name.toLowerCase() === match.categoryName.toLowerCase());
+          if (cat) setSelectedCategoryId(cat.id);
+        }
       }
     }
   }, [description, visible, initialData, selectedCategoryId, categoryList, amount]);
@@ -151,21 +155,36 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
             </View>
           )}
 
-          <TextInput 
-            style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-            placeholder="Título (Ex: Uber, Ifood...)"
-            placeholderTextColor={activeTheme.textSecondary}
-            value={description}
-            onChangeText={setDescription}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput 
+              style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
+              placeholder="Título (Ex: Uber, Ifood...)"
+              placeholderTextColor={activeTheme.textSecondary}
+              value={description}
+              onChangeText={setDescription}
+            />
+            {initialData?.isPending === 1 && (
+              <TouchableOpacity style={styles.clearBtn} onPress={() => setDescription('')}>
+                <Ionicons name="close-circle" size={24} color={activeTheme.expense} />
+              </TouchableOpacity>
+            )}
+          </View>
           
-          <TextInput 
-            style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-            placeholder="Notas adicionais (Opcional)"
-            placeholderTextColor={activeTheme.textSecondary}
-            value={note}
-            onChangeText={setNote}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput 
+              style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
+              placeholder="Notas adicionais (Opcional)"
+              placeholderTextColor={activeTheme.textSecondary}
+              value={note}
+              onChangeText={setNote}
+              multiline
+            />
+            {initialData?.isPending === 1 && (
+              <TouchableOpacity style={styles.clearBtn} onPress={() => setNote('')}>
+                <Ionicons name="close-circle" size={24} color={activeTheme.expense} />
+              </TouchableOpacity>
+            )}
+          </View>
 
           {categoryList.length > 0 && (
             <View style={styles.selectorBlock}>
@@ -197,7 +216,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
               <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.btnSave, { backgroundColor: activeTheme.accent }]} onPress={handleSave}>
-              <Text style={[styles.btnText, { color: '#121212' }]}>Salvar</Text>
+              <Text style={[styles.btnText, { color: '#121212' }]}>{initialData?.isPending === 1 ? 'Aprovar' : 'Salvar'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -231,5 +250,6 @@ const getStyles = (z, f) => StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: 12 * z, marginTop: 16 * z },
   btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
   btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
-  btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f }
+  btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+  clearBtn: { padding: 12 * z, marginLeft: 8 * z, justifyContent: 'center', alignItems: 'center' }
 });

@@ -81,6 +81,23 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', newConfig);
   };
 
+  const homeOrder = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
+  const moveModule = (index, direction) => {
+    if (index + direction < 0 || index + direction >= homeOrder.length) return;
+    const newOrder = [...homeOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[index + direction];
+    newOrder[index + direction] = temp;
+    saveSetting('uiConfig', { ...uiConfig, homeModulesOrder: newOrder });
+  };
+  
+  const getModuleName = (key) => {
+    if (key === 'accounts') return 'Suas Contas';
+    if (key === 'pending') return 'Transações Pendentes';
+    if (key === 'recent') return 'Últimas Transações';
+    return key;
+  };
+
   // Mutações de Macros Dinâmicos (agora salvam no Contexto/DB)
   const updateMacroName = (oldName, newName) => {
     if (oldName === newName) return;
@@ -158,11 +175,41 @@ export default function ModuleConfigScreen({ onBack }) {
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Pendências</Text>
-            <Switch value={uiConfig.homeShowPending} onValueChange={() => handleToggleUi('homeShowPending')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+            <Switch value={uiConfig.homeShowPending !== false} onValueChange={() => handleToggleUi('homeShowPending')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Contas</Text>
-            <Switch value={uiConfig.homeShowAccounts} onValueChange={() => handleToggleUi('homeShowAccounts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+            <Switch value={uiConfig.homeShowAccounts !== false} onValueChange={() => handleToggleUi('homeShowAccounts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Últimas Trans.</Text>
+            <Switch value={uiConfig.homeShowRecent !== false} onValueChange={() => handleToggleUi('homeShowRecent')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+
+          <Text style={[styles.sectionTitle, { color: activeTheme.text, marginTop: 24 * z }]}>Ordem na Tela Inicial</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Mova para cima ou para baixo para reordenar.</Text>
+          <View style={{ marginTop: 8 * z }}>
+            {homeOrder.map((modKey, idx) => (
+              <View key={modKey} style={[styles.orderRow, { backgroundColor: activeTheme.cardSecondary }]}>
+                <Text style={[styles.orderLabel, { color: activeTheme.text }]}>{getModuleName(modKey)}</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity 
+                    style={[styles.orderBtn, idx === 0 && { opacity: 0.3 }]} 
+                    onPress={() => moveModule(idx, -1)} 
+                    disabled={idx === 0}
+                  >
+                    <Ionicons name="chevron-up" size={24} color={activeTheme.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.orderBtn, idx === homeOrder.length - 1 && { opacity: 0.3 }]} 
+                    onPress={() => moveModule(idx, 1)} 
+                    disabled={idx === homeOrder.length - 1}
+                  >
+                    <Ionicons name="chevron-down" size={24} color={activeTheme.text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Análise] Mostrar Gráficos</Text>
@@ -269,6 +316,10 @@ const getStyles = (z, f) => StyleSheet.create({
   
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
   switchLabel: { fontSize: 16 * z, fontFamily: f },
+  
+  orderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 * z, borderRadius: 12 * z, marginBottom: 8 * z },
+  orderLabel: { fontSize: 16 * z, fontFamily: f, fontWeight: 'bold' },
+  orderBtn: { padding: 4 * z, marginLeft: 8 * z },
   
   goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 12 * z },
   addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 12 * z },
