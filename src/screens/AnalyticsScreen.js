@@ -3,10 +3,11 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { categorizeTransaction } from '../services/categorizer';
+import { resolveCategory } from '../services/categorizer';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { SettingsContext } from '../context/SettingsContext';
 import { useTransactions } from '../hooks/useTransactions';
+import { useCategories } from '../hooks/useCategories';
 import { DateUtils } from '../utils/dateUtils';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
@@ -14,18 +15,20 @@ const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '
 export default function AnalyticsScreen() {
   const { 
     activeTheme, uiConfig, defaultPeriod, 
-    macroTargets, macroMapping, macroOptions 
+    macroTargets 
   } = React.useContext(SettingsContext);
 
   const [isMacro, setIsMacro] = useState(true);
   const [period, setPeriod] = useState(defaultPeriod || '30d');
 
   const { txList, loadTransactions } = useTransactions();
+  const { categoryList, loadCategories } = useCategories();
 
   useFocusEffect(
     useCallback(() => {
       loadTransactions();
-    }, [loadTransactions])
+      loadCategories();
+    }, [loadTransactions, loadCategories])
   );
 
   const { analyticsData, totalExpense, totalIncome, topExpenses, monthlyData } = useMemo(() => {
@@ -74,7 +77,10 @@ export default function AnalyticsScreen() {
       const grouped = {};
 
       if (isMacro) {
-        macroOptions.forEach(key => {
+        const allMacros = new Set(Object.keys(macroTargets));
+        categoryList.forEach(c => c.macro && allMacros.add(c.macro));
+        
+        allMacros.forEach(key => {
           grouped[key] = { name: key, total: 0, color: activeTheme.cardSecondary };
         });
         grouped['Outros'] = { name: 'Outros', total: 0, color: activeTheme.textSecondary };
@@ -82,12 +88,12 @@ export default function AnalyticsScreen() {
 
       expenses.forEach(tx => {
         sum += tx.amount;
-        const catInfo = categorizeTransaction(tx.description, tx.amount);
+        const catInfo = resolveCategory(tx, categoryList);
         let finalCatName = catInfo.categoryName;
         let finalColor = catInfo.color;
         
         if (isMacro) {
-          finalCatName = macroMapping[catInfo.categoryName] || 'Outros';
+          finalCatName = catInfo.macro || 'Outros';
         }
 
         if (!grouped[finalCatName]) {
@@ -113,7 +119,7 @@ export default function AnalyticsScreen() {
         topExpenses: top3,
         monthlyData: barData
       };
-  }, [txList, period, isMacro, macroTargets, macroMapping, macroOptions, activeTheme]);
+  }, [txList, period, isMacro, macroTargets, activeTheme, categoryList]);
 
   const pieData = analyticsData.filter(i => i.total > 0).map(item => ({
     value: item.total,
@@ -285,7 +291,7 @@ export default function AnalyticsScreen() {
                 <Text style={[styles.emptyText, { color: activeTheme.textSecondary }]}>Nenhuma transação encontrada.</Text>
               ) : (
                 topExpenses.map((item, idx) => {
-                  const catInfo = categorizeTransaction(item.description, item.amount);
+                  const catInfo = resolveCategory(item, categoryList);
                   return (
                     <View key={item.id} style={[styles.vilaoCard, { backgroundColor: activeTheme.cardSecondary }]}>
                       <Text style={[styles.vilaoRank, { color: activeTheme.accent }]}>#{idx + 1}</Text>

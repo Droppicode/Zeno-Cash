@@ -7,6 +7,7 @@ import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
+import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
 import { Swipeable } from 'react-native-gesture-handler';
 import TransactionModal from '../components/TransactionModal';
@@ -15,6 +16,7 @@ export default function TransactionsScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const { txList, loadTransactions, saveTransaction, removeTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
+  const { accountList, loadAccounts } = useAccounts();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -22,6 +24,7 @@ export default function TransactionsScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); 
   const [period, setPeriod] = useState(defaultPeriod || '30d'); 
+  const [accountFilter, setAccountFilter] = useState('all');
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);
@@ -34,7 +37,8 @@ export default function TransactionsScreen() {
     useCallback(() => {
       loadTransactions();
       loadCategories();
-    }, [loadTransactions, loadCategories])
+      loadAccounts();
+    }, [loadTransactions, loadCategories, loadAccounts])
   );
 
   const filteredList = useMemo(() => {
@@ -44,6 +48,7 @@ export default function TransactionsScreen() {
 
       if (filter === 'income' && item.type !== 'income') return false;
       if (filter === 'expense' && item.type !== 'expense') return false;
+      if (accountFilter !== 'all' && item.accountId !== accountFilter) return false;
       
       const catInfo = resolveCategory(item, categoryList);
       if (selectedCats.length > 0 && !selectedCats.includes(catInfo.categoryName)) {
@@ -66,7 +71,7 @@ export default function TransactionsScreen() {
 
       return true;
     });
-  }, [txList, period, filter, selectedCats, search, startDate, endDate]);
+  }, [txList, period, filter, accountFilter, selectedCats, search, startDate, endDate, categoryList]);
 
   const uniqueCategories = Array.from(new Set(txList.map(item => resolveCategory(item, categoryList).categoryName)));
 
@@ -165,85 +170,97 @@ export default function TransactionsScreen() {
         </View>
         
         {uiConfig.transactionsShowFilters !== false && (
-          <View style={styles.filterContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
-              
-              <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
-                <TouchableOpacity style={[styles.filterBtn, filter === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('all')}>
-                  <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'all' && { color: '#121212' }]}>Tudo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.filterBtn, filter === 'income' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('income')}>
-                  <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'income' && { color: '#121212' }]}>Receitas</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('expense')}>
-                  <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'expense' && { color: '#121212' }]}>Despesas</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
-                <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('30d')}>
-                  <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '30d' && { color: '#121212' }]}>30D</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('90d')}>
-                  <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '90d' && { color: '#121212' }]}>90D</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('all')}>
-                  <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212' }]}>Sempre</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+          <View>
+            <View style={styles.filterContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
+                <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
+                  <TouchableOpacity style={[styles.periodBtn, accountFilter === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setAccountFilter('all')}>
+                    <Text style={[styles.periodText, { color: activeTheme.textSecondary }, accountFilter === 'all' && { color: '#121212' }]}>Todas as Contas</Text>
+                  </TouchableOpacity>
+                  {accountList.map(acc => (
+                    <TouchableOpacity key={acc.id} style={[styles.periodBtn, accountFilter === acc.id && { backgroundColor: activeTheme.accent }]} onPress={() => setAccountFilter(acc.id)}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, accountFilter === acc.id && { color: '#121212' }]}>{acc.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
 
-            <TouchableOpacity style={[styles.advancedToggleBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setShowAdvanced(!showAdvanced)}>
-              <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.accent} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {showAdvanced && (
-          <View style={[styles.advancedPanel, { backgroundColor: activeTheme.cardSecondary }]}>
-            <Text style={[styles.advancedTitle, { color: activeTheme.text }]}>Filtros Específicos</Text>
-            
-            <View style={styles.dateInputsRow}>
-              <View style={styles.dateInputContainer}>
-                <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Inicial</Text>
-                <TextInput 
-                  style={[styles.dateInput, { backgroundColor: activeTheme.card, color: activeTheme.text }]}
-                  placeholder="DD/MM/AAAA"
-                  placeholderTextColor={activeTheme.textSecondary}
-                  keyboardType="numeric"
-                  value={startDate}
-                  onChangeText={(text) => setStartDate(DateUtils.formatDateInput(text))}
-                  maxLength={10}
-                />
-              </View>
-              <View style={styles.dateInputContainer}>
-                <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Final</Text>
-                <TextInput 
-                  style={[styles.dateInput, { backgroundColor: activeTheme.card, color: activeTheme.text }]}
-                  placeholder="DD/MM/AAAA"
-                  placeholderTextColor={activeTheme.textSecondary}
-                  keyboardType="numeric"
-                  value={endDate}
-                  onChangeText={(text) => setEndDate(DateUtils.formatDateInput(text))}
-                  maxLength={10}
-                />
-              </View>
+              <TouchableOpacity style={[styles.advancedToggleBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setShowAdvanced(!showAdvanced)}>
+                <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.accent} />
+              </TouchableOpacity>
             </View>
 
-            <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Categorias</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScrollContent}>
-              {uniqueCategories.map(cat => (
-                <TouchableOpacity 
-                  key={cat} 
-                  style={[styles.catBtn, { backgroundColor: activeTheme.card }, selectedCats.includes(cat) && { backgroundColor: activeTheme.accent }]}
-                  onPress={() => toggleCategory(cat)}
-                >
-                  <Text style={[styles.catText, { color: activeTheme.textSecondary }, selectedCats.includes(cat) && { color: '#121212' }]}>
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {showAdvanced && (
+              <View style={{ marginTop: 12 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={styles.filterScrollContent}>
+                  <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
+                    <TouchableOpacity style={[styles.filterBtn, filter === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('all')}>
+                      <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'all' && { color: '#121212' }]}>Tudo</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.filterBtn, filter === 'income' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('income')}>
+                      <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'income' && { color: '#121212' }]}>Receitas</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('expense')}>
+                      <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'expense' && { color: '#121212' }]}>Despesas</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
+                    <TouchableOpacity style={[styles.periodBtn, period === '30d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('30d')}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '30d' && { color: '#121212' }]}>30D</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.periodBtn, period === '90d' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('90d')}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '90d' && { color: '#121212' }]}>90D</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('all')}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212' }]}>Sempre</Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+
+                <View style={styles.dateInputsRow}>
+                  <View style={styles.dateInputContainer}>
+                    <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Inicial</Text>
+                    <TextInput 
+                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+                      placeholder="DD/MM/AAAA"
+                      placeholderTextColor={activeTheme.textSecondary}
+                      keyboardType="numeric"
+                      value={startDate}
+                      onChangeText={(text) => setStartDate(DateUtils.formatDateInput(text))}
+                      maxLength={10}
+                    />
+                  </View>
+                  <View style={styles.dateInputContainer}>
+                    <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Final</Text>
+                    <TextInput 
+                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+                      placeholder="DD/MM/AAAA"
+                      placeholderTextColor={activeTheme.textSecondary}
+                      keyboardType="numeric"
+                      value={endDate}
+                      onChangeText={(text) => setEndDate(DateUtils.formatDateInput(text))}
+                      maxLength={10}
+                    />
+                  </View>
+                </View>
+
+                <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Categorias</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScrollContent}>
+                  {uniqueCategories.map(cat => (
+                    <TouchableOpacity 
+                      key={cat} 
+                      style={[styles.catBtn, { backgroundColor: activeTheme.cardSecondary }, selectedCats.includes(cat) && { backgroundColor: activeTheme.accent }]}
+                      onPress={() => toggleCategory(cat)}
+                    >
+                      <Text style={[styles.catText, { color: activeTheme.textSecondary }, selectedCats.includes(cat) && { color: '#121212' }]}>
+                        {cat}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
         )}
 

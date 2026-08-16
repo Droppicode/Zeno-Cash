@@ -147,17 +147,6 @@ const EXTRA_PRESETS = [
   }
 ].map(preset => ({ ...preset, zoom: 1, fontFamily: 'monospace' }));
 
-const INITIAL_MAPPING = {
-  'Alimentação': 'Essenciais', 'Supermercado': 'Essenciais', 'Restaurante': 'Essenciais', 'Ifood': 'Essenciais', 'Padaria': 'Essenciais',
-  'Transporte': 'Essenciais', 'Gasolina': 'Essenciais', 'Uber': 'Essenciais', 'Passagem': 'Essenciais', 'Pedágio': 'Essenciais',
-  'Moradia': 'Essenciais', 'Aluguel': 'Essenciais', 'Luz': 'Essenciais', 'Água': 'Essenciais', 'Internet': 'Essenciais',
-  'Saúde': 'Essenciais', 'Farmácia': 'Essenciais', 'Médico': 'Essenciais',
-  'Educação': 'Essenciais', 'Cursos': 'Essenciais', 'Livros': 'Essenciais',
-  'Lazer': 'Estilo de Vida', 'Cinema': 'Estilo de Vida', 'Shows': 'Estilo de Vida', 'Jogos': 'Estilo de Vida',
-  'Investimento': 'Investimento', 'Ações': 'Investimento', 'FIIs': 'Investimento', 'Tesouro': 'Investimento',
-  'Outros': 'Outros', 'Transferência': 'Outros'
-};
-
 export const SettingsProvider = ({ children }) => {
   const [activeTheme, setActiveTheme] = useState(defaultTheme);
   const [customThemes, setCustomThemes] = useState([defaultTheme, defaultLightTheme, ...EXTRA_PRESETS]);
@@ -170,7 +159,7 @@ export const SettingsProvider = ({ children }) => {
     analyticsShowVilao: true,
     analyticsShowCharts: true,
     transactionsShowFilters: true,
-    showInvestmentsTab: true,
+    showInvestmentsTab: false,
   });
 
   const [macroTargets, setMacroTargets] = useState({
@@ -179,8 +168,6 @@ export const SettingsProvider = ({ children }) => {
     'Investimento': 20,
     'Outros': 0
   });
-  const [macroMapping, setMacroMapping] = useState(INITIAL_MAPPING);
-  const [macroOptions, setMacroOptions] = useState(['Essenciais', 'Estilo de Vida', 'Investimento']);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -210,8 +197,6 @@ export const SettingsProvider = ({ children }) => {
           if (item.key === 'llmKey') setLlmKey(item.value);
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
-          if (item.key === 'macroMapping') setMacroMapping(JSON.parse(item.value));
-          if (item.key === 'macroOptions') setMacroOptions(JSON.parse(item.value));
         });
         
         // Inject extra presets only ONCE when they haven't been initialized yet
@@ -261,10 +246,11 @@ export const SettingsProvider = ({ children }) => {
 
   return (
     <SettingsContext.Provider value={{ 
-      activeTheme, customThemes, defaultPeriod, llmKey, uiConfig, 
-      macroTargets, macroMapping, macroOptions,
-      saveSetting, isLoaded 
-    }}>
+      activeTheme, customThemes, defaultPeriod, llmKey, uiConfig,        macroTargets,
+        isLoaded,
+        saveSetting
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );
