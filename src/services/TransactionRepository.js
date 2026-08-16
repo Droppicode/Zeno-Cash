@@ -23,6 +23,16 @@ export const TransactionRepository = {
     }
   },
 
+  update: async (id, txData) => {
+    try {
+      await db.update(transactions).set(txData).where(eq(transactions.id, id));
+      return true;
+    } catch (err) {
+      Logger.error('TransactionRepository.update', err);
+      throw err;
+    }
+  },
+
   remove: async (id) => {
     try {
       await db.delete(transactions).where(eq(transactions.id, id));

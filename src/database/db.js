@@ -43,5 +43,34 @@ expoDb.execSync(`
   WHERE NOT EXISTS (SELECT 1 FROM accounts);
 `);
 
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN note TEXT;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE categories ADD COLUMN macro TEXT;'); } catch (e) {}
+
+expoDb.execSync(`
+  INSERT INTO categories (name, icon, color, macro)
+  SELECT 'Receitas', 'cash', '#4CAF50', 'Outros'
+  WHERE NOT EXISTS (SELECT 1 FROM categories);
+  
+  INSERT INTO categories (name, icon, color, macro)
+  SELECT 'Transporte', 'car', '#FF9800', 'Essenciais'
+  WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Transporte');
+
+  INSERT INTO categories (name, icon, color, macro)
+  SELECT 'Alimentação', 'restaurant', '#F44336', 'Essenciais'
+  WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Alimentação');
+
+  INSERT INTO categories (name, icon, color, macro)
+  SELECT 'Mercado', 'cart', '#2196F3', 'Essenciais'
+  WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Mercado');
+
+  INSERT INTO categories (name, icon, color, macro)
+  SELECT 'Lazer & Assinaturas', 'play-circle', '#9C27B0', 'Estilo de Vida'
+  WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Lazer & Assinaturas');
+
+  INSERT INTO categories (name, icon, color, macro)
+  SELECT 'Saúde', 'medkit', '#E91E63', 'Essenciais'
+  WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Saúde');
+`);
+
 // Envelopa a conexão com o Drizzle ORM
 export const db = drizzle(expoDb);

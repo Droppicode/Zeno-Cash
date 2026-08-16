@@ -17,6 +17,7 @@ export const transactions = sqliteTable('transactions', {
   type: text('type').notNull(), // 'income' | 'expense'
   date: integer('date').notNull(), // unix timestamp
   accountId: integer('account_id'),
+  note: text('note'),
 });
 
 export const categories = sqliteTable('categories', {
@@ -24,6 +25,7 @@ export const categories = sqliteTable('categories', {
   name: text('name').notNull(),
   icon: text('icon'),
   color: text('color'),
+  macro: text('macro'),
 });
 
 export const settings = sqliteTable('settings', {

@@ -1,0 +1,31 @@
+import { useState, useCallback } from 'react';
+import { CategoryRepository } from '../services/CategoryRepository';
+
+export const useCategories = () => {
+  const [categoryList, setCategoryList] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    const data = await CategoryRepository.getAll();
+    setCategoryList(data);
+    setLoading(false);
+    return data;
+  }, []);
+
+  const saveCategory = async (id, data) => {
+    if (id) {
+      await CategoryRepository.update(id, data);
+    } else {
+      await CategoryRepository.add(data);
+    }
+    await loadCategories();
+  };
+
+  const deleteCategory = async (id) => {
+    await CategoryRepository.remove(id);
+    await loadCategories();
+  };
+
+  return { categoryList, loading, loadCategories, saveCategory, deleteCategory };
+};

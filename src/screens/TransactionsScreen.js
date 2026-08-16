@@ -3,14 +3,21 @@ import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, Scrol
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { categorizeTransaction } from '../services/categorizer';
+import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
 import { useTransactions } from '../hooks/useTransactions';
+import { useCategories } from '../hooks/useCategories';
 import { DateUtils } from '../utils/dateUtils';
+import { Swipeable } from 'react-native-gesture-handler';
+import TransactionModal from '../components/TransactionModal';
 
 export default function TransactionsScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
-  const { txList, loadTransactions } = useTransactions();
+  const { txList, loadTransactions, saveTransaction, removeTransaction } = useTransactions();
+  const { categoryList, loadCategories } = useCategories();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingTx, setEditingTx] = useState(null);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); 
@@ -26,7 +33,8 @@ export default function TransactionsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadTransactions();
-    }, [loadTransactions])
+      loadCategories();
+    }, [loadTransactions, loadCategories])
   );
 
   const filteredList = useMemo(() => {
@@ -37,7 +45,7 @@ export default function TransactionsScreen() {
       if (filter === 'income' && item.type !== 'income') return false;
       if (filter === 'expense' && item.type !== 'expense') return false;
       
-      const catInfo = categorizeTransaction(item.description, item.amount);
+      const catInfo = resolveCategory(item, categoryList);
       if (selectedCats.length > 0 && !selectedCats.includes(catInfo.categoryName)) {
         return false;
       }
@@ -60,7 +68,7 @@ export default function TransactionsScreen() {
     });
   }, [txList, period, filter, selectedCats, search, startDate, endDate]);
 
-  const uniqueCategories = Array.from(new Set(txList.map(item => categorizeTransaction(item.description, item.amount).categoryName)));
+  const uniqueCategories = Array.from(new Set(txList.map(item => resolveCategory(item, categoryList).categoryName)));
 
   const toggleCategory = (cat) => {
     if (selectedCats.includes(cat)) {
@@ -87,27 +95,46 @@ export default function TransactionsScreen() {
     data: groupedData[key]
   }));
 
+  const handleSave = async (data) => {
+    await saveTransaction(data.id, data);
+    setModalVisible(false);
+    setEditingTx(null);
+  };
+
+  const renderRightActions = (tx) => (
+    <TouchableOpacity 
+      style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
+      onPress={() => removeTransaction(tx.id)}
+    >
+      <Ionicons name="trash" size={24} color="#fff" />
+      <Text style={[styles.deleteActionText, { color: '#fff' }]}>Apagar</Text>
+    </TouchableOpacity>
+  );
+
   const renderItem = ({ item, index, section }) => {
-    const catInfo = categorizeTransaction(item.description, item.amount);
+    const catInfo = resolveCategory(item, categoryList);
     const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
     
     const isFirst = index === 0;
     const isLast = index === section.data.length - 1;
     
     return (
-      <View style={[
-        styles.card, 
-        { backgroundColor: activeTheme.card },
-        isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-        isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
-        !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
-      ]}>
+      <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
+        <TouchableOpacity onPress={() => { setEditingTx(item); setModalVisible(true); }} activeOpacity={0.7}>
+          <View style={[
+            styles.card, 
+            { backgroundColor: activeTheme.card },
+            isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+            isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+            !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
+          ]}>
         <View style={styles.cardLeft}>
           <View style={[styles.iconBox, { backgroundColor: catInfo.color + '20' }]}>
             <Ionicons name={catInfo.icon} size={20} color={catInfo.color} />
           </View>
           <View>
             <Text style={[styles.desc, { color: activeTheme.text }]}>{item.description}</Text>
+            {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]}>{item.note}</Text> : null}
             <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName}</Text>
           </View>
         </View>
@@ -117,7 +144,9 @@ export default function TransactionsScreen() {
         ]}>
           {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
         </Text>
-      </View>
+        </View>
+        </TouchableOpacity>
+      </Swipeable>
     );
   };
 
@@ -234,6 +263,13 @@ export default function TransactionsScreen() {
           stickySectionHeadersEnabled={false}
         />
       </View>
+
+      <TransactionModal 
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); setEditingTx(null); }}
+        onSave={handleSave}
+        initialData={editingTx}
+      />
     </SafeAreaView>
   );
 }
@@ -281,6 +317,8 @@ const getStyles = (theme) => {
     desc: { fontSize: 16 * z, fontWeight: '600', marginBottom: 4 * z, fontFamily: f },
     date: { fontSize: 13 * z, fontFamily: f },
     amount: { fontSize: 16 * z, fontWeight: '700', marginLeft: 8 * z, fontFamily: f },
-    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f }
+    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f },
+    deleteAction: { width: 80 * z, justifyContent: 'center', alignItems: 'center' },
+    deleteActionText: { fontSize: 12 * z, fontWeight: 'bold', marginTop: 4 * z, fontFamily: f }
   });
 };

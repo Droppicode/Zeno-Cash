@@ -22,6 +22,19 @@ export const useTransactions = () => {
     await loadTransactions();
   };
 
+  const updateTransaction = async (id, data) => {
+    await TransactionRepository.update(id, data);
+    await loadTransactions();
+  };
+
+  const saveTransaction = async (id, data) => {
+    if (id) {
+      await updateTransaction(id, data);
+    } else {
+      await addTransaction(data);
+    }
+  };
+
   const removeTransaction = async (id) => {
     await TransactionRepository.remove(id);
     await loadTransactions();
@@ -38,6 +51,8 @@ export const useTransactions = () => {
     loading,
     loadTransactions,
     addTransaction,
+    updateTransaction,
+    saveTransaction,
     removeTransaction,
     filterByPeriod
   };

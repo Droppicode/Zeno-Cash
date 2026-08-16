@@ -7,11 +7,12 @@ import { SettingsContext } from '../context/SettingsContext';
 import ThemeConfigScreen from './ThemeConfigScreen';
 import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
+import CategoriesConfigScreen from './CategoriesConfigScreen';
 
 export default function SettingsScreen() {
   const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
   
-  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts'
+  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories'
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
 
   const handleBackup = () => {
@@ -46,6 +47,14 @@ export default function SettingsScreen() {
     );
   }
 
+  if (currentScreen === 'categories') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+        <CategoriesConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary, backgroundColor: activeTheme.card }]}>
@@ -68,6 +77,14 @@ export default function SettingsScreen() {
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Saldos e bancos</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('categories')}>
+            <Ionicons name="pricetags" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Categorias</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Regras e cores</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.menuGrid}>
           <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('module')}>
             <Ionicons name="construct" size={32} color={activeTheme.accent} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Módulos</Text>

@@ -3,25 +3,22 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput 
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { categorizeTransaction } from '../services/categorizer';
+import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAccounts } from '../hooks/useAccounts';
+import { useCategories } from '../hooks/useCategories';
+import TransactionModal from '../components/TransactionModal';
 
 export default function HomeScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [modalVisible, setModalVisible] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [txType, setTxType] = useState('expense');
   const [period, setPeriod] = useState(defaultPeriod || '30d');
   
-  const [errorMsg, setErrorMsg] = useState('');
-  
-  const { txList, loadTransactions, addTransaction, removeTransaction, filterByPeriod } = useTransactions();
+  const { txList, loadTransactions, saveTransaction: saveTx, removeTransaction, filterByPeriod } = useTransactions();
   const { accountList, loadAccounts } = useAccounts();
-  const [selectedAccountId, setSelectedAccountId] = useState(null);
+  const { categoryList, loadCategories } = useCategories();
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
@@ -29,14 +26,9 @@ export default function HomeScreen() {
     useCallback(() => {
       loadTransactions();
       loadAccounts();
+      loadCategories();
     }, [])
   );
-
-  useEffect(() => {
-    if (accountList.length > 0 && !selectedAccountId) {
-      setSelectedAccountId(accountList[0].id);
-    }
-  }, [accountList, selectedAccountId]);
 
   const accountBalances = useMemo(() => {
     return accountList.map(acc => {
@@ -63,32 +55,9 @@ export default function HomeScreen() {
     return { total: inTotal - outTotal, income: inTotal, expense: outTotal };
   }, [filteredTxList]);
 
-  const saveTransaction = async () => {
-    setErrorMsg('');
-    if (!amount || !description.trim()) {
-      setErrorMsg('Preencha o valor e a descrição.');
-      return;
-    }
-    
-    let rawAmount = amount.replace(',', '.').replace(/[^0-9.]/g, '');
-    let numAmount = parseFloat(rawAmount);
-    
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setErrorMsg('Insira um valor numérico válido maior que zero.');
-      return;
-    }
-    
-    await addTransaction({
-      amount: numAmount,
-      description: description.trim(),
-      type: txType,
-      accountId: selectedAccountId
-    });
-    
+  const saveTransaction = async (data) => {
+    await saveTx(null, data);
     setModalVisible(false);
-    setAmount('');
-    setDescription('');
-    setTxType('expense');
   };
 
   const renderRightActions = (tx) => (
@@ -178,7 +147,7 @@ export default function HomeScreen() {
             {txList.length > 0 && (
               <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
                 {txList.slice(0, 5).map((item, idx) => {
-                  const catInfo = categorizeTransaction(item.description, item.amount);
+                  const catInfo = resolveCategory(item, categoryList);
                   const isLast = idx === Math.min(txList.length, 5) - 1;
                   
                   return (
@@ -195,7 +164,10 @@ export default function HomeScreen() {
                           <View style={[styles.groupedIcon, { backgroundColor: catInfo.color + '20' }]}>
                             <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
                           </View>
-                          <Text style={[styles.groupedText, { color: activeTheme.text }]}>{item.description}</Text>
+                          <View>
+                            <Text style={[styles.groupedText, { color: activeTheme.text }]}>{item.description}</Text>
+                            {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11, marginLeft: 12 }]}>{item.note}</Text> : null}
+                          </View>
                         </View>
                         <Text style={[
                           styles.groupedAmount, 
@@ -218,85 +190,11 @@ export default function HomeScreen() {
         <Ionicons name="add" size={32} color="#121212" />
       </TouchableOpacity>
 
-      {/* Modal Real de Cadastro */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
-            <Text style={[styles.modalTitle, { color: activeTheme.text }]}>Nova Transação</Text>
-            
-            {errorMsg ? (
-              <Text style={{ color: activeTheme.expense, marginBottom: 12, fontWeight: 'bold' }}>{errorMsg}</Text>
-            ) : null}
-            
-            <View style={[styles.toggleContainer, { backgroundColor: activeTheme.cardSecondary }]}>
-              <TouchableOpacity 
-                style={[styles.toggleBtn, txType === 'expense' && { backgroundColor: activeTheme.expense }]} 
-                onPress={() => setTxType('expense')}
-              >
-                <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'expense' && { color: '#fff' }]}>Despesa</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.toggleBtn, txType === 'income' && { backgroundColor: activeTheme.income }]} 
-                onPress={() => setTxType('income')}
-              >
-                <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'income' && { color: '#fff' }]}>Receita</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TextInput 
-              style={[styles.inputAmount, { color: activeTheme.text }]}
-              placeholder="0,00"
-              placeholderTextColor={activeTheme.textSecondary}
-              keyboardType="numeric"
-              value={amount}
-              onChangeText={setAmount}
-              autoFocus
-            />
-
-            {accountBalances.length > 0 && (
-              <View style={styles.accountSelector}>
-                <Text style={[styles.accountLabel, { color: activeTheme.textSecondary }]}>Conta:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {accountBalances.map(acc => (
-                    <TouchableOpacity 
-                      key={acc.id} 
-                      style={[
-                        styles.accountPill, 
-                        { backgroundColor: activeTheme.cardSecondary },
-                        selectedAccountId === acc.id && { backgroundColor: activeTheme.accent }
-                      ]}
-                      onPress={() => setSelectedAccountId(acc.id)}
-                    >
-                      <Text style={[
-                        styles.accountPillText, 
-                        { color: activeTheme.textSecondary },
-                        selectedAccountId === acc.id && { color: '#121212', fontWeight: 'bold' }
-                      ]}>{acc.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            <TextInput 
-              style={[styles.inputDesc, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-              placeholder="Ex: Uber, Ifood, Salário..."
-              placeholderTextColor={activeTheme.textSecondary}
-              value={description}
-              onChangeText={setDescription}
-            />
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setModalVisible(false)}>
-                <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnSave, { backgroundColor: activeTheme.accent }]} onPress={saveTransaction}>
-                <Text style={[styles.btnText, { color: '#121212' }]}>Salvar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <TransactionModal 
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={saveTransaction}
+      />
     </SafeAreaView>
   );
 }

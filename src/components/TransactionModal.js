@@ -1,0 +1,235 @@
+import React, { useState, useEffect, useContext } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { SettingsContext } from '../context/SettingsContext';
+import { useAccounts } from '../hooks/useAccounts';
+import { useCategories } from '../hooks/useCategories';
+import { categorizeTransaction } from '../services/categorizer';
+import { DateUtils } from '../utils/dateUtils';
+import { Ionicons } from '@expo/vector-icons';
+
+export default function TransactionModal({ visible, onClose, onSave, initialData }) {
+  const { activeTheme } = useContext(SettingsContext);
+  const { accountList, loadAccounts } = useAccounts();
+  const { categoryList, loadCategories } = useCategories();
+  
+  const [errorMsg, setErrorMsg] = useState('');
+  
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [note, setNote] = useState('');
+  const [txType, setTxType] = useState('expense');
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+
+  const z = 0.8 * (activeTheme.zoom || 1);
+  const f = activeTheme.fontFamily || 'monospace';
+  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+
+  useEffect(() => {
+    if (visible) {
+      loadAccounts();
+      loadCategories();
+    }
+  }, [visible, loadAccounts, loadCategories]);
+
+  useEffect(() => {
+    if (visible && initialData) {
+      setAmount(initialData.amount.toString());
+      setDescription(initialData.description);
+      setNote(initialData.note || '');
+      setTxType(initialData.type);
+      setSelectedAccountId(initialData.accountId);
+      setSelectedCategoryId(initialData.categoryId || null);
+      setErrorMsg('');
+    } else if (visible) {
+      setAmount('');
+      setDescription('');
+      setNote('');
+      setTxType('expense');
+      setSelectedAccountId(accountList.length > 0 ? accountList[0].id : null);
+      setSelectedCategoryId(null);
+      setErrorMsg('');
+    }
+  }, [visible, initialData, accountList]);
+
+  // Auto-categorize only if the user hasn't manually selected a category and we are not editing
+  useEffect(() => {
+    if (visible && !initialData && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {
+      const match = categorizeTransaction(description, parseFloat(amount || 0));
+      if (match) {
+        const cat = categoryList.find(c => c.name.toLowerCase() === match.categoryName.toLowerCase());
+        if (cat) setSelectedCategoryId(cat.id);
+      }
+    }
+  }, [description, visible, initialData, selectedCategoryId, categoryList, amount]);
+
+  const handleSave = () => {
+    setErrorMsg('');
+    if (!amount || !description.trim()) {
+      setErrorMsg('Preencha o valor e o título.');
+      return;
+    }
+    
+    let rawAmount = amount.replace(',', '.').replace(/[^0-9.]/g, '');
+    let numAmount = parseFloat(rawAmount);
+    
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setErrorMsg('Insira um valor numérico válido.');
+      return;
+    }
+    
+    onSave({
+      id: initialData?.id,
+      amount: numAmount,
+      description: description.trim(),
+      note: note.trim(),
+      type: txType,
+      accountId: selectedAccountId,
+      categoryId: selectedCategoryId
+    });
+  };
+
+  return (
+    <Modal animationType="slide" transparent={true} visible={visible}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.modalTitle, { color: activeTheme.text }]}>
+            {initialData ? 'Editar Transação' : 'Nova Transação'}
+          </Text>
+          
+          {errorMsg ? (
+            <Text style={{ color: activeTheme.expense, marginBottom: 12, fontWeight: 'bold' }}>{errorMsg}</Text>
+          ) : null}
+          
+          <View style={[styles.toggleContainer, { backgroundColor: activeTheme.cardSecondary }]}>
+            <TouchableOpacity 
+              style={[styles.toggleBtn, txType === 'expense' && { backgroundColor: activeTheme.expense }]} 
+              onPress={() => setTxType('expense')}
+            >
+              <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'expense' && { color: '#fff' }]}>Despesa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.toggleBtn, txType === 'income' && { backgroundColor: activeTheme.income }]} 
+              onPress={() => setTxType('income')}
+            >
+              <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'income' && { color: '#fff' }]}>Receita</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TextInput 
+            style={[styles.inputAmount, { color: activeTheme.text }]}
+            placeholder="0,00"
+            placeholderTextColor={activeTheme.textSecondary}
+            keyboardType="numeric"
+            value={amount}
+            onChangeText={setAmount}
+            autoFocus={!initialData}
+          />
+
+          {accountList.length > 0 && (
+            <View style={styles.selectorBlock}>
+              <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Conta</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {accountList.map(acc => (
+                  <TouchableOpacity 
+                    key={acc.id} 
+                    style={[
+                      styles.pill, 
+                      { backgroundColor: activeTheme.cardSecondary },
+                      selectedAccountId === acc.id && { backgroundColor: activeTheme.accent }
+                    ]}
+                    onPress={() => setSelectedAccountId(acc.id)}
+                  >
+                    <Text style={[
+                      styles.pillText, 
+                      { color: activeTheme.textSecondary },
+                      selectedAccountId === acc.id && { color: '#121212', fontWeight: 'bold' }
+                    ]}>{acc.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <TextInput 
+            style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+            placeholder="Título (Ex: Uber, Ifood...)"
+            placeholderTextColor={activeTheme.textSecondary}
+            value={description}
+            onChangeText={setDescription}
+          />
+          
+          <TextInput 
+            style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+            placeholder="Notas adicionais (Opcional)"
+            placeholderTextColor={activeTheme.textSecondary}
+            value={note}
+            onChangeText={setNote}
+          />
+
+          {categoryList.length > 0 && (
+            <View style={styles.selectorBlock}>
+              <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Categoria</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {categoryList.map(cat => (
+                  <TouchableOpacity 
+                    key={cat.id} 
+                    style={[
+                      styles.catPill, 
+                      { backgroundColor: cat.color + '20', borderColor: cat.color },
+                      selectedCategoryId === cat.id && { backgroundColor: cat.color }
+                    ]}
+                    onPress={() => setSelectedCategoryId(cat.id)}
+                  >
+                    <Ionicons name={cat.icon} size={16} color={selectedCategoryId === cat.id ? '#fff' : cat.color} style={{ marginRight: 4 }} />
+                    <Text style={[
+                      styles.catPillText, 
+                      { color: selectedCategoryId === cat.id ? '#fff' : cat.color }
+                    ]}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={onClose}>
+              <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.btnSave, { backgroundColor: activeTheme.accent }]} onPress={handleSave}>
+              <Text style={[styles.btnText, { color: '#121212' }]}>Salvar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const getStyles = (z, f) => StyleSheet.create({
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 24 * z, borderTopRightRadius: 24 * z, padding: 24 * z, maxHeight: '90%' },
+  modalTitle: { fontSize: 22 * z, fontWeight: 'bold', marginBottom: 20 * z, fontFamily: f },
+  
+  toggleContainer: { flexDirection: 'row', borderRadius: 12 * z, overflow: 'hidden', marginBottom: 20 * z },
+  toggleBtn: { flex: 1, paddingVertical: 12 * z, alignItems: 'center' },
+  toggleText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+  
+  inputAmount: { fontSize: 40 * z, fontWeight: 'bold', textAlign: 'center', marginBottom: 24 * z, fontFamily: f },
+  
+  selectorBlock: { marginBottom: 16 * z },
+  label: { fontSize: 14 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
+  
+  pill: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z, marginRight: 8 * z },
+  pillText: { fontSize: 14 * z, fontFamily: f },
+  
+  catPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 * z, paddingVertical: 6 * z, borderRadius: 20 * z, borderWidth: 1, marginRight: 8 * z },
+  catPillText: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
+  
+  inputField: { padding: 16 * z, borderRadius: 12 * z, fontSize: 16 * z, marginBottom: 12 * z, fontFamily: f },
+  
+  modalActions: { flexDirection: 'row', gap: 12 * z, marginTop: 16 * z },
+  btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
+  btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
+  btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f }
+});

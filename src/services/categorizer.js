@@ -75,3 +75,11 @@ export const categorizeTransaction = (description, amount) => {
     color: '#9E9E9E' 
   };
 };
+
+export const resolveCategory = (tx, categoryList) => {
+  if (tx.categoryId && categoryList && categoryList.length > 0) {
+    const cat = categoryList.find(c => c.id === tx.categoryId);
+    if (cat) return { categoryName: cat.name, icon: cat.icon, color: cat.color, type: tx.type, macro: cat.macro };
+  }
+  return categorizeTransaction(tx.description, tx.amount);
+};
