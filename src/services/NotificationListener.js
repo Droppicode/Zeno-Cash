@@ -3,7 +3,8 @@ import RNAndroidNotificationListener from 'react-native-android-notification-lis
 import * as Notifications from 'expo-notifications';
 
 import { db } from '../database/db';
-import { transactions } from '../database/schema';
+import { transactions, accounts } from '../database/schema';
+import { eq } from 'drizzle-orm';
 
 export const headlessNotificationListener = async ({ notification }) => {
   try {
@@ -103,13 +104,17 @@ export const headlessNotificationListener = async ({ notification }) => {
     
     txDesc = `${txDesc} - ${accountName}`;
     
+    // Tenta encontrar o ID da conta correspondente ao banco
+    const accountsData = await db.select().from(accounts).where(eq(accounts.name, accountName));
+    const accId = accountsData.length > 0 ? accountsData[0].id : null;
+    
     const newTx = {
       amount,
       type,
       description: txDesc,
       date: Date.now(),
-      category_id: null,
-      account: accountName,
+      categoryId: null,
+      accountId: accId,
       isPending: 1, // Pendente para aprovação
       note: text.substring(0, 100)
     };
