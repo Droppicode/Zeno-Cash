@@ -12,11 +12,22 @@ import { useCategories } from '../hooks/useCategories';
 import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function HomeScreen() {
+export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
   const [period, setPeriod] = useState(defaultPeriod || '30d');
+  
+  useEffect(() => {
+    if (route?.params?.type) {
+      const type = route.params.type;
+      if (type === 'expense' || type === 'income') {
+        setEditingTx({ type, amount: '', description: '', note: '' });
+        setModalVisible(true);
+        navigation.setParams({ type: undefined });
+      }
+    }
+  }, [route?.params?.type]);
   
   const { txList, loadTransactions, saveTransaction: saveTx, removeTransaction, filterByPeriod } = useTransactions();
   const { accountList, loadAccounts } = useAccounts();

@@ -4,11 +4,14 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Linking from 'expo-linking';
 import AppNavigator from './src/navigation/AppNavigator';
 import { seedDatabase } from './src/database/seed';
 import { SettingsProvider } from './src/context/SettingsContext';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/components/ErrorBoundary';
+
+const prefix = Linking.createURL('/');
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -34,6 +37,15 @@ export default function App() {
     initApp();
   }, []);
 
+  const linking = {
+    prefixes: [prefix, 'zenocash://'],
+    config: {
+      screens: {
+        Home: 'add-transaction',
+      },
+    },
+  };
+
   if (!isReady) {
     return (
       <View style={styles.loadingContainer}>
@@ -47,7 +59,7 @@ export default function App() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SettingsProvider>
-          <NavigationContainer>
+          <NavigationContainer linking={linking}>
             <AppNavigator />
             <StatusBar style="light" />
           </NavigationContainer>

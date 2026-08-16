@@ -99,7 +99,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.modalTitle, { color: activeTheme.text }]}>
-            {initialData ? 'Editar Transação' : 'Nova Transação'}
+            {initialData?.id ? 'Editar Transação' : 'Nova Transação'}
           </Text>
           
           {errorMsg ? (
@@ -128,7 +128,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
             keyboardType="numeric"
             value={amount}
             onChangeText={setAmount}
-            autoFocus={!initialData}
+            autoFocus={!initialData?.id}
           />
 
           {accountList.length > 0 && (

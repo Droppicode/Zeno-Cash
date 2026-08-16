@@ -148,8 +148,9 @@ export default function TransactionsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
               <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
               {item.isPending === 1 && (
-                <View style={[styles.pendingBadge, { backgroundColor: activeTheme.expense + '30' }]}>
-                  <Text style={[styles.pendingText, { color: activeTheme.expense }]}>PENDENTE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                  <Ionicons name="time-outline" size={10} color="#FF9800" />
+                  <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
                 </View>
               )}
             </View>

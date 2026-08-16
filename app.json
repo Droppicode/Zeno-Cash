@@ -4,6 +4,7 @@
     "slug": "zeno-cash",
     "version": "1.0.0",
     "entryPoint": "./index.js",
+    "scheme": "zenocash",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
@@ -16,7 +17,21 @@
     "plugins": [
       "expo-sqlite",
       "./withNotificationListener.js",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "ZenoWidget",
+              "label": "Zeno Cash",
+              "minWidth": "250dp",
+              "minHeight": "100dp",
+              "description": "Atalhos do Zeno Cash"
+            }
+          ]
+        }
+      ]
     ]
   }
 }
