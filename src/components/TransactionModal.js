@@ -33,9 +33,22 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
     }
   }, [visible, loadAccounts, loadCategories]);
 
+  const formatCurrency = (value) => {
+    if (!value) return '';
+    const cleaned = value.toString().replace(/\D/g, '');
+    if (!cleaned) return '';
+    const numberValue = parseInt(cleaned, 10);
+    const formatted = (numberValue / 100).toFixed(2);
+    const parts = formatted.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return parts.join(',');
+  };
+
   useEffect(() => {
     if (visible && initialData) {
-      setAmount(initialData.amount.toString());
+      // Format initial number (e.g. 5.5 -> 550 -> "5,50")
+      const numStr = (initialData.amount * 100).toFixed(0);
+      setAmount(formatCurrency(numStr));
       setDescription(initialData.description);
       setNote(initialData.note || '');
       setTxType(initialData.type);
@@ -59,7 +72,8 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
     if (visible && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {
       // Evita re-categorizar uma transação oficial editada, mas permite para as pendentes
       if (!initialData || initialData.isPending === 1) {
-        const match = categorizeTransaction(description, parseFloat(amount || 0));
+        const rawAmount = amount.replace(/\./g, '').replace(',', '.');
+        const match = categorizeTransaction(description, parseFloat(rawAmount || 0));
         if (match) {
           const cat = categoryList.find(c => c.name.toLowerCase() === match.categoryName.toLowerCase());
           if (cat) setSelectedCategoryId(cat.id);
@@ -68,6 +82,10 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
     }
   }, [description, visible, initialData, selectedCategoryId, categoryList, amount]);
 
+  const handleAmountChange = (text) => {
+    setAmount(formatCurrency(text));
+  };
+
   const handleSave = () => {
     setErrorMsg('');
     if (!amount || !description.trim()) {
@@ -75,7 +93,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
       return;
     }
     
-    let rawAmount = amount.replace(',', '.').replace(/[^0-9.]/g, '');
+    let rawAmount = amount.replace(/\./g, '').replace(',', '.');
     let numAmount = parseFloat(rawAmount);
     
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -148,7 +166,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
               placeholderTextColor={activeTheme.textSecondary}
               keyboardType="numeric"
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={handleAmountChange}
               autoFocus={!initialData?.id}
             />
 
