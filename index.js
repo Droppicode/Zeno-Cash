@@ -4,11 +4,13 @@ import * as Notifications from 'expo-notifications';
 import { registerWidgetTaskHandler } from 'react-native-android-widget';
 import { headlessNotificationListener } from './src/services/NotificationListener';
 import { widgetTaskHandler } from './src/widget/WidgetTaskHandler';
+import './src/services/BackgroundTasks';
 
 // Configuração Global de Notificações
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),

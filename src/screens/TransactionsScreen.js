@@ -12,6 +12,8 @@ import { DateUtils } from '../utils/dateUtils';
 import { Swipeable } from 'react-native-gesture-handler';
 import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
+import { RecurrenceRepository } from '../services/RecurrenceRepository';
+import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 
 export default function TransactionsScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -31,6 +33,9 @@ export default function TransactionsScreen() {
   const [selectedCats, setSelectedCats] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  const [recurrences, setRecurrences] = useState([]);
+  const [forecastPeriod, setForecastPeriod] = useState('none');
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
@@ -39,6 +44,7 @@ export default function TransactionsScreen() {
       loadTransactions();
       loadCategories();
       loadAccounts();
+      RecurrenceRepository.getActive().then(setRecurrences);
     }, [loadTransactions, loadCategories, loadAccounts])
   );
 
@@ -72,7 +78,35 @@ export default function TransactionsScreen() {
 
       return true;
     });
-  }, [txList, period, filter, accountFilter, selectedCats, search, startDate, endDate, categoryList]);
+
+    if (forecastPeriod !== 'none') {
+      const days = forecastPeriod === '30d' ? 30 : 60;
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + days);
+      maxDate.setHours(23, 59, 59, 999);
+
+      const virtualTxs = RecurrenceGenerator.generateVirtualTransactions(
+        recurrences,
+        txList,
+        maxDate.getTime()
+      );
+
+      let virtualsToInclude = virtualTxs.filter(v => v.date > Date.now());
+      
+      if (filter === 'income') virtualsToInclude = virtualsToInclude.filter(t => t.type === 'income');
+      if (filter === 'expense') virtualsToInclude = virtualsToInclude.filter(t => t.type === 'expense');
+      if (accountFilter !== 'all') virtualsToInclude = virtualsToInclude.filter(t => t.accountId === accountFilter);
+
+      if (search.trim() !== '') {
+        const s = search.toLowerCase();
+        virtualsToInclude = virtualsToInclude.filter(t => t.description.toLowerCase().includes(s));
+      }
+
+      result = [...result, ...virtualsToInclude];
+    }
+
+    return result.sort((a, b) => b.date - a.date);
+  }, [txList, period, filter, accountFilter, selectedCats, search, startDate, endDate, categoryList, forecastPeriod, recurrences]);
 
   const uniqueCategories = Array.from(new Set(txList.map(item => resolveCategory(item, categoryList).categoryName)));
 
@@ -151,7 +185,13 @@ export default function TransactionsScreen() {
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
               <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
-              {item.isPending === 1 && (
+              {item.isVirtual && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: activeTheme.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                  <Ionicons name="calendar-outline" size={10} color={activeTheme.accent} />
+                  <Text style={{ color: activeTheme.accent, fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Previsto</Text>
+                </View>
+              )}
+              {item.isPending === 1 && !item.isVirtual && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
                   <Ionicons name="time-outline" size={10} color="#FF9800" />
                   <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
@@ -159,13 +199,13 @@ export default function TransactionsScreen() {
               )}
             </View>
             {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
-            <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {item.account}</Text>
-          </View>
+          <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {item.account}</Text>
         </View>
-        <Text style={[
-          styles.amount, 
-          { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }
-        ]}>
+      </View>
+      <Text style={[
+        styles.amount, 
+        { color: item.type === 'income' ? activeTheme.income : activeTheme.expense, opacity: item.isVirtual ? 0.6 : 1 }
+      ]}>
           {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
         </Text>
         </View>
@@ -233,6 +273,18 @@ export default function TransactionsScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.periodBtn, period === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('all')}>
                       <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212' }]}>Sempre</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={[styles.filterGroup, { backgroundColor: activeTheme.cardSecondary }]}>
+                    <TouchableOpacity style={[styles.periodBtn, forecastPeriod === 'none' && { backgroundColor: activeTheme.accent }]} onPress={() => setForecastPeriod('none')}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, forecastPeriod === 'none' && { color: '#121212' }]}>S/ Previsão</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.periodBtn, forecastPeriod === '30d' && { backgroundColor: activeTheme.accent }]} onPress={() => setForecastPeriod('30d')}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, forecastPeriod === '30d' && { color: '#121212' }]}>+30D (Futuro)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.periodBtn, forecastPeriod === '60d' && { backgroundColor: activeTheme.accent }]} onPress={() => setForecastPeriod('60d')}>
+                      <Text style={[styles.periodText, { color: activeTheme.textSecondary }, forecastPeriod === '60d' && { color: '#121212' }]}>+60D</Text>
                     </TouchableOpacity>
                   </View>
                 </ScrollView>

@@ -10,6 +10,8 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { DateUtils } from '../utils/dateUtils';
 import { getZoomFactor } from '../utils/scaler';
+import { RecurrenceRepository } from '../services/RecurrenceRepository';
+import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -21,6 +23,8 @@ export default function AnalyticsScreen() {
 
   const [isMacro, setIsMacro] = useState(true);
   const [period, setPeriod] = useState(defaultPeriod || '30d');
+  const [forecastPeriod, setForecastPeriod] = useState('none');
+  const [recurrences, setRecurrences] = useState([]);
 
   const { txList, loadTransactions } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
@@ -29,34 +33,62 @@ export default function AnalyticsScreen() {
     useCallback(() => {
       loadTransactions();
       loadCategories();
+      RecurrenceRepository.getActive().then(setRecurrences);
     }, [loadTransactions, loadCategories])
   );
 
   const { analyticsData, totalExpense, totalIncome, topExpenses, monthlyData } = useMemo(() => {
-      const data = txList;
+      let data = [...txList];
+
+      if (forecastPeriod !== 'none') {
+        const days = forecastPeriod === '30d' ? 30 : 60;
+        const maxDate = new Date();
+        maxDate.setDate(maxDate.getDate() + days);
+        maxDate.setHours(23, 59, 59, 999);
+
+        const virtualTxs = RecurrenceGenerator.generateVirtualTransactions(
+          recurrences,
+          txList,
+          maxDate.getTime()
+        );
+
+        const virtualsToInclude = virtualTxs.filter(v => v.date > Date.now());
+        data = [...data, ...virtualsToInclude];
+      }
       
       const limitDate = DateUtils.getLimitDateForPeriod(period);
 
-      const last6Months = {};
-      for (let i = 5; i >= 0; i--) {
+      let startOffset = 5;
+      let endOffset = 0;
+      if (forecastPeriod === '30d') {
+        startOffset = 4;
+        endOffset = -1;
+      } else if (forecastPeriod === '60d') {
+        startOffset = 3;
+        endOffset = -2;
+      }
+
+      const visibleMonths = {};
+      for (let i = startOffset; i >= endOffset; i--) {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const label = d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
-        last6Months[key] = { label, income: 0, expense: 0 };
+        let label = d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+        if (i < 0) label += '*';
+        visibleMonths[key] = { label, income: 0, expense: 0 };
       }
       
       data.forEach(tx => {
         const d = new Date(tx.date);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        if (last6Months[key]) {
-          if (tx.type === 'income') last6Months[key].income += tx.amount;
-          if (tx.type === 'expense') last6Months[key].expense += tx.amount;
+        if (visibleMonths[key]) {
+          if (tx.type === 'income') visibleMonths[key].income += tx.amount;
+          if (tx.type === 'expense') visibleMonths[key].expense += tx.amount;
         }
       });
       
       const barData = [];
-      Object.values(last6Months).forEach(item => {
+      Object.values(visibleMonths).forEach(item => {
         barData.push({ 
           value: item.income, 
           frontColor: activeTheme.income, 
@@ -145,6 +177,18 @@ export default function AnalyticsScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, period === 'all' && { backgroundColor: activeTheme.accent }]} onPress={() => setPeriod('all')}>
             <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212' }]}>Sempre</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.periodRow, { marginTop: 8 }]}>
+          <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, forecastPeriod === 'none' && { backgroundColor: activeTheme.accent }]} onPress={() => setForecastPeriod('none')}>
+            <Text style={[styles.periodText, { color: activeTheme.textSecondary }, forecastPeriod === 'none' && { color: '#121212' }]}>Sem Previsão</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, forecastPeriod === '30d' && { backgroundColor: activeTheme.accent }]} onPress={() => setForecastPeriod('30d')}>
+            <Text style={[styles.periodText, { color: activeTheme.textSecondary }, forecastPeriod === '30d' && { color: '#121212' }]}>Futuro (+30D)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.periodBtn, { backgroundColor: activeTheme.cardSecondary }, forecastPeriod === '60d' && { backgroundColor: activeTheme.accent }]} onPress={() => setForecastPeriod('60d')}>
+            <Text style={[styles.periodText, { color: activeTheme.textSecondary }, forecastPeriod === '60d' && { color: '#121212' }]}>Futuro (+60D)</Text>
           </TouchableOpacity>
         </View>
       </View>

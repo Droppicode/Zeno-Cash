@@ -11,7 +11,7 @@ export const AccountRepository = {
           a.id, a.name, a.type, a.balance, a.icon, a.color,
           a.balance + COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE -t.amount END), 0) as currentBalance
         FROM accounts a
-        LEFT JOIN transactions t ON a.id = t.account_id AND (t.is_pending = 0 OR t.is_pending IS NULL)
+        LEFT JOIN transactions t ON a.id = t.account_id AND (t.is_pending = 0 OR t.is_pending IS NULL) AND t.date <= ${Date.now()}
         GROUP BY a.id
       `);
       return rows;

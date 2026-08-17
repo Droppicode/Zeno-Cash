@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
 import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
@@ -8,10 +10,11 @@ import { DateUtils } from '../utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function TransactionModal({ visible, onClose, onSave, initialData }) {
+export default function TransactionModal({ visible, onClose, onSave, initialData, isContractEdit = false }) {
   const { activeTheme } = useContext(SettingsContext);
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
+  const navigation = useNavigation();
   
   const [errorMsg, setErrorMsg] = useState('');
   
@@ -21,6 +24,16 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
   const [txType, setTxType] = useState('expense');
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [txDateObj, setTxDateObj] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Estados para Recorrência
+  const [recurrenceType, setRecurrenceType] = useState('single'); // single, subscription, installment
+  const [frequencyType, setFrequencyType] = useState('monthly'); // custom_days, monthly, yearly
+  const [frequencyInterval, setFrequencyInterval] = useState('1');
+  const [installments, setInstallments] = useState('');
+  const [interestRate, setInterestRate] = useState('');
+  const [interestType, setInterestType] = useState('simple'); // simple, compound
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -54,6 +67,25 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
       setTxType(initialData.type);
       setSelectedAccountId(initialData.accountId);
       setSelectedCategoryId(initialData.categoryId || null);
+      
+      setTxDateObj(new Date(initialData.date || initialData.startDate || Date.now()));
+      
+      if (initialData.frequencyType) {
+        setRecurrenceType(initialData.installments ? 'installment' : 'subscription');
+        setFrequencyType(initialData.frequencyType);
+        setFrequencyInterval(initialData.frequencyInterval?.toString() || '1');
+        setInstallments(initialData.installments?.toString() || '');
+        setInterestRate(initialData.interestRate?.toString() || '');
+        setInterestType(initialData.interestType || 'simple');
+      } else {
+        setRecurrenceType('single');
+        setFrequencyType('monthly');
+        setFrequencyInterval('1');
+        setInstallments('');
+        setInterestRate('');
+        setInterestType('simple');
+      }
+      
       setErrorMsg('');
     } else if (visible) {
       setAmount('');
@@ -63,6 +95,14 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
       setSelectedAccountId(accountList.length > 0 ? accountList[0].id : null);
       setSelectedCategoryId(null);
       setErrorMsg('');
+      setRecurrenceType('single');
+      setFrequencyType('monthly');
+      setFrequencyInterval('1');
+      setInstallments('');
+      setInterestRate('');
+      setInterestType('simple');
+      
+      setTxDateObj(new Date());
     }
   }, [visible, initialData, accountList]);
 
@@ -106,9 +146,18 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
       amount: numAmount,
       description: description.trim(),
       note: note.trim(),
+      date: txDateObj.getTime(),
       type: txType,
       accountId: selectedAccountId,
-      categoryId: selectedCategoryId
+      categoryId: selectedCategoryId,
+      recurrenceType,
+      recurrenceData: recurrenceType === 'single' ? null : {
+        frequencyType,
+        frequencyInterval: parseInt(frequencyInterval) || 1,
+        installments: recurrenceType === 'installment' ? parseInt(installments) : null,
+        interestRate: parseFloat(interestRate) || 0,
+        interestType
+      }
     });
   };
 
@@ -160,6 +209,33 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
               </TouchableOpacity>
             </View>
 
+            {/* Abas de Tipo de Transação */}
+            {(!initialData?.id || isContractEdit) && (
+              <View style={[styles.toggleContainer, { backgroundColor: activeTheme.cardSecondary, marginBottom: 24 * z }]}>
+                <TouchableOpacity 
+                  style={[styles.toggleBtn, recurrenceType === 'single' && { backgroundColor: activeTheme.accent }, isContractEdit && { opacity: 0.5 }]} 
+                  onPress={() => {
+                    if (!isContractEdit) setRecurrenceType('single');
+                  }}
+                  disabled={isContractEdit}
+                >
+                  <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, recurrenceType === 'single' && { color: '#121212' }]}>Única</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.toggleBtn, recurrenceType === 'subscription' && { backgroundColor: activeTheme.accent }]} 
+                  onPress={() => setRecurrenceType('subscription')}
+                >
+                  <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, recurrenceType === 'subscription' && { color: '#121212' }]}>Assinatura</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.toggleBtn, recurrenceType === 'installment' && { backgroundColor: activeTheme.accent }]} 
+                  onPress={() => setRecurrenceType('installment')}
+                >
+                  <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, recurrenceType === 'installment' && { color: '#121212' }]}>Parcelada</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <TextInput 
               style={[styles.inputAmount, { color: activeTheme.text }]}
               placeholder="0,00"
@@ -170,30 +246,70 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
               autoFocus={!initialData?.id}
             />
 
-            {accountList.length > 0 && (
-              <View style={styles.selectorBlock}>
-                <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Conta</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {accountList.map(acc => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {accountList.length > 0 && (
+                <View style={[styles.selectorBlock, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Conta</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {accountList.map(acc => (
+                      <TouchableOpacity 
+                        key={acc.id} 
+                        style={[
+                          styles.pill, 
+                          { backgroundColor: activeTheme.cardSecondary },
+                          selectedAccountId === acc.id && { backgroundColor: activeTheme.accent }
+                        ]}
+                        onPress={() => setSelectedAccountId(acc.id)}
+                      >
+                        <Text style={[
+                          styles.pillText, 
+                          { color: activeTheme.textSecondary },
+                          selectedAccountId === acc.id && { color: '#121212', fontWeight: 'bold' }
+                        ]}>{acc.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              <View style={[styles.selectorBlock, { marginLeft: 8 * z, justifyContent: 'flex-end', paddingBottom: 8 * z }]}>
+                <Text style={[styles.label, { color: activeTheme.textSecondary, marginBottom: 4*z }]}>Data</Text>
+                {Platform.OS === 'ios' ? (
+                  <DateTimePicker
+                    value={txDateObj}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      if (selectedDate) setTxDateObj(selectedDate);
+                    }}
+                    themeVariant={activeTheme.card === '#121212' ? 'dark' : 'light'}
+                    style={{ minWidth: 110 * z }}
+                  />
+                ) : (
+                  <>
                     <TouchableOpacity 
-                      key={acc.id} 
-                      style={[
-                        styles.pill, 
-                        { backgroundColor: activeTheme.cardSecondary },
-                        selectedAccountId === acc.id && { backgroundColor: activeTheme.accent }
-                      ]}
-                      onPress={() => setSelectedAccountId(acc.id)}
+                      style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, minWidth: 110 * z, paddingVertical: 12 * z, marginBottom: 0, alignItems: 'center', justifyContent: 'center' }]}
+                      onPress={() => setShowDatePicker(true)}
                     >
-                      <Text style={[
-                        styles.pillText, 
-                        { color: activeTheme.textSecondary },
-                        selectedAccountId === acc.id && { color: '#121212', fontWeight: 'bold' }
-                      ]}>{acc.name}</Text>
+                      <Text style={{ color: activeTheme.text }}>
+                        {txDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </Text>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={txDateObj}
+                        mode="date"
+                        display="default"
+                        onChange={(event, selectedDate) => {
+                          setShowDatePicker(false);
+                          if (selectedDate) setTxDateObj(selectedDate);
+                        }}
+                      />
+                    )}
+                  </>
+                )}
               </View>
-            )}
+            </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput 
@@ -251,6 +367,76 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
               </View>
             )}
 
+            {/* Configurações de Recorrência */}
+            {recurrenceType !== 'single' && (!initialData?.id || isContractEdit) && (
+              <View style={[styles.recurrenceBox, { backgroundColor: activeTheme.cardSecondary }]}>
+                <Text style={[styles.label, { color: activeTheme.text }]}>Configuração da {recurrenceType === 'subscription' ? 'Assinatura' : 'Parcela'}</Text>
+                
+                <View style={{ flexDirection: 'row', gap: 8 * z, marginTop: 8 * z }}>
+                  <TextInput 
+                    style={[styles.inputField, { backgroundColor: activeTheme.card, color: activeTheme.text, flex: 1, marginBottom: 0 }]}
+                    placeholder="A cada..."
+                    placeholderTextColor={activeTheme.textSecondary}
+                    keyboardType="numeric"
+                    value={frequencyInterval}
+                    onChangeText={setFrequencyInterval}
+                  />
+                  <View style={[styles.toggleContainer, { flex: 2, marginBottom: 0, backgroundColor: activeTheme.card }]}>
+                    <TouchableOpacity style={[styles.toggleBtn, frequencyType === 'custom_days' && { backgroundColor: activeTheme.accent }]} onPress={() => setFrequencyType('custom_days')}>
+                      <Text style={[styles.toggleText, { fontSize: 12*z, color: frequencyType === 'custom_days' ? '#000' : activeTheme.textSecondary }]}>Dias</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.toggleBtn, frequencyType === 'monthly' && { backgroundColor: activeTheme.accent }]} onPress={() => setFrequencyType('monthly')}>
+                      <Text style={[styles.toggleText, { fontSize: 12*z, color: frequencyType === 'monthly' ? '#000' : activeTheme.textSecondary }]}>Meses</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {recurrenceType === 'installment' && (
+                  <>
+                    <TextInput 
+                      style={[styles.inputField, { backgroundColor: activeTheme.card, color: activeTheme.text, marginTop: 8 * z, marginBottom: 0 }]}
+                      placeholder="Qtd. de Parcelas (ex: 12)"
+                      placeholderTextColor={activeTheme.textSecondary}
+                      keyboardType="numeric"
+                      value={installments}
+                      onChangeText={setInstallments}
+                    />
+                    
+                    <View style={{ flexDirection: 'row', gap: 8 * z, marginTop: 8 * z }}>
+                      <TextInput 
+                        style={[styles.inputField, { backgroundColor: activeTheme.card, color: activeTheme.text, flex: 1, marginBottom: 0 }]}
+                        placeholder="Juros % (Opcional)"
+                        placeholderTextColor={activeTheme.textSecondary}
+                        keyboardType="numeric"
+                        value={interestRate}
+                        onChangeText={setInterestRate}
+                      />
+                      <View style={[styles.toggleContainer, { flex: 1.5, marginBottom: 0, backgroundColor: activeTheme.card }]}>
+                        <TouchableOpacity style={[styles.toggleBtn, interestType === 'simple' && { backgroundColor: activeTheme.accent }]} onPress={() => setInterestType('simple')}>
+                          <Text style={[styles.toggleText, { fontSize: 12*z, color: interestType === 'simple' ? '#000' : activeTheme.textSecondary }]}>Simples</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.toggleBtn, interestType === 'compound' && { backgroundColor: activeTheme.accent }]} onPress={() => setInterestType('compound')}>
+                          <Text style={[styles.toggleText, { fontSize: 12*z, color: interestType === 'compound' ? '#000' : activeTheme.textSecondary }]}>Composto</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+            {initialData?.recurrenceId && (
+              <TouchableOpacity 
+                style={{ backgroundColor: activeTheme.accent + '20', padding: 16 * z, borderRadius: 12 * z, alignItems: 'center', marginBottom: 16 * z, flexDirection: 'row', justifyContent: 'center' }}
+                onPress={() => {
+                  onClose();
+                  navigation.navigate('RecurrenceDetails', { id: initialData.recurrenceId });
+                }}
+              >
+                <Ionicons name="documents-outline" size={20 * z} color={activeTheme.accent} style={{ marginRight: 8 * z }} />
+                <Text style={{ color: activeTheme.accent, fontWeight: 'bold', fontSize: 16 * z }}>Ver Detalhes do Contrato</Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={onClose}>
                 <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
@@ -292,5 +478,6 @@ const getStyles = (z, f) => StyleSheet.create({
   btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
   btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
   btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
-  clearBtn: { padding: 12 * z, marginLeft: 8 * z, justifyContent: 'center', alignItems: 'center' }
+  clearBtn: { padding: 12 * z, marginLeft: 8 * z, justifyContent: 'center', alignItems: 'center' },
+  recurrenceBox: { padding: 16 * z, borderRadius: 12 * z, marginBottom: 16 * z }
 });

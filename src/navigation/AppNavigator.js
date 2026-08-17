@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 
@@ -8,13 +9,13 @@ import TransactionsScreen from '../screens/TransactionsScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import InvestmentsScreen from '../screens/InvestmentsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import RecurrenceDetailsScreen from '../screens/RecurrenceDetailsScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-export default function AppNavigator() {
-  const { activeTheme, uiConfig, isLoaded } = useContext(SettingsContext);
-
-  if (!isLoaded) return null; // Aguarda carregar configurações
+function MainTabs() {
+  const { activeTheme, uiConfig } = useContext(SettingsContext);
 
   return (
     <Tab.Navigator
@@ -43,5 +44,18 @@ export default function AppNavigator() {
       )}
       <Tab.Screen name="Config" component={SettingsScreen} />
     </Tab.Navigator>
+  );
+}
+
+export default function AppNavigator() {
+  const { isLoaded, activeTheme } = useContext(SettingsContext);
+
+  if (!isLoaded) return null; // Aguarda carregar configurações
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: activeTheme.background } }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal' }} />
+    </Stack.Navigator>
   );
 }

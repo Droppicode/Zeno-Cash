@@ -10,6 +10,7 @@ import { seedDatabase } from './src/database/seed';
 import { SettingsProvider } from './src/context/SettingsContext';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { registerBackgroundFetchAsync } from './src/services/BackgroundTasks';
 
 const prefix = Linking.createURL('/');
 
@@ -27,6 +28,9 @@ export default function App() {
         if (status !== 'granted') {
           await Notifications.requestPermissionsAsync();
         }
+
+        // Registra a tarefa diária em background
+        await registerBackgroundFetchAsync();
       } catch (error) {
         console.error("Erro durante a inicialização do app:", error);
       } finally {

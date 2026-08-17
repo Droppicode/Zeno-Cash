@@ -63,7 +63,7 @@ export default function HomeScreen({ route, navigation }) {
   }, [filteredTxList]);
 
   const pendingTxList = txList.filter(t => t.isPending === 1);
-  const recentTxList = txList.filter(t => t.isPending !== 1);
+  const recentTxList = txList.filter(t => t.isPending !== 1 && t.date <= Date.now());
   const homeOrder = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
 
   const saveTransaction = async (data) => {

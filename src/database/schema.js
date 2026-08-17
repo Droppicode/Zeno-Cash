@@ -19,6 +19,7 @@ export const transactions = sqliteTable('transactions', {
   accountId: integer('account_id'),
   note: text('note'),
   isPending: integer('is_pending').default(0),
+  recurrenceId: integer('recurrence_id'), // ID from recurrences table
 });
 
 export const categories = sqliteTable('categories', {
@@ -32,4 +33,20 @@ export const categories = sqliteTable('categories', {
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
+});
+
+export const recurrences = sqliteTable('recurrences', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  amount: real('amount').notNull(),
+  description: text('description').notNull(),
+  categoryId: integer('category_id'),
+  type: text('type').notNull(), // 'income' | 'expense'
+  accountId: integer('account_id'),
+  startDate: integer('start_date').notNull(), // unix timestamp
+  frequencyType: text('frequency_type').notNull(), // 'custom_days', 'monthly', 'yearly'
+  frequencyInterval: integer('frequency_interval').notNull(), // e.g. 1 (every 1 month), 15 (every 15 days)
+  installments: integer('installments'), // null if infinite, or number like 12
+  interestRate: real('interest_rate'), // e.g. 1.5 for 1.5%
+  interestType: text('interest_type'), // 'simple', 'compound'
+  isActive: integer('is_active').default(1),
 });

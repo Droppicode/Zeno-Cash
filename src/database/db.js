@@ -37,6 +37,22 @@ expoDb.execSync(`
     value TEXT NOT NULL
   );
   
+  CREATE TABLE IF NOT EXISTS recurrences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount REAL NOT NULL,
+    description TEXT NOT NULL,
+    category_id INTEGER,
+    type TEXT NOT NULL,
+    account_id INTEGER,
+    start_date INTEGER NOT NULL,
+    frequency_type TEXT NOT NULL,
+    frequency_interval INTEGER NOT NULL,
+    installments INTEGER,
+    interest_rate REAL,
+    interest_type TEXT,
+    is_active INTEGER DEFAULT 1
+  );
+
   -- Insert a default account if the table is completely empty
   INSERT INTO accounts (name, type, balance, icon, color)
   SELECT 'Dinheiro', 'cash', 0, 'wallet-outline', '#4CAF50'
@@ -45,6 +61,7 @@ expoDb.execSync(`
 
 try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN note TEXT;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_pending INTEGER DEFAULT 0;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN recurrence_id INTEGER;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE categories ADD COLUMN macro TEXT;'); } catch (e) {}
 
 expoDb.execSync(`
