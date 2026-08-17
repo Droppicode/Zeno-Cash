@@ -8,7 +8,8 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mmn.zenocash"
     },
     "android": {
       "package": "com.mmn.zenocash",
@@ -25,8 +26,10 @@
             {
               "name": "ZenoWidget",
               "label": "Zeno Cash",
-              "minWidth": "250dp",
-              "minHeight": "100dp",
+              "minWidth": "110dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
               "description": "Atalhos do Zeno Cash"
             }
           ]

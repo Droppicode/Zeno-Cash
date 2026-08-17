@@ -11,10 +11,14 @@ export async function widgetTaskHandler(props) {
     widgetAction === 'WIDGET_UPDATE' ||
     widgetAction === 'WIDGET_RESIZED'
   ) {
-    requestWidgetUpdate({
-      widgetName: 'ZenoWidget',
-      renderWidget: () => <ZenoWidget />,
-      widgetInfo,
-    });
+    try {
+      await requestWidgetUpdate({
+        widgetName: 'ZenoWidget',
+        renderWidget: () => <ZenoWidget />,
+        widgetInfo,
+      });
+    } catch (e) {
+      // ignore
+    }
   }
 }

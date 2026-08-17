@@ -2,7 +2,6 @@ import { registerRootComponent } from 'expo';
 import { AppRegistry } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { registerWidgetTaskHandler } from 'react-native-android-widget';
-import App from './App';
 import { headlessNotificationListener } from './src/services/NotificationListener';
 import { widgetTaskHandler } from './src/widget/WidgetTaskHandler';
 
@@ -22,4 +21,7 @@ AppRegistry.registerHeadlessTask('RNAndroidNotificationListenerHeadlessJs', () =
 registerWidgetTaskHandler(widgetTaskHandler);
 
 // Registra o componente raiz do aplicativo
-registerRootComponent(App);
+registerRootComponent(function AppRoot() {
+  const App = require('./App').default;
+  return <App />;
+});
