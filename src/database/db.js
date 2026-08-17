@@ -2,7 +2,7 @@ import { openDatabaseSync } from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 
 // Inicializa a conexão nativa com o banco do Expo
-const expoDb = openDatabaseSync('zenocash.db');
+export const expoDb = openDatabaseSync('zenocash.db');
 
 // Setup das tabelas de forma síncrona (muito mais rápido e evita migrações pesadas no MVP)
 expoDb.execSync(`

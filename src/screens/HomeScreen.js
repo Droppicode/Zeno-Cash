@@ -45,16 +45,10 @@ export default function HomeScreen({ route, navigation }) {
 
   const accountBalances = useMemo(() => {
     return accountList.map(acc => {
-      let current = acc.balance || 0;
-      txList.forEach(tx => {
-        if (tx.accountId === acc.id) {
-           if (tx.type === 'income') current += tx.amount;
-           else current -= tx.amount;
-        }
-      });
+      const current = acc.currentBalance !== undefined ? acc.currentBalance : (acc.balance || 0);
       return { ...acc, currentBalance: current };
     });
-  }, [accountList, txList]);
+  }, [accountList]);
 
   const filteredTxList = useMemo(() => filterByPeriod(txList, period), [txList, period, filterByPeriod]);
   
@@ -75,6 +69,7 @@ export default function HomeScreen({ route, navigation }) {
   const saveTransaction = async (data) => {
     data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente
     await saveTx(data.id, data);
+    await loadAccounts(); // Recarrega os saldos do DB
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -82,7 +77,10 @@ export default function HomeScreen({ route, navigation }) {
   const renderRightActions = (tx) => (
     <TouchableOpacity 
       style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
-      onPress={() => removeTransaction(tx.id)}
+      onPress={async () => {
+        await removeTransaction(tx.id);
+        await loadAccounts(); // Atualiza o saldo após deletar
+      }}
     >
       <Ionicons name="trash" size={24} color="#fff" />
       <Text style={styles.deleteActionText}>Apagar</Text>

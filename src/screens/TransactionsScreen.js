@@ -105,6 +105,7 @@ export default function TransactionsScreen() {
     // Se a transação for salva/editada, ela deixa de ser pendente
     data.isPending = 0;
     await saveTransaction(data.id, data);
+    await loadAccounts(); // Atualizar saldo
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -112,7 +113,10 @@ export default function TransactionsScreen() {
   const renderRightActions = (tx) => (
     <TouchableOpacity 
       style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
-      onPress={() => removeTransaction(tx.id)}
+      onPress={async () => {
+        await removeTransaction(tx.id);
+        await loadAccounts(); // Atualizar saldo
+      }}
     >
       <Ionicons name="trash" size={24} color="#fff" />
       <Text style={[styles.deleteActionText, { color: '#fff' }]}>Apagar</Text>

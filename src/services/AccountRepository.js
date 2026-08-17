@@ -1,4 +1,4 @@
-import { db } from '../database/db';
+import { db, expoDb } from '../database/db';
 import { accounts } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
@@ -6,7 +6,15 @@ import { Logger } from '../utils/logger';
 export const AccountRepository = {
   getAll: async () => {
     try {
-      return await db.select().from(accounts);
+      const rows = await expoDb.getAllAsync(`
+        SELECT 
+          a.id, a.name, a.type, a.balance, a.icon, a.color,
+          a.balance + COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE -t.amount END), 0) as currentBalance
+        FROM accounts a
+        LEFT JOIN transactions t ON a.id = t.account_id AND (t.is_pending = 0 OR t.is_pending IS NULL)
+        GROUP BY a.id
+      `);
+      return rows;
     } catch (err) {
       Logger.error('AccountRepository.getAll', err);
       return [];
