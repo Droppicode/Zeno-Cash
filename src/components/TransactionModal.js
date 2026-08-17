@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
@@ -94,10 +94,26 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
     });
   };
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   return (
     <Modal animationType="slide" transparent={true} visible={visible}>
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
+      <KeyboardAvoidingView 
+        style={styles.modalOverlay} 
+        behavior="position"
+        contentContainerStyle={{ flex: 1, justifyContent: 'flex-end' }}
+        enabled={Platform.OS === 'ios' ? true : isKeyboardVisible}
+      >
+        <View style={[styles.modalContent, { backgroundColor: activeTheme.card, flexShrink: 1 }]}>
           <Text style={[styles.modalTitle, { color: activeTheme.text }]}>
             {initialData?.id ? 'Editar Transação' : 'Nova Transação'}
           </Text>
@@ -106,122 +122,128 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
             <Text style={{ color: activeTheme.expense, marginBottom: 12, fontWeight: 'bold' }}>{errorMsg}</Text>
           ) : null}
           
-          <View style={[styles.toggleContainer, { backgroundColor: activeTheme.cardSecondary }]}>
-            <TouchableOpacity 
-              style={[styles.toggleBtn, txType === 'expense' && { backgroundColor: activeTheme.expense }]} 
-              onPress={() => setTxType('expense')}
-            >
-              <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'expense' && { color: '#fff' }]}>Despesa</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.toggleBtn, txType === 'income' && { backgroundColor: activeTheme.income }]} 
-              onPress={() => setTxType('income')}
-            >
-              <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'income' && { color: '#fff' }]}>Receita</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TextInput 
-            style={[styles.inputAmount, { color: activeTheme.text }]}
-            placeholder="0,00"
-            placeholderTextColor={activeTheme.textSecondary}
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            autoFocus={!initialData?.id}
-          />
-
-          {accountList.length > 0 && (
-            <View style={styles.selectorBlock}>
-              <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Conta</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {accountList.map(acc => (
-                  <TouchableOpacity 
-                    key={acc.id} 
-                    style={[
-                      styles.pill, 
-                      { backgroundColor: activeTheme.cardSecondary },
-                      selectedAccountId === acc.id && { backgroundColor: activeTheme.accent }
-                    ]}
-                    onPress={() => setSelectedAccountId(acc.id)}
-                  >
-                    <Text style={[
-                      styles.pillText, 
-                      { color: activeTheme.textSecondary },
-                      selectedAccountId === acc.id && { color: '#121212', fontWeight: 'bold' }
-                    ]}>{acc.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TextInput 
-              style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
-              placeholder="Título (Ex: Uber, Ifood...)"
-              placeholderTextColor={activeTheme.textSecondary}
-              value={description}
-              onChangeText={setDescription}
-            />
-            {initialData?.isPending === 1 && (
-              <TouchableOpacity style={styles.clearBtn} onPress={() => setDescription('')}>
-                <Ionicons name="close-circle" size={24} color={activeTheme.expense} />
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+          >
+            <View style={[styles.toggleContainer, { backgroundColor: activeTheme.cardSecondary }]}>
+              <TouchableOpacity 
+                style={[styles.toggleBtn, txType === 'expense' && { backgroundColor: activeTheme.expense }]} 
+                onPress={() => setTxType('expense')}
+              >
+                <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'expense' && { color: '#fff' }]}>Despesa</Text>
               </TouchableOpacity>
-            )}
-          </View>
-          
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TextInput 
-              style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
-              placeholder="Notas adicionais (Opcional)"
-              placeholderTextColor={activeTheme.textSecondary}
-              value={note}
-              onChangeText={setNote}
-              multiline
-            />
-            {initialData?.isPending === 1 && (
-              <TouchableOpacity style={styles.clearBtn} onPress={() => setNote('')}>
-                <Ionicons name="close-circle" size={24} color={activeTheme.expense} />
+              <TouchableOpacity 
+                style={[styles.toggleBtn, txType === 'income' && { backgroundColor: activeTheme.income }]} 
+                onPress={() => setTxType('income')}
+              >
+                <Text style={[styles.toggleText, { color: activeTheme.textSecondary }, txType === 'income' && { color: '#fff' }]}>Receita</Text>
               </TouchableOpacity>
-            )}
-          </View>
-
-          {categoryList.length > 0 && (
-            <View style={styles.selectorBlock}>
-              <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Categoria</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {categoryList.map(cat => (
-                  <TouchableOpacity 
-                    key={cat.id} 
-                    style={[
-                      styles.catPill, 
-                      { backgroundColor: cat.color + '20', borderColor: cat.color },
-                      selectedCategoryId === cat.id && { backgroundColor: cat.color }
-                    ]}
-                    onPress={() => setSelectedCategoryId(cat.id)}
-                  >
-                    <Ionicons name={cat.icon} size={16} color={selectedCategoryId === cat.id ? '#fff' : cat.color} style={{ marginRight: 4 }} />
-                    <Text style={[
-                      styles.catPillText, 
-                      { color: selectedCategoryId === cat.id ? '#fff' : cat.color }
-                    ]}>{cat.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
             </View>
-          )}
 
-          <View style={styles.modalActions}>
-            <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={onClose}>
-              <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.btnSave, { backgroundColor: activeTheme.accent }]} onPress={handleSave}>
-              <Text style={[styles.btnText, { color: '#121212' }]}>{initialData?.isPending === 1 ? 'Aprovar' : 'Salvar'}</Text>
-            </TouchableOpacity>
-          </View>
+            <TextInput 
+              style={[styles.inputAmount, { color: activeTheme.text }]}
+              placeholder="0,00"
+              placeholderTextColor={activeTheme.textSecondary}
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              autoFocus={!initialData?.id}
+            />
+
+            {accountList.length > 0 && (
+              <View style={styles.selectorBlock}>
+                <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Conta</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {accountList.map(acc => (
+                    <TouchableOpacity 
+                      key={acc.id} 
+                      style={[
+                        styles.pill, 
+                        { backgroundColor: activeTheme.cardSecondary },
+                        selectedAccountId === acc.id && { backgroundColor: activeTheme.accent }
+                      ]}
+                      onPress={() => setSelectedAccountId(acc.id)}
+                    >
+                      <Text style={[
+                        styles.pillText, 
+                        { color: activeTheme.textSecondary },
+                        selectedAccountId === acc.id && { color: '#121212', fontWeight: 'bold' }
+                      ]}>{acc.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TextInput 
+                style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
+                placeholder="Título (Ex: Uber, Ifood...)"
+                placeholderTextColor={activeTheme.textSecondary}
+                value={description}
+                onChangeText={setDescription}
+              />
+              {initialData?.isPending === 1 && (
+                <TouchableOpacity style={styles.clearBtn} onPress={() => setDescription('')}>
+                  <Ionicons name="close-circle" size={24} color={activeTheme.expense} />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TextInput 
+                style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
+                placeholder="Notas adicionais (Opcional)"
+                placeholderTextColor={activeTheme.textSecondary}
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
+              {initialData?.isPending === 1 && (
+                <TouchableOpacity style={styles.clearBtn} onPress={() => setNote('')}>
+                  <Ionicons name="close-circle" size={24} color={activeTheme.expense} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {categoryList.length > 0 && (
+              <View style={styles.selectorBlock}>
+                <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Categoria</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {categoryList.map(cat => (
+                    <TouchableOpacity 
+                      key={cat.id} 
+                      style={[
+                        styles.catPill, 
+                        { backgroundColor: cat.color + '20', borderColor: cat.color },
+                        selectedCategoryId === cat.id && { backgroundColor: cat.color }
+                      ]}
+                      onPress={() => setSelectedCategoryId(cat.id)}
+                    >
+                      <Ionicons name={cat.icon} size={16} color={selectedCategoryId === cat.id ? '#fff' : cat.color} style={{ marginRight: 4 }} />
+                      <Text style={[
+                        styles.catPillText, 
+                        { color: selectedCategoryId === cat.id ? '#fff' : cat.color }
+                      ]}>{cat.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={onClose}>
+                <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btnSave, { backgroundColor: activeTheme.accent }]} onPress={handleSave}>
+                <Text style={[styles.btnText, { color: '#121212' }]}>{initialData?.isPending === 1 ? 'Aprovar' : 'Salvar'}</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
