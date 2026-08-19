@@ -15,6 +15,12 @@
       "package": "com.mmn.zenocash",
       "allowBackup": false
     },
+    "androidStatusBar": {
+      "hidden": true
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive"
+    },
     "plugins": [
       "expo-sqlite",
       "./withNotificationListener.js",

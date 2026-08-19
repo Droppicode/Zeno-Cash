@@ -240,7 +240,7 @@ export default function AccountsConfigScreen({ onBack }) {
 
 const getStyles = (z, f) => StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderBottomWidth: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderBottomWidth: 1 },
   backBtn: { width: 40 * z, height: 40 * z, justifyContent: 'center' },
   title: { fontSize: 20 * z, fontWeight: 'bold', fontFamily: f },
   scroll: { padding: 16 * z },

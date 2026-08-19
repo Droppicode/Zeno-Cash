@@ -16,7 +16,7 @@ export default function InvestmentsScreen() {
   const totalValue = assets.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, { color: activeTheme.text }]}>Meus Investimentos</Text>
         <Text style={[styles.subtitle, { color: activeTheme.textSecondary }]}>Patrimônio Acumulado</Text>

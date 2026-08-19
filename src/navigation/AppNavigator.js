@@ -10,6 +10,7 @@ import AnalyticsScreen from '../screens/AnalyticsScreen';
 import InvestmentsScreen from '../screens/InvestmentsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import RecurrenceDetailsScreen from '../screens/RecurrenceDetailsScreen';
+import DebtsScreen from '../screens/DebtsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -32,7 +33,7 @@ function MainTabs() {
         tabBarActiveTintColor: activeTheme.accent,
         tabBarInactiveTintColor: activeTheme.textSecondary,
         headerShown: false,
-        tabBarStyle: { backgroundColor: activeTheme.card, borderTopWidth: 0 },
+        tabBarStyle: { backgroundColor: activeTheme.card, borderTopWidth: 0, paddingBottom: 24, paddingTop: 8, height: 70 },
         sceneStyle: { backgroundColor: activeTheme.background }
       })}
     >
@@ -56,6 +57,7 @@ export default function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: activeTheme.background } }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="Debts" component={DebtsScreen} />
     </Stack.Navigator>
   );
 }

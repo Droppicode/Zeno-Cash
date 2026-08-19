@@ -277,7 +277,7 @@ export default function ThemeConfigScreen({ onBack }) {
 
 const getStyles = (z, f) => StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16 * z, paddingTop: 24 * z, paddingBottom: 16 * z },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 * z, paddingVertical: 8 * z },
   backBtn: { marginRight: 16 * z },
   title: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
   scroll: { padding: 16 * z },

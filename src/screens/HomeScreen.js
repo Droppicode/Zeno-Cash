@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
+import { useDebts } from '../hooks/useDebts';
 import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
 
@@ -32,6 +33,7 @@ export default function HomeScreen({ route, navigation }) {
   const { txList, loadTransactions, saveTransaction: saveTx, removeTransaction, filterByPeriod } = useTransactions();
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
+  const { debtsList, loadDebts } = useDebts();
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
@@ -40,6 +42,7 @@ export default function HomeScreen({ route, navigation }) {
       loadTransactions();
       loadAccounts();
       loadCategories();
+      loadDebts();
     }, [])
   );
 
@@ -64,7 +67,8 @@ export default function HomeScreen({ route, navigation }) {
 
   const pendingTxList = txList.filter(t => t.isPending === 1);
   const recentTxList = txList.filter(t => t.isPending !== 1 && t.date <= Date.now());
-  const homeOrder = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
+  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
+  const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
 
   const saveTransaction = async (data) => {
     data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente
@@ -88,7 +92,7 @@ export default function HomeScreen({ route, navigation }) {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 * getZoomFactor(activeTheme) }}>
         {/* Filtro Temporal na Home */}
         <View style={styles.headerRow}>
@@ -235,6 +239,50 @@ export default function HomeScreen({ route, navigation }) {
               </View>
             );
           }
+
+          if (modKey === 'debts' && uiConfig.homeShowDebts !== false) {
+            const totalOwe = debtsList.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
+            const totalOwed = debtsList.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
+
+            if (totalOwe === 0 && totalOwed === 0) return null;
+
+            return (
+              <View key="debts" style={styles.section}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={[styles.sectionTitle, { color: activeTheme.text, marginBottom: 0 }]}>Dívidas</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Debts')}>
+                    <Text style={{ color: activeTheme.accent, fontWeight: 'bold' }}>Ver Tudo</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Debts')}>
+                    <View style={[styles.groupedItem, { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.groupedIcon, { backgroundColor: activeTheme.expense + '20' }]}>
+                          <Ionicons name="arrow-up" size={18} color={activeTheme.expense} />
+                        </View>
+                        <Text style={[styles.groupedText, { color: activeTheme.text }]}>Eu Devo</Text>
+                      </View>
+                      <Text style={[styles.groupedAmount, { color: activeTheme.expense }]}>R$ {totalOwe.toFixed(2)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Debts')}>
+                    <View style={styles.groupedItem}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.groupedIcon, { backgroundColor: activeTheme.income + '20' }]}>
+                          <Ionicons name="arrow-down" size={18} color={activeTheme.income} />
+                        </View>
+                        <Text style={[styles.groupedText, { color: activeTheme.text }]}>Me Devem</Text>
+                      </View>
+                      <Text style={[styles.groupedAmount, { color: activeTheme.income }]}>R$ {totalOwed.toFixed(2)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          }
           
           return null;
         })}
@@ -261,7 +309,7 @@ const getStyles = (theme) => {
   
   return StyleSheet.create({
     container: { flex: 1 },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 * z },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 * z },
     headerTitle: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
     periodBox: { flexDirection: 'row', borderRadius: 20 * z, padding: 4 * z },
     periodText: { paddingHorizontal: 12 * z, paddingVertical: 6 * z, fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },

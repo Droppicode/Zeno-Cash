@@ -215,7 +215,7 @@ export default function TransactionsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
       <View style={[styles.header, { backgroundColor: activeTheme.card }]}>
         <View style={[styles.searchBox, { backgroundColor: activeTheme.cardSecondary }]}>
           <Ionicons name="search" size={20} color={activeTheme.textSecondary} style={styles.searchIcon} />

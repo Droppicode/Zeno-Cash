@@ -53,6 +53,15 @@ expoDb.execSync(`
     is_active INTEGER DEFAULT 1
   );
 
+  CREATE TABLE IF NOT EXISTS debts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    amount REAL NOT NULL,
+    date INTEGER NOT NULL,
+    account_id INTEGER
+  );
+
   -- Insert a default account if the table is completely empty
   INSERT INTO accounts (name, type, balance, icon, color)
   SELECT 'Dinheiro', 'cash', 0, 'wallet-outline', '#4CAF50'

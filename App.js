@@ -11,6 +11,8 @@ import { SettingsProvider } from './src/context/SettingsContext';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { registerBackgroundFetchAsync } from './src/services/BackgroundTasks';
+import * as NavigationBar from 'expo-navigation-bar';
+import { Platform } from 'react-native';
 
 const prefix = Linking.createURL('/');
 
@@ -31,6 +33,10 @@ export default function App() {
 
         // Registra a tarefa diária em background
         await registerBackgroundFetchAsync();
+
+        if (Platform.OS === 'android') {
+          await NavigationBar.setVisibilityAsync('hidden');
+        }
       } catch (error) {
         console.error("Erro durante a inicialização do app:", error);
       } finally {
@@ -54,7 +60,7 @@ export default function App() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#BB86FC" />
-        <StatusBar style="light" />
+        <StatusBar style="light" hidden={true} />
       </View>
     );
   }
@@ -65,7 +71,7 @@ export default function App() {
         <SettingsProvider>
           <NavigationContainer linking={linking}>
             <AppNavigator />
-            <StatusBar style="light" />
+            <StatusBar style="light" hidden={true} />
           </NavigationContainer>
         </SettingsProvider>
       </GestureHandlerRootView>

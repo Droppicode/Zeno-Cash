@@ -82,7 +82,9 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', newConfig);
   };
 
-  const homeOrder = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
+  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
+  const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+
   const moveModule = (index, direction) => {
     if (index + direction < 0 || index + direction >= homeOrder.length) return;
     const newOrder = [...homeOrder];
@@ -96,6 +98,7 @@ export default function ModuleConfigScreen({ onBack }) {
     if (key === 'accounts') return 'Suas Contas';
     if (key === 'pending') return 'Transações Pendentes';
     if (key === 'recent') return 'Últimas Transações';
+    if (key === 'debts') return 'Controle de Dívidas';
     return key;
   };
 
@@ -185,6 +188,10 @@ export default function ModuleConfigScreen({ onBack }) {
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Últimas Trans.</Text>
             <Switch value={uiConfig.homeShowRecent !== false} onValueChange={() => handleToggleUi('homeShowRecent')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Dívidas</Text>
+            <Switch value={uiConfig.homeShowDebts !== false} onValueChange={() => handleToggleUi('homeShowDebts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
 
           <Text style={[styles.sectionTitle, { color: activeTheme.text, marginTop: 24 * z }]}>Ordem na Tela Inicial</Text>
@@ -306,7 +313,7 @@ export default function ModuleConfigScreen({ onBack }) {
 
 const getStyles = (z, f) => StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16 * z, paddingTop: 24 * z, paddingBottom: 16 * z },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 * z, paddingVertical: 8 * z },
   backBtn: { marginRight: 16 * z },
   title: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
   scroll: { padding: 16 * z },

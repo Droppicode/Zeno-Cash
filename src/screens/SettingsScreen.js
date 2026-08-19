@@ -11,7 +11,7 @@ import CategoriesConfigScreen from './CategoriesConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
   
   const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations'
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
 
   if (currentScreen === 'theme') {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <ThemeConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
@@ -35,7 +35,7 @@ export default function SettingsScreen() {
 
   if (currentScreen === 'module') {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <ModuleConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
@@ -43,7 +43,7 @@ export default function SettingsScreen() {
 
   if (currentScreen === 'accounts') {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <AccountsConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
@@ -51,7 +51,7 @@ export default function SettingsScreen() {
 
   if (currentScreen === 'categories') {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <CategoriesConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
@@ -59,14 +59,14 @@ export default function SettingsScreen() {
 
   if (currentScreen === 'automations') {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <AutomationsConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
       <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary, backgroundColor: activeTheme.card }]}>
         <Text style={[styles.title, { color: activeTheme.text }]}>Configurações Globais</Text>
       </View>
@@ -105,6 +105,12 @@ export default function SettingsScreen() {
             <Ionicons name="flash" size={32} color={activeTheme.income} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Automações</Text>
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Pix e Notificações</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => navigation.navigate('Debts')}>
+            <Ionicons name="people" size={32} color={activeTheme.expense} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Dívidas</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Quem me deve</Text>
           </TouchableOpacity>
         </View>
 
@@ -163,8 +169,8 @@ export default function SettingsScreen() {
 
 const getStyles = (z, f) => StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 16 * z, borderBottomWidth: 1 },
-  title: { fontSize: 24 * z, fontWeight: 'bold', marginTop: 16 * z, fontFamily: f },
+  header: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderBottomWidth: 1 },
+  title: { fontSize: 24 * z, fontWeight: 'bold', marginTop: 4 * z, fontFamily: f },
   scroll: { padding: 16 * z },
   
   menuGrid: { flexDirection: 'row', gap: 12 * z, marginBottom: 20 * z },

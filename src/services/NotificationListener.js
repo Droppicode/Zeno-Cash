@@ -12,11 +12,19 @@ export const headlessNotificationListener = async ({ notification }) => {
     
     const parsed = typeof notification === 'string' ? JSON.parse(notification) : notification;
     
+    // Ignora notificações muito antigas (mais de 10 minutos) para evitar crash ao reconectar o Expo após dias offline
+    const notifTime = Number(parsed.time || parsed.postTime) || Date.now();
+    if (Date.now() - notifTime > 600000) {
+      return;
+    }
+    
     const appName = parsed.app ? parsed.app.toLowerCase() : '';
     const title = parsed.title || '';
     const text = parsed.text || '';
     
-    console.log(`Notificação recebida do app ${appName}: ${title}`);
+    if (!appName.includes('.android') && !appName.includes('.huami')) {
+      console.log(`Notificação recebida do app ${appName}: ${title}`);
+    }
     
     // Mapeamento de bancos para o nome da conta e validação de pacotes
     const bankMap = {

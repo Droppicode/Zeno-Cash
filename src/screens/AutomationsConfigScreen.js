@@ -101,7 +101,8 @@ const getStyles = (z, f) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16 * z,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderBottomWidth: 1,
   },
   backBtn: {

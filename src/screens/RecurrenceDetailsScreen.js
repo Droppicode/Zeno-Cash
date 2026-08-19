@@ -164,7 +164,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
   const catInfo = resolveCategory({ categoryId: recurrence.categoryId, description: recurrence.description }, categoryList);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
       <View style={[styles.header, { backgroundColor: activeTheme.card }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
