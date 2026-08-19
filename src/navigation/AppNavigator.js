@@ -56,8 +56,8 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: activeTheme.background } }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal' }} />
-      <Stack.Screen name="Debts" component={DebtsScreen} />
+      <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal', animation: 'none' }} />
+      <Stack.Screen name="Debts" component={DebtsScreen} options={{ animation: 'none' }} />
     </Stack.Navigator>
   );
 }

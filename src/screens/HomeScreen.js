@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import SwipeableCard from '../components/ui/SwipeableCard';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { resolveCategory } from '../services/categorizer';
@@ -65,7 +65,8 @@ export default function HomeScreen({ route, navigation }) {
     return { total: inTotal - outTotal, income: inTotal, expense: outTotal };
   }, [filteredTxList]);
 
-  const pendingTxList = txList.filter(t => t.isPending === 1);
+  const pendingTxList = txList.filter(t => t.isPending === 1).sort((a, b) => a.date - b.date);
+  const displayPendingList = pendingTxList.slice(0, 10);
   const recentTxList = txList.filter(t => t.isPending !== 1 && t.date <= Date.now());
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
   const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
@@ -78,18 +79,7 @@ export default function HomeScreen({ route, navigation }) {
     setEditingTx(null);
   };
 
-  const renderRightActions = (tx) => (
-    <TouchableOpacity 
-      style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
-      onPress={async () => {
-        await removeTransaction(tx.id);
-        await loadAccounts(); // Atualiza o saldo após deletar
-      }}
-    >
-      <Ionicons name="trash" size={24} color="#fff" />
-      <Text style={styles.deleteActionText}>Apagar</Text>
-    </TouchableOpacity>
-  );
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
@@ -163,17 +153,20 @@ export default function HomeScreen({ route, navigation }) {
             );
           }
           
-          if (modKey === 'pending' && uiConfig.homeShowPending !== false && pendingTxList.length > 0) {
+          if (modKey === 'pending' && uiConfig.homeShowPending !== false && displayPendingList.length > 0) {
             return (
               <View key="pending" style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: activeTheme.expense }]}>Transações Pendentes</Text>
                 <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                  {pendingTxList.map((item, idx) => {
+                  {displayPendingList.map((item, idx) => {
                     const catInfo = resolveCategory(item, categoryList);
-                    const isLast = idx === pendingTxList.length - 1;
+                    const isLast = idx === displayPendingList.length - 1;
                     
                     return (
-                      <Swipeable key={item.id} renderRightActions={() => renderRightActions(item)} overshootRight={false}>
+                      <SwipeableCard key={item.id} onDelete={async () => {
+                        await removeTransaction(item.id);
+                        await loadAccounts();
+                      }}>
                         <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
                           <View style={[styles.groupedItem, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -190,7 +183,7 @@ export default function HomeScreen({ route, navigation }) {
                             </Text>
                           </View>
                         </TouchableOpacity>
-                      </Swipeable>
+                      </SwipeableCard>
                     );
                   })}
                 </View>
@@ -214,7 +207,10 @@ export default function HomeScreen({ route, navigation }) {
                       const isLast = idx === Math.min(recentTxList.length, 5) - 1;
                       
                       return (
-                        <Swipeable key={item.id} renderRightActions={() => renderRightActions(item)} overshootRight={false}>
+                        <SwipeableCard key={item.id} onDelete={async () => {
+                          await removeTransaction(item.id);
+                          await loadAccounts();
+                        }}>
                           <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
                             <View style={[styles.groupedItem, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -231,7 +227,7 @@ export default function HomeScreen({ route, navigation }) {
                               </Text>
                             </View>
                           </TouchableOpacity>
-                        </Swipeable>
+                        </SwipeableCard>
                       );
                     })}
                   </View>
@@ -297,6 +293,10 @@ export default function HomeScreen({ route, navigation }) {
         visible={modalVisible}
         onClose={() => { setModalVisible(false); setEditingTx(null); }}
         onSave={saveTransaction}
+        onDelete={async (id) => {
+          await removeTransaction(id);
+          await loadAccounts();
+        }}
         initialData={editingTx}
       />
     </SafeAreaView>
@@ -332,8 +332,6 @@ const getStyles = (theme) => {
     groupedText: { fontSize: 16 * z, fontWeight: '600', fontFamily: f },
     groupedAmount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
-    deleteAction: { justifyContent: 'center', alignItems: 'center', width: 80 * z, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 },
-    deleteActionText: { color: '#fff', fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
     fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 30 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     modalContent: { borderTopLeftRadius: 20 * z, borderTopRightRadius: 20 * z, padding: 24 * z, minHeight: 300 * z },

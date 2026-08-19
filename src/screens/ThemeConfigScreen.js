@@ -1,9 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import ColorPicker from 'react-native-wheel-color-picker';
 import { getZoomFactor } from '../utils/scaler';
+import { getSharedStyles } from '../utils/StyleHub';
+import BaseModal from '../components/ui/BaseModal';
 
 export default function ThemeConfigScreen({ onBack }) {
   const { activeTheme, customThemes, saveSetting } = useContext(SettingsContext);
@@ -18,7 +20,7 @@ export default function ThemeConfigScreen({ onBack }) {
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
-  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+  const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
   const applyTheme = (theme) => {
     setSelectedThemeId(theme.id);
@@ -108,11 +110,12 @@ export default function ThemeConfigScreen({ onBack }) {
   if (showEditor && editingTheme) {
     return (
       <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary }]}>
           <TouchableOpacity onPress={() => setShowEditor(false)} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: activeTheme.text }]}>Editar Tema</Text>
+          <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll}>
@@ -185,53 +188,45 @@ export default function ThemeConfigScreen({ onBack }) {
           </TouchableOpacity>
         </ScrollView>
 
-        <Modal visible={showPicker} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
-              <Text style={[styles.modalTitle, { color: activeTheme.text }]}>Escolha a Cor</Text>
-              
-              <View style={styles.pickerContainer}>
-                <ColorPicker
-                  color={tempColor}
-                  onColorChange={(color) => setTempColor(color)}
-                  thumbSize={30}
-                  sliderSize={30}
-                  noSnap={true}
-                  row={false}
-                />
-              </View>
-              
-              <TextInput
-                style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, textAlign: 'center', marginBottom: 20 }]}
-                value={tempColor}
-                onChangeText={setTempColor}
-                autoCapitalize="none"
-                placeholder="#000000"
-                placeholderTextColor={activeTheme.textSecondary}
-              />
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setShowPicker(false)}>
-                  <Text style={[styles.modalBtnText, { color: activeTheme.text }]}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: activeTheme.accent }]} onPress={confirmColor}>
-                  <Text style={[styles.modalBtnText, { color: '#121212' }]}>Confirmar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+        <BaseModal
+          visible={showPicker}
+          title="Escolha a Cor"
+          onClose={() => setShowPicker(false)}
+          onSave={confirmColor}
+          saveText="Confirmar"
+        >
+          <View style={styles.pickerContainer}>
+            <ColorPicker
+              color={tempColor}
+              onColorChange={(color) => setTempColor(color)}
+              thumbSize={30}
+              sliderSize={30}
+              noSnap={true}
+              row={false}
+            />
           </View>
-        </Modal>
+          
+          <TextInput
+            style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, textAlign: 'center', marginBottom: 20 }]}
+            value={tempColor}
+            onChangeText={setTempColor}
+            autoCapitalize="none"
+            placeholder="#000000"
+            placeholderTextColor={activeTheme.textSecondary}
+          />
+        </BaseModal>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary }]}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: activeTheme.text }]}>Aparência e Temas</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -275,47 +270,33 @@ export default function ThemeConfigScreen({ onBack }) {
   );
 }
 
-const getStyles = (z, f) => StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 * z, paddingVertical: 8 * z },
-  backBtn: { marginRight: 16 * z },
-  title: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
-  scroll: { padding: 16 * z },
-  
-  createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', padding: 16 * z, borderRadius: 12 * z, marginBottom: 24 * z },
-  createBtnText: { fontSize: 16 * z, fontWeight: 'bold', marginLeft: 8 * z, fontFamily: f },
-  
-  sectionTitle: { fontSize: 14 * z, fontWeight: 'bold', marginBottom: 12 * z, textTransform: 'uppercase', fontFamily: f },
-  themeCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z, borderRadius: 12 * z, marginBottom: 12 * z, borderWidth: 2 * z },
-  themeName: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
-  themePreview: { flexDirection: 'row', gap: 8 * z },
-  previewDot: { width: 20 * z, height: 20 * z, borderRadius: 10 * z, borderWidth: 1, borderColor: '#555' },
-  themeActions: { flexDirection: 'row', gap: 8 * z },
-  actionBtn: { padding: 8 * z },
+const getLocalStyles = (theme) => {
+  const z = getZoomFactor(theme);
+  const f = theme.fontFamily || 'monospace';
 
-  label: { fontSize: 14 * z, marginBottom: 8 * z, fontFamily: f },
-  input: { padding: 12 * z, borderRadius: 8 * z, fontSize: 16 * z, marginBottom: 24 * z, fontFamily: f },
-  
-  colorsGrid: { gap: 12 * z, marginBottom: 24 * z },
-  colorRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 * z },
-  colorLabel: { fontSize: 16 * z, fontFamily: f },
-  colorCircle: { width: 32 * z, height: 32 * z, borderRadius: 16 * z },
+  return StyleSheet.create({
+    createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', padding: 16 * z, borderRadius: 12 * z, marginBottom: 24 * z },
+    createBtnText: { fontSize: 16 * z, fontWeight: 'bold', marginLeft: 8 * z, fontFamily: f },
+    
+    sectionTitle: { fontSize: 14 * z, fontWeight: 'bold', marginBottom: 12 * z, textTransform: 'uppercase', fontFamily: f },
+    themeCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z, borderRadius: 12 * z, marginBottom: 12 * z, borderWidth: 2 * z },
+    themeName: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
+    themePreview: { flexDirection: 'row', gap: 8 * z },
+    previewDot: { width: 20 * z, height: 20 * z, borderRadius: 10 * z, borderWidth: 1, borderColor: '#555' },
+    themeActions: { flexDirection: 'row', gap: 8 * z },
+    
+    colorsGrid: { gap: 12 * z, marginBottom: 24 * z },
+    colorRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 * z },
+    colorLabel: { fontSize: 16 * z, fontFamily: f },
+    colorCircle: { width: 32 * z, height: 32 * z, borderRadius: 16 * z },
 
-  saveBtn: { padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
-  saveBtnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContent: { borderTopLeftRadius: 20 * z, borderTopRightRadius: 20 * z, padding: 24 * z, paddingBottom: 40 * z },
-  modalTitle: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 20 * z, textAlign: 'center', fontFamily: f },
-  
-  pickerContainer: { height: 300 * z, marginBottom: 20 * z },
-  
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 * z },
-  modalBtn: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
-  modalBtnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
-  
-  pickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 * z, marginBottom: 24 * z },
-  fontPill: { paddingHorizontal: 16 * z, paddingVertical: 10 * z, borderRadius: 20 * z },
-  fontPillText: { fontSize: 14 * z, fontFamily: f },
-  zoomPill: { paddingHorizontal: 12 * z, paddingVertical: 12 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center' }
-});
+    saveBtn: { padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
+    saveBtnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+    
+    pickerContainer: { height: 300 * z, marginBottom: 20 * z },
+    
+    fontPill: { paddingHorizontal: 16 * z, paddingVertical: 10 * z, borderRadius: 20 * z },
+    fontPillText: { fontSize: 14 * z, fontFamily: f },
+    zoomPill: { paddingHorizontal: 12 * z, paddingVertical: 12 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center' }
+  });
+};

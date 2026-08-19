@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -10,6 +10,7 @@ import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
+import { getSharedStyles } from '../utils/StyleHub';
 
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
@@ -17,13 +18,24 @@ export default function SettingsScreen({ navigation }) {
   const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations'
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
 
+  useEffect(() => {
+    const backAction = () => {
+      if (currentScreen !== 'hub') {
+        setCurrentScreen('hub');
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [currentScreen]);
+
   const handleBackup = () => {
     Alert.alert('Backup Local', 'Funcionalidade de backup será integrada com Google Drive na Fase 4.');
   };
 
-  const z = getZoomFactor(activeTheme);
-  const f = activeTheme.fontFamily || 'monospace';
-  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+  const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
   if (currentScreen === 'theme') {
     return (
@@ -68,7 +80,9 @@ export default function SettingsScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
       <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary, backgroundColor: activeTheme.card }]}>
+        <View style={{ width: 40 }} />
         <Text style={[styles.title, { color: activeTheme.text }]}>Configurações Globais</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={{ flex: 1, backgroundColor: activeTheme.background }}>
@@ -167,26 +181,24 @@ export default function SettingsScreen({ navigation }) {
   );
 }
 
-const getStyles = (z, f) => StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderBottomWidth: 1 },
-  title: { fontSize: 24 * z, fontWeight: 'bold', marginTop: 4 * z, fontFamily: f },
-  scroll: { padding: 16 * z },
-  
-  menuGrid: { flexDirection: 'row', gap: 12 * z, marginBottom: 20 * z },
-  menuCard: { flex: 1, padding: 16 * z, borderRadius: 16 * z, alignItems: 'flex-start' },
-  menuTitle: { fontSize: 16 * z, fontWeight: 'bold', marginTop: 12 * z, marginBottom: 4 * z, fontFamily: f },
-  menuDesc: { fontSize: 12 * z, fontFamily: f },
+const getLocalStyles = (theme) => {
+  const z = getZoomFactor(theme);
+  const f = theme.fontFamily || 'monospace';
 
-  section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
-  sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
-  sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
-  
-  chip: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z },
-  chipText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
-  
-  input: { padding: 16 * z, borderRadius: 12 * z, fontSize: 16 * z, fontFamily: f },
-  
-  backupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, padding: 16 * z, borderRadius: 12 * z, marginTop: 8 * z },
-  backupText: { fontWeight: 'bold', fontSize: 16 * z, fontFamily: f }
-});
+  return StyleSheet.create({
+    menuGrid: { flexDirection: 'row', gap: 12 * z, marginBottom: 20 * z },
+    menuCard: { flex: 1, padding: 16 * z, borderRadius: 16 * z, alignItems: 'flex-start' },
+    menuTitle: { fontSize: 16 * z, fontWeight: 'bold', marginTop: 12 * z, marginBottom: 4 * z, fontFamily: f },
+    menuDesc: { fontSize: 12 * z, fontFamily: f },
+
+    section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+    sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
+    sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
+    
+    chip: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z },
+    chipText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
+    
+    backupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, padding: 16 * z, borderRadius: 12 * z, marginTop: 8 * z },
+    backupText: { fontWeight: 'bold', fontSize: 16 * z, fontFamily: f }
+  });
+};

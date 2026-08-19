@@ -1,17 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import RNAndroidNotificationListener from 'react-native-android-notification-listener';
 import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
+import { getSharedStyles } from '../utils/StyleHub';
 
 export default function AutomationsConfigScreen({ onBack }) {
   const { activeTheme } = useContext(SettingsContext);
   const [hasPermission, setHasPermission] = useState(false);
 
-  const z = getZoomFactor(activeTheme);
-  const f = activeTheme.fontFamily || 'monospace';
-  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+  const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
   const checkPermission = async () => {
     try {
@@ -56,7 +55,7 @@ export default function AutomationsConfigScreen({ onBack }) {
 
   return (
     <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
-      <View style={[styles.header, { backgroundColor: activeTheme.card, borderBottomColor: activeTheme.cardSecondary }]}>
+      <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary }]}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
         </TouchableOpacity>
@@ -93,68 +92,18 @@ export default function AutomationsConfigScreen({ onBack }) {
   );
 }
 
-const getStyles = (z, f) => StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    padding: 8 * z,
-    marginLeft: -8 * z,
-  },
-  title: {
-    fontFamily: f,
-    fontSize: 20 * z,
-    fontWeight: 'bold',
-  },
-  content: {
-    padding: 16 * z,
-  },
-  card: {
-    borderRadius: 16 * z,
-    padding: 16 * z,
-    marginBottom: 16 * z,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconBox: {
-    width: 48 * z,
-    height: 48 * z,
-    borderRadius: 24 * z,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardTitle: {
-    fontFamily: f,
-    fontSize: 16 * z,
-    fontWeight: 'bold',
-    marginBottom: 4 * z,
-  },
-  cardDesc: {
-    fontFamily: f,
-    fontSize: 12 * z,
-    lineHeight: 18 * z,
-  },
-  statusBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16 * z,
-    padding: 12 * z,
-    borderRadius: 8 * z,
-    gap: 8 * z,
-  },
-  statusText: {
-    fontFamily: f,
-    fontSize: 12 * z,
-    fontWeight: '500',
-  }
-});
+const getLocalStyles = (theme) => {
+  const z = getZoomFactor(theme);
+  const f = theme.fontFamily || 'monospace';
+  
+  return StyleSheet.create({
+    content: { padding: 16 * z },
+    card: { borderRadius: 16 * z, padding: 16 * z, marginBottom: 16 * z },
+    cardHeader: { flexDirection: 'row', alignItems: 'center' },
+    iconBox: { width: 48 * z, height: 48 * z, borderRadius: 24 * z, alignItems: 'center', justifyContent: 'center' },
+    cardTitle: { fontFamily: f, fontSize: 16 * z, fontWeight: 'bold', marginBottom: 4 * z },
+    cardDesc: { fontFamily: f, fontSize: 12 * z, lineHeight: 18 * z },
+    statusBox: { flexDirection: 'row', alignItems: 'center', marginTop: 16 * z, padding: 12 * z, borderRadius: 8 * z, gap: 8 * z },
+    statusText: { fontFamily: f, fontSize: 12 * z, fontWeight: '500' }
+  });
+};

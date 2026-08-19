@@ -1,8 +1,10 @@
-import React, { useState, useContext } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch, Modal } from 'react-native';
+import React, { useState, useContext, useMemo } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
+import { getSharedStyles } from '../utils/StyleHub';
+import BaseModal from '../components/ui/BaseModal';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -10,9 +12,7 @@ const MacroRow = ({ macro, target, onUpdateName, onUpdateTarget, onRemove, theme
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(macro);
 
-  const z = getZoomFactor(theme);
-  const f = theme.fontFamily || 'monospace';
-  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+  const styles = useMemo(() => ({ ...getSharedStyles(theme), ...getLocalStyles(theme) }), [theme]);
 
   const handleSaveName = () => {
     if (tempName.trim() === '') {
@@ -73,9 +73,8 @@ export default function ModuleConfigScreen({ onBack }) {
   const [newMacroName, setNewMacroName] = useState('');
   const [showMappingModal, setShowMappingModal] = useState(false);
 
+  const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
   const z = getZoomFactor(activeTheme);
-  const f = activeTheme.fontFamily || 'monospace';
-  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
 
   const handleToggleUi = (key) => {
     const newConfig = { ...uiConfig, [key]: !uiConfig[key] };
@@ -159,11 +158,12 @@ export default function ModuleConfigScreen({ onBack }) {
 
   return (
     <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary }]}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: activeTheme.text }]}>Módulos e Macros</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -274,80 +274,66 @@ export default function ModuleConfigScreen({ onBack }) {
       </ScrollView>
 
       {/* MODAL MAPEAMENTO DE CATEGORIAS */}
-      <Modal visible={showMappingModal} transparent animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContainerBig, { backgroundColor: activeTheme.background }]}>
-            <Text style={[styles.modalTitle, { color: activeTheme.text }]}>Mapeamento Macro</Text>
-            <Text style={[styles.modalSub, { color: activeTheme.textSecondary }]}>Toque no botão à direita para trocar o grupo macro da categoria.</Text>
-            
-            <ScrollView style={{ maxHeight: '70%', marginBottom: 16 }}>
-              {Object.keys(macroMapping).sort().map(microCat => {
-                const currentMacro = macroMapping[microCat];
-                const macroIdx = macroOptions.indexOf(currentMacro);
-                const macroColor = currentMacro === 'Outros' ? activeTheme.textSecondary : COLORS_PALETTE[macroIdx % COLORS_PALETTE.length] || activeTheme.textSecondary;
+      <BaseModal
+        visible={showMappingModal}
+        title="Mapeamento Macro"
+        onClose={() => setShowMappingModal(false)}
+        cancelText="Voltar"
+      >
+        <Text style={[styles.modalSub, { color: activeTheme.textSecondary }]}>Toque no botão à direita para trocar o grupo macro da categoria.</Text>
+        
+        <ScrollView style={{ maxHeight: 400, marginBottom: 16 }}>
+          {Object.keys(macroMapping).sort().map(microCat => {
+            const currentMacro = macroMapping[microCat];
+            const macroIdx = macroOptions.indexOf(currentMacro);
+            const macroColor = currentMacro === 'Outros' ? activeTheme.textSecondary : COLORS_PALETTE[macroIdx % COLORS_PALETTE.length] || activeTheme.textSecondary;
 
-                return (
-                  <View key={microCat} style={[styles.mapRow, { borderBottomColor: activeTheme.card }]}>
-                    <Text style={[styles.mapMicro, { color: activeTheme.text }]}>{microCat}</Text>
-                    <TouchableOpacity 
-                      style={[styles.mapToggleBtn, { borderColor: macroColor }]}
-                      onPress={() => cycleMacroMapping(microCat)}
-                    >
-                      <Text style={[styles.mapToggleText, { color: macroColor }]}>{currentMacro}</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: activeTheme.accent }]} onPress={() => setShowMappingModal(false)}>
-              <Text style={[styles.saveBtnText, { color: '#121212' }]}>Voltar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+            return (
+              <View key={microCat} style={[styles.mapRow, { borderBottomColor: activeTheme.card }]}>
+                <Text style={[styles.mapMicro, { color: activeTheme.text }]}>{microCat}</Text>
+                <TouchableOpacity 
+                  style={[styles.mapToggleBtn, { borderColor: macroColor }]}
+                  onPress={() => cycleMacroMapping(microCat)}
+                >
+                  <Text style={[styles.mapToggleText, { color: macroColor }]}>{currentMacro}</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </BaseModal>
 
     </View>
   );
 }
 
-const getStyles = (z, f) => StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 * z, paddingVertical: 8 * z },
-  backBtn: { marginRight: 16 * z },
-  title: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
-  scroll: { padding: 16 * z },
-  
-  section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
-  sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
-  sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
-  
-  switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
-  switchLabel: { fontSize: 16 * z, fontFamily: f },
-  
-  orderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 * z, borderRadius: 12 * z, marginBottom: 8 * z },
-  orderLabel: { fontSize: 16 * z, fontFamily: f, fontWeight: 'bold' },
-  orderBtn: { padding: 4 * z, marginLeft: 8 * z },
-  
-  goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 12 * z },
-  addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 12 * z },
-  goalLabel: { fontSize: 14 * z, fontWeight: 'bold', flexShrink: 1, fontFamily: f },
-  goalInput: { borderRadius: 8 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, width: 60 * z, textAlign: 'center', fontFamily: f },
-  iconBtnAdd: { padding: 8 * z, borderRadius: 8 * z },
+const getLocalStyles = (theme) => {
+  const z = getZoomFactor(theme);
+  const f = theme.fontFamily || 'monospace';
 
-  outlineBtn: { borderWidth: 1, padding: 12 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 8 * z },
-  outlineBtnText: { fontWeight: 'bold', fontSize: 14 * z, fontFamily: f },
+  return StyleSheet.create({
+    section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+    sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
+    sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
+    
+    orderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 * z, borderRadius: 12 * z, marginBottom: 8 * z },
+    orderLabel: { fontSize: 16 * z, fontFamily: f, fontWeight: 'bold' },
+    orderBtn: { padding: 4 * z, marginLeft: 8 * z },
+    
+    goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 12 * z },
+    addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 12 * z },
+    goalLabel: { fontSize: 14 * z, fontWeight: 'bold', flexShrink: 1, fontFamily: f },
+    goalInput: { borderRadius: 8 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, width: 60 * z, textAlign: 'center', fontFamily: f },
+    iconBtnAdd: { padding: 8 * z, borderRadius: 8 * z },
 
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 24 * z },
-  modalContainerBig: { borderRadius: 16 * z, padding: 24 * z, flex: 0.9 },
-  modalTitle: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
-  modalSub: { fontSize: 14 * z, marginBottom: 24 * z, fontFamily: f },
-  
-  mapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
-  mapMicro: { fontSize: 14 * z, fontFamily: f },
-  mapToggleBtn: { borderWidth: 1, borderRadius: 12 * z, paddingHorizontal: 10 * z, paddingVertical: 4 * z },
-  mapToggleText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
+    outlineBtn: { borderWidth: 1, padding: 12 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 8 * z },
+    outlineBtnText: { fontWeight: 'bold', fontSize: 14 * z, fontFamily: f },
 
-  saveBtn: { padding: 16 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 16 * z },
-  saveBtnText: { fontWeight: 'bold', fontSize: 16 * z, fontFamily: f },
-});
+    modalSub: { fontSize: 14 * z, marginBottom: 24 * z, fontFamily: f },
+    
+    mapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
+    mapMicro: { fontSize: 14 * z, fontFamily: f },
+    mapToggleBtn: { borderWidth: 1, borderRadius: 12 * z, paddingHorizontal: 10 * z, paddingVertical: 4 * z },
+    mapToggleText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f }
+  });
+};

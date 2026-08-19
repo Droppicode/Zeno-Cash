@@ -361,8 +361,8 @@ export default function AnalyticsScreen() {
 
 const getStyles = (z, f) => StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderBottomWidth: 1 },
-  title: { fontSize: 24 * z, fontWeight: 'bold', marginBottom: 8 * z, marginTop: 4 * z, fontFamily: f },
+  header: { paddingHorizontal: 16 * z, paddingVertical: 12 * z, borderBottomWidth: 1 },
+  title: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 16 * z, fontFamily: f },
   periodRow: { flexDirection: 'row', gap: 8 * z },
   periodBtn: { flex: 1, paddingVertical: 8 * z, alignItems: 'center', borderRadius: 8 * z },
   periodText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },

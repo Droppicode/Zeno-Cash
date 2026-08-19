@@ -6,7 +6,7 @@ import { useDebts } from '../hooks/useDebts';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function DebtModal({ visible, onClose, initialData = null }) {
+export default function DebtModal({ visible, onClose, onDelete, initialData = null }) {
   const { activeTheme } = useContext(SettingsContext);
   const { addDebt, updateDebt, getUniqueNames } = useDebts();
   const { accountList, loadAccounts } = useAccounts();
@@ -20,6 +20,7 @@ export default function DebtModal({ visible, onClose, initialData = null }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  const z = getZoomFactor(activeTheme);
   const styles = useMemo(() => getStyles(activeTheme), [activeTheme]);
 
   const formatCurrency = (value) => {
@@ -216,6 +217,18 @@ export default function DebtModal({ visible, onClose, initialData = null }) {
 
           </ScrollView>
           <View style={styles.footer}>
+            {initialData && onDelete && (
+              <TouchableOpacity 
+                style={styles.deleteButton} 
+                onPress={() => {
+                  onDelete(initialData.id);
+                  onClose();
+                }}
+              >
+                <Ionicons name="trash-outline" size={20 * z} color={activeTheme.expense} style={{ marginRight: 8 * z }} />
+                <Text style={styles.deleteButtonText}>Apagar Dívida</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Text style={styles.saveButtonText}>Salvar</Text>
             </TouchableOpacity>
@@ -253,8 +266,10 @@ const getStyles = (theme) => {
     accountBtnActive: { backgroundColor: theme.accent },
     accountText: { color: theme.textSecondary, fontWeight: '600', fontFamily: f },
     accountTextActive: { color: '#121212' },
-    footer: { marginTop: 24 * z, paddingTop: 16 * z, borderTopWidth: 1, borderTopColor: theme.background },
-    saveButton: { backgroundColor: theme.accent, paddingVertical: 16 * z, borderRadius: 16 * z, alignItems: 'center' },
+    footer: { marginTop: 24 * z, paddingTop: 16 * z, borderTopWidth: 1, borderTopColor: theme.background, flexDirection: 'row', gap: 12 * z },
+    saveButton: { flex: 1, backgroundColor: theme.accent, paddingVertical: 16 * z, borderRadius: 16 * z, alignItems: 'center' },
     saveButtonText: { color: '#121212', fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+    deleteButton: { flex: 1, backgroundColor: theme.expense + '15', paddingVertical: 16 * z, borderRadius: 16 * z, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    deleteButtonText: { color: theme.expense, fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
   });
 };

@@ -10,7 +10,7 @@ import { DateUtils } from '../utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function TransactionModal({ visible, onClose, onSave, initialData, isContractEdit = false }) {
+export default function TransactionModal({ visible, onClose, onSave, onDelete, initialData, isContractEdit = false }) {
   const { activeTheme } = useContext(SettingsContext);
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
@@ -37,7 +37,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
-  const styles = React.useMemo(() => getStyles(z, f), [z, f]);
+  const styles = React.useMemo(() => getStyles(z, f, activeTheme), [z, f, activeTheme]);
 
   useEffect(() => {
     if (visible) {
@@ -438,6 +438,18 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
             )}
 
             <View style={styles.modalActions}>
+              {initialData?.id && onDelete && (
+                <TouchableOpacity 
+                  style={styles.deleteButton} 
+                  onPress={() => {
+                    onDelete(initialData.id);
+                    onClose();
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={20 * z} color={activeTheme.expense} style={{ marginRight: 8 * z }} />
+                  <Text style={styles.deleteButtonText}>Apagar</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={onClose}>
                 <Text style={[styles.btnText, { color: activeTheme.text }]}>Cancelar</Text>
               </TouchableOpacity>
@@ -452,7 +464,7 @@ export default function TransactionModal({ visible, onClose, onSave, initialData
   );
 }
 
-const getStyles = (z, f) => StyleSheet.create({
+const getStyles = (z, f, theme) => StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 24 * z, borderTopRightRadius: 24 * z, padding: 24 * z, maxHeight: '90%' },
   modalTitle: { fontSize: 22 * z, fontWeight: 'bold', marginBottom: 20 * z, fontFamily: f },
@@ -478,6 +490,8 @@ const getStyles = (z, f) => StyleSheet.create({
   btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
   btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
   btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+  deleteButton: { flex: 1, backgroundColor: theme?.expense ? theme.expense + '15' : '#FF4B4B15', padding: 16 * z, borderRadius: 12 * z, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginRight: 8 * z },
+  deleteButtonText: { color: theme?.expense || '#FF4B4B', fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
   clearBtn: { padding: 12 * z, marginLeft: 8 * z, justifyContent: 'center', alignItems: 'center' },
   recurrenceBox: { padding: 16 * z, borderRadius: 12 * z, marginBottom: 16 * z }
 });

@@ -9,11 +9,80 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
-import { Swipeable } from 'react-native-gesture-handler';
+import SwipeableCard from '../components/ui/SwipeableCard';
 import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
+
+const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, styles, onEdit, onDelete }) => {
+  const catInfo = resolveCategory(item, categoryList);
+  const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  
+  const isFirst = index === 0;
+  const isLast = index === sectionLength - 1;
+  
+  return (
+    <SwipeableCard 
+      onDelete={onDelete}
+      containerStyle={[
+        isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+        isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }
+      ]}
+    >
+      <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
+        <View style={[
+          styles.card, 
+          { backgroundColor: activeTheme.card },
+          isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+          isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+          !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
+        ]}>
+          <View style={styles.cardLeft}>
+            <View style={[styles.iconBox, { backgroundColor: item.isPending ? activeTheme.expense + '20' : catInfo.color + '20' }]}>
+              {item.isPending ? (
+                <Ionicons name="time" size={20} color={activeTheme.expense} />
+              ) : (
+                <Ionicons name={catInfo.icon} size={20} color={catInfo.color} />
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+                {item.isVirtual && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: activeTheme.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                    <Ionicons name="calendar-outline" size={10} color={activeTheme.accent} />
+                    <Text style={{ color: activeTheme.accent, fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Previsto</Text>
+                  </View>
+                )}
+                {item.isPending === 1 && !item.isVirtual && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                    <Ionicons name="time-outline" size={10} color="#FF9800" />
+                    <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
+                  </View>
+                )}
+              </View>
+              {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
+              <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {item.account}</Text>
+            </View>
+          </View>
+          <Text style={[
+            styles.amount, 
+            { color: item.type === 'income' ? activeTheme.income : activeTheme.expense, opacity: item.isVirtual ? 0.6 : 1 }
+          ]}>
+            {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </SwipeableCard>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.item === nextProps.item && 
+         prevProps.activeTheme === nextProps.activeTheme && 
+         prevProps.categoryList === nextProps.categoryList &&
+         prevProps.sectionLength === nextProps.sectionLength &&
+         prevProps.index === nextProps.index;
+});
 
 export default function TransactionsScreen() {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -24,7 +93,15 @@ export default function TransactionsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
 
+  const [inputSearch, setInputSearch] = useState('');
   const [search, setSearch] = useState('');
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(inputSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [inputSearch]);
   const [filter, setFilter] = useState('all'); 
   const [period, setPeriod] = useState(defaultPeriod || '30d'); 
   const [accountFilter, setAccountFilter] = useState('all');
@@ -37,7 +114,13 @@ export default function TransactionsScreen() {
   const [recurrences, setRecurrences] = useState([]);
   const [forecastPeriod, setForecastPeriod] = useState('none');
 
+  const [visibleCount, setVisibleCount] = useState(50);
+
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
+
+  React.useEffect(() => {
+    setVisibleCount(50);
+  }, [filter, accountFilter, period, search, startDate, endDate, selectedCats, forecastPeriod]);
 
   useFocusEffect(
     useCallback(() => {
@@ -120,7 +203,9 @@ export default function TransactionsScreen() {
 
 
 
-  const groupedData = filteredList.reduce((acc, tx) => {
+  const paginatedList = filteredList.slice(0, visibleCount);
+
+  const groupedData = paginatedList.reduce((acc, tx) => {
     const d = new Date(tx.date);
     const monthYear = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const key = monthYear.charAt(0).toUpperCase() + monthYear.slice(1);
@@ -144,75 +229,30 @@ export default function TransactionsScreen() {
     setEditingTx(null);
   };
 
-  const renderRightActions = (tx) => (
-    <TouchableOpacity 
-      style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
-      onPress={async () => {
-        await removeTransaction(tx.id);
-        await loadAccounts(); // Atualizar saldo
-      }}
-    >
-      <Ionicons name="trash" size={24} color="#fff" />
-      <Text style={[styles.deleteActionText, { color: '#fff' }]}>Apagar</Text>
-    </TouchableOpacity>
-  );
+  const handleEdit = useCallback((item) => {
+    setEditingTx(item);
+    setModalVisible(true);
+  }, []);
 
-  const renderItem = ({ item, index, section }) => {
-    const catInfo = resolveCategory(item, categoryList);
-    const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-    
-    const isFirst = index === 0;
-    const isLast = index === section.data.length - 1;
-    
+  const handleDelete = useCallback(async (item) => {
+    await removeTransaction(item.id);
+    await loadAccounts();
+  }, [removeTransaction, loadAccounts]);
+
+  const renderItem = useCallback(({ item, index, section }) => {
     return (
-      <Swipeable renderRightActions={() => renderRightActions(item)} overshootRight={false}>
-        <TouchableOpacity onPress={() => { setEditingTx(item); setModalVisible(true); }} activeOpacity={0.7}>
-          <View style={[
-            styles.card, 
-            { backgroundColor: activeTheme.card },
-            isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-            isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
-            !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
-          ]}>
-        <View style={styles.cardLeft}>
-          <View style={[styles.iconBox, { backgroundColor: item.isPending ? activeTheme.expense + '20' : catInfo.color + '20' }]}>
-            {item.isPending ? (
-              <Ionicons name="time" size={20} color={activeTheme.expense} />
-            ) : (
-              <Ionicons name={catInfo.icon} size={20} color={catInfo.color} />
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-              <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
-              {item.isVirtual && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: activeTheme.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
-                  <Ionicons name="calendar-outline" size={10} color={activeTheme.accent} />
-                  <Text style={{ color: activeTheme.accent, fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Previsto</Text>
-                </View>
-              )}
-              {item.isPending === 1 && !item.isVirtual && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
-                  <Ionicons name="time-outline" size={10} color="#FF9800" />
-                  <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
-                </View>
-              )}
-            </View>
-            {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
-          <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {item.account}</Text>
-        </View>
-      </View>
-      <Text style={[
-        styles.amount, 
-        { color: item.type === 'income' ? activeTheme.income : activeTheme.expense, opacity: item.isVirtual ? 0.6 : 1 }
-      ]}>
-          {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
-        </Text>
-        </View>
-        </TouchableOpacity>
-      </Swipeable>
+      <TransactionItem
+        item={item}
+        index={index}
+        sectionLength={section.data.length}
+        activeTheme={activeTheme}
+        categoryList={categoryList}
+        styles={styles}
+        onEdit={() => handleEdit(item)}
+        onDelete={() => handleDelete(item)}
+      />
     );
-  };
+  }, [activeTheme, categoryList, styles, handleEdit, handleDelete]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
@@ -223,8 +263,8 @@ export default function TransactionsScreen() {
             style={[styles.searchInput, { color: activeTheme.text }]}
             placeholder="Buscar transação..."
             placeholderTextColor={activeTheme.textSecondary}
-            value={search}
-            onChangeText={setSearch}
+            value={inputSearch}
+            onChangeText={setInputSearch}
           />
         </View>
         
@@ -349,6 +389,17 @@ export default function TransactionsScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={<Text style={[styles.emptyText, { color: activeTheme.textSecondary }]}>Nenhuma transação encontrada.</Text>}
           stickySectionHeadersEnabled={false}
+          onEndReached={() => {
+            if (visibleCount < filteredList.length) {
+              setVisibleCount(v => v + 50);
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
       </View>
 
@@ -356,6 +407,10 @@ export default function TransactionsScreen() {
         visible={modalVisible}
         onClose={() => { setModalVisible(false); setEditingTx(null); }}
         onSave={handleSave}
+        onDelete={async (id) => {
+          await removeTransaction(id);
+          await loadAccounts();
+        }}
         initialData={editingTx}
       />
     </SafeAreaView>
@@ -405,8 +460,6 @@ const getStyles = (theme) => {
     desc: { fontSize: 16 * z, fontWeight: '600', marginBottom: 4 * z, fontFamily: f },
     date: { fontSize: 13 * z, fontFamily: f },
     amount: { fontSize: 16 * z, fontWeight: '700', marginLeft: 8 * z, fontFamily: f },
-    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f },
-    deleteAction: { width: 80 * z, justifyContent: 'center', alignItems: 'center' },
-    deleteActionText: { fontSize: 12 * z, fontWeight: 'bold', marginTop: 4 * z, fontFamily: f }
+    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f }
   });
 };
