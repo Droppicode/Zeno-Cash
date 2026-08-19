@@ -3,6 +3,7 @@ import { db } from '../database/db';
 import { settings } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
+import * as SecureStore from 'expo-secure-store';
 
 export const SettingsContext = createContext();
 
@@ -201,14 +202,13 @@ export const SettingsProvider = ({ children }) => {
           if (item.key === 'defaultPeriod') setDefaultPeriod(item.value);
           if (item.key === 'llmProvider') setLlmProvider(item.value);
           if (item.key === 'llmModel') setLlmModel(item.value);
-          if (item.key === 'llmKey') setLlmKey(item.value);
+          // Omit loading llmKey from db
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
           if (item.key === 'macroMapping') setMacroMapping(JSON.parse(item.value));
           if (item.key === 'macroOptions') setMacroOptions(JSON.parse(item.value));
         });
         
-        // Inject extra presets only ONCE when they haven't been initialized yet
         if (!hasInitializedThemes) {
           loadedThemes = [...loadedThemes, ...EXTRA_PRESETS];
           await db.insert(settings).values({ key: 'themesInitialized', value: 'true' }).onConflictDoNothing?.();
@@ -216,6 +216,20 @@ export const SettingsProvider = ({ children }) => {
         }
         
         setCustomThemes(loadedThemes);
+
+        // Load active provider from db, then fetch its secure key
+        const providerFromDb = data.find(i => i.key === 'llmProvider')?.value || 'openai';
+        try {
+          const secureKey = await SecureStore.getItemAsync(`llmKey_${providerFromDb}`);
+          if (secureKey) setLlmKey(secureKey);
+        } catch(e) { Logger.error('SecureStore init', e); }
+
+        // Clean up legacy unencrypted key
+        const hasLegacyKey = data.some(i => i.key === 'llmKey');
+        if (hasLegacyKey) {
+          await db.delete(settings).where(eq(settings.key, 'llmKey'));
+        }
+
       } catch (err) {
         Logger.error('SettingsContext.loadSettings', err);
       } finally {
@@ -244,15 +258,44 @@ export const SettingsProvider = ({ children }) => {
     if (key === 'activeTheme') setActiveTheme(value);
     if (key === 'customThemes') setCustomThemes(value);
     if (key === 'defaultPeriod') setDefaultPeriod(value);
-    if (key === 'llmProvider') setLlmProvider(value);
+    if (key === 'llmProvider') {
+      setLlmProvider(value);
+      getSecureKey(value).then(k => setLlmKey(k));
+    }
     if (key === 'llmModel') setLlmModel(value);
-    if (key === 'llmKey') setLlmKey(value);
+    // Do not set llmKey in local db here
     if (key === 'uiConfig') setUiConfig(value);
     if (key === 'macroTargets') setMacroTargets(value);
     if (key === 'macroMapping') setMacroMapping(value);
     if (key === 'macroOptions') setMacroOptions(value);
 
-    await saveSettingInternal(key, value);
+    if (key !== 'llmKey') {
+      await saveSettingInternal(key, value);
+    }
+  };
+
+  const getSecureKey = async (provider) => {
+    try {
+      return await SecureStore.getItemAsync(`llmKey_${provider}`) || '';
+    } catch (err) {
+      Logger.error('SecureStore.getItemAsync', err);
+      return '';
+    }
+  };
+
+  const saveSecureKey = async (provider, keyStr) => {
+    try {
+      if (keyStr) {
+        await SecureStore.setItemAsync(`llmKey_${provider}`, keyStr);
+      } else {
+        await SecureStore.deleteItemAsync(`llmKey_${provider}`);
+      }
+      if (provider === llmProvider) {
+        setLlmKey(keyStr);
+      }
+    } catch (err) {
+      Logger.error('SecureStore.setItemAsync', err);
+    }
   };
 
   return (
@@ -260,7 +303,9 @@ export const SettingsProvider = ({ children }) => {
       activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
       macroOptions, macroMapping,
       isLoaded,
-      saveSetting
+      saveSetting,
+      getSecureKey,
+      saveSecureKey
     }}>
       {children}
     </SettingsContext.Provider>

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -17,17 +17,29 @@ const PROVIDER_MODELS = {
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Rápido e Atualizado' },
   ],
   claude: [
-    { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet', desc: 'Rápido e Inteligente' },
-    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', desc: 'Máxima Inteligência' }
+    { id: 'claude-fable-5', name: 'Claude 5 Fable', desc: 'Agente Autônomo • Top de Linha' },
+    { id: 'claude-opus-5', name: 'Claude 5 Opus', desc: 'Máxima Inteligência' },
+    { id: 'claude-sonnet-5', name: 'Claude 5 Sonnet', desc: 'Equilíbrio e Velocidade' },
+    { id: 'claude-opus-4-6', name: 'Claude 4.6 Opus', desc: 'Inteligência Avançada (Ger. 4)' },
+    { id: 'claude-sonnet-4-6', name: 'Claude 4.6 Sonnet', desc: 'Rápido e Inteligente' },
+    { id: 'claude-haiku-4-6', name: 'Claude 4.6 Haiku', desc: 'Mais Rápido e Barato' }
   ]
 };
 
 export default function ExtractionConfigScreen({ onBack }) {
-  const { activeTheme, llmKey, llmProvider, llmModel, saveSetting } = useContext(SettingsContext);
+  const { activeTheme, llmKey, llmProvider, llmModel, saveSetting, getSecureKey, saveSecureKey } = useContext(SettingsContext);
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
   const [providerLocal, setProviderLocal] = useState(llmProvider || 'openai');
   const [modelLocal, setModelLocal] = useState(llmModel || PROVIDER_MODELS[providerLocal || 'openai'][0].id);
   const [showHelpModal, setShowHelpModal] = useState(false);
+
+  useEffect(() => {
+    const loadKey = async () => {
+      const key = await getSecureKey(providerLocal);
+      setLlmKeyLocal(key);
+    };
+    loadKey();
+  }, [providerLocal]);
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -114,8 +126,11 @@ export default function ExtractionConfigScreen({ onBack }) {
             placeholderTextColor={activeTheme.textSecondary}
             secureTextEntry
             value={llmKeyLocal}
-            onChangeText={setLlmKeyLocal}
-            onBlur={() => saveSetting('llmKey', llmKeyLocal)}
+            onChangeText={(text) => {
+              setLlmKeyLocal(text);
+              saveSecureKey(providerLocal, text);
+            }}
+            onBlur={() => saveSecureKey(providerLocal, llmKeyLocal)}
           />
         </View>
       </ScrollView>
