@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
+import ExtractionBanner from '../components/ui/ExtractionBanner';
+import { View } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
@@ -11,6 +13,7 @@ import InvestmentsScreen from '../screens/InvestmentsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import RecurrenceDetailsScreen from '../screens/RecurrenceDetailsScreen';
 import DebtsScreen from '../screens/DebtsScreen';
+import ExtractionReviewScreen from '../screens/ExtractionReviewScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -54,10 +57,14 @@ export default function AppNavigator() {
   if (!isLoaded) return null; // Aguarda carregar configurações
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: activeTheme.background } }}>
-      <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal', animation: 'none' }} />
-      <Stack.Screen name="Debts" component={DebtsScreen} options={{ animation: 'none' }} />
-    </Stack.Navigator>
+    <View style={{ flex: 1 }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: activeTheme.background } }}>
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal', animation: 'none' }} />
+        <Stack.Screen name="Debts" component={DebtsScreen} options={{ animation: 'none' }} />
+        <Stack.Screen name="ExtractionReview" component={ExtractionReviewScreen} options={{ presentation: 'fullScreenModal' }} />
+      </Stack.Navigator>
+      <ExtractionBanner />
+    </View>
   );
 }

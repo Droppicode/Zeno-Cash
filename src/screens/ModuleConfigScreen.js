@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import BaseModal from '../components/ui/BaseModal';
+import BaseModalBottom from '../components/ui/BaseModalBottom';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -274,7 +274,7 @@ export default function ModuleConfigScreen({ onBack }) {
       </ScrollView>
 
       {/* MODAL MAPEAMENTO DE CATEGORIAS */}
-      <BaseModal
+      <BaseModalBottom
         visible={showMappingModal}
         title="Mapeamento Macro"
         onClose={() => setShowMappingModal(false)}
@@ -301,7 +301,7 @@ export default function ModuleConfigScreen({ onBack }) {
             );
           })}
         </ScrollView>
-      </BaseModal>
+      </BaseModalBottom>
 
     </View>
   );

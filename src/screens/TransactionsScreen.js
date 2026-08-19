@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,9 +11,12 @@ import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import TransactionModal from '../components/TransactionModal';
+import BaseModalCenter from '../components/ui/BaseModalCenter';
 import { getZoomFactor } from '../utils/scaler';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
+import { DocumentScanner } from '../services/DocumentScanner';
+import { ExtractionContext } from '../context/ExtractionContext';
 
 const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, styles, onEdit, onDelete }) => {
   const catInfo = resolveCategory(item, categoryList);
@@ -30,14 +33,15 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
         isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }
       ]}
     >
-      <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
-        <View style={[
-          styles.card, 
-          { backgroundColor: activeTheme.card },
-          isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-          isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
-          !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
-        ]}>
+      {(isSwiping) => (
+        <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
+          <View style={[
+            styles.card, 
+            { backgroundColor: activeTheme.card },
+            isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: isSwiping ? 0 : 16 },
+            isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: isSwiping ? 0 : 16 },
+            !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
+          ]}>
           <View style={styles.cardLeft}>
             <View style={[styles.iconBox, { backgroundColor: item.isPending ? activeTheme.expense + '20' : catInfo.color + '20' }]}>
               {item.isPending ? (
@@ -74,6 +78,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
           </Text>
         </View>
       </TouchableOpacity>
+      )}
     </SwipeableCard>
   );
 }, (prevProps, nextProps) => {
@@ -84,14 +89,58 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
          prevProps.index === nextProps.index;
 });
 
-export default function TransactionsScreen() {
-  const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
+export default function TransactionsScreen({ navigation }) {
+  const { activeTheme, uiConfig, defaultPeriod, llmProvider, llmModel, llmKey } = React.useContext(SettingsContext);
+  const { startExtraction, status } = React.useContext(ExtractionContext);
   const { txList, loadTransactions, saveTransaction, removeTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
   const { accountList, loadAccounts } = useAccounts();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
+
+  const [contextModalVisible, setContextModalVisible] = useState(false);
+  const [pendingDoc, setPendingDoc] = useState(null);
+  const [userContextText, setUserContextText] = useState('');
+
+  const isImporting = status === 'uploading' || status === 'processing';
+
+  const handleImportData = async () => {
+    if (!llmKey) {
+      Alert.alert('Chave API Ausente', 'Configure sua chave API em Configurações > Extratos primeiro.');
+      return;
+    }
+
+    Alert.alert(
+      'Importação via IA',
+      'Escolha a origem do documento:',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Câmera (Nota Fiscal)', onPress: () => processImport('camera') },
+        { text: 'Arquivo (PDF/Imagem)', onPress: () => processImport('file') }
+      ]
+    );
+  };
+
+  const processImport = async (source) => {
+    let doc = null;
+    if (source === 'camera') doc = await DocumentScanner.pickImage();
+    else doc = await DocumentScanner.pickDocument();
+
+    if (!doc) return;
+
+    setPendingDoc(doc);
+    setUserContextText('');
+    setContextModalVisible(true);
+  };
+
+  const confirmExtraction = () => {
+    if (!pendingDoc) return;
+    setContextModalVisible(false);
+    const categoriesStr = categoryList.map(c => c.name).join(', ');
+    startExtraction(pendingDoc, llmProvider, llmModel, llmKey, categoriesStr, userContextText);
+    setPendingDoc(null);
+  };
 
   const [inputSearch, setInputSearch] = useState('');
   const [search, setSearch] = useState('');
@@ -257,15 +306,36 @@ export default function TransactionsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
       <View style={[styles.header, { backgroundColor: activeTheme.card }]}>
-        <View style={[styles.searchBox, { backgroundColor: activeTheme.cardSecondary }]}>
-          <Ionicons name="search" size={20} color={activeTheme.textSecondary} style={styles.searchIcon} />
-          <TextInput 
-            style={[styles.searchInput, { color: activeTheme.text }]}
-            placeholder="Buscar transação..."
-            placeholderTextColor={activeTheme.textSecondary}
-            value={inputSearch}
-            onChangeText={setInputSearch}
-          />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={[styles.searchBox, { backgroundColor: activeTheme.cardSecondary, flex: 1, marginBottom: 16 * getZoomFactor(activeTheme) }]}>
+            <Ionicons name="search" size={20} color={activeTheme.textSecondary} style={styles.searchIcon} />
+            <TextInput 
+              style={[styles.searchInput, { color: activeTheme.text }]}
+              placeholder="Buscar transação..."
+              placeholderTextColor={activeTheme.textSecondary}
+              value={inputSearch}
+              onChangeText={setInputSearch}
+            />
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.importBtn, { backgroundColor: activeTheme.cardSecondary }]}
+            onPress={() => { setEditingTx(null); setModalVisible(true); }}
+          >
+            <Ionicons name="add" size={24} color={activeTheme.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.importBtn, { backgroundColor: activeTheme.accent, marginLeft: 8 * getZoomFactor(activeTheme) }]}
+            onPress={handleImportData}
+            disabled={isImporting}
+          >
+            {isImporting ? (
+              <ActivityIndicator size="small" color="#121212" />
+            ) : (
+              <Ionicons name="sparkles" size={20} color="#121212" />
+            )}
+          </TouchableOpacity>
         </View>
         
         {uiConfig.transactionsShowFilters !== false && (
@@ -413,6 +483,27 @@ export default function TransactionsScreen() {
         }}
         initialData={editingTx}
       />
+
+      <BaseModalCenter
+        visible={contextModalVisible}
+        title="Instruções Especiais"
+        onClose={() => { setContextModalVisible(false); setPendingDoc(null); }}
+        onSave={confirmExtraction}
+        saveText="Extrair"
+      >
+        <Text style={[styles.contextModalSubtitle, { color: activeTheme.textSecondary }]}>
+          Deseja passar algum contexto ou regra para a Inteligência Artificial? (Opcional)
+        </Text>
+        <TextInput
+          style={[styles.contextInput, { color: activeTheme.text, backgroundColor: activeTheme.background }]}
+          placeholder="Ex: Todas as compras no Mercado Pago são gastos com Pet."
+          placeholderTextColor={activeTheme.textSecondary}
+          value={userContextText}
+          onChangeText={setUserContextText}
+          multiline
+          textAlignVertical="top"
+        />
+      </BaseModalCenter>
     </SafeAreaView>
   );
 }
@@ -424,9 +515,10 @@ const getStyles = (theme) => {
   return StyleSheet.create({
     container: { flex: 1 },
     header: { padding: 16 * z, borderBottomWidth: 1, borderBottomColor: 'transparent' },
-    searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 12 * z, paddingHorizontal: 12 * z, height: 44 * z, marginBottom: 16 * z },
+    searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 12 * z, paddingHorizontal: 12 * z, height: 44 * z },
     searchIcon: { marginRight: 8 * z },
     searchInput: { flex: 1, fontSize: 16 * z, fontFamily: f },
+    importBtn: { width: 44 * z, height: 44 * z, borderRadius: 12 * z, justifyContent: 'center', alignItems: 'center', marginLeft: 12 * z, marginBottom: 16 * z },
     
     filterContainer: { flexDirection: 'row', alignItems: 'center' },
     filterScroll: { flex: 1, marginRight: 8 * z },
@@ -460,6 +552,15 @@ const getStyles = (theme) => {
     desc: { fontSize: 16 * z, fontWeight: '600', marginBottom: 4 * z, fontFamily: f },
     date: { fontSize: 13 * z, fontFamily: f },
     amount: { fontSize: 16 * z, fontWeight: '700', marginLeft: 8 * z, fontFamily: f },
-    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f }
+    emptyText: { textAlign: 'center', marginTop: 40 * z, fontSize: 16 * z, fontFamily: f },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 * z },
+    contextModal: { padding: 24 * z, borderRadius: 16 * z, elevation: 5 },
+    contextModalTitle: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
+    contextModalSubtitle: { fontSize: 14 * z, marginBottom: 16 * z, fontFamily: f },
+    contextInput: { height: 100 * z, borderRadius: 8 * z, padding: 12 * z, fontFamily: f, marginBottom: 24 * z },
+    contextModalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16 * z },
+    contextBtnCancel: { padding: 12 * z, justifyContent: 'center' },
+    contextBtnConfirm: { paddingHorizontal: 24 * z, paddingVertical: 12 * z, borderRadius: 8 * z, justifyContent: 'center' },
   });
 };

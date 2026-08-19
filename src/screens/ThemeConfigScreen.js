@@ -5,7 +5,7 @@ import { SettingsContext } from '../context/SettingsContext';
 import ColorPicker from 'react-native-wheel-color-picker';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import BaseModal from '../components/ui/BaseModal';
+import BaseModalBottom from '../components/ui/BaseModalBottom';
 
 export default function ThemeConfigScreen({ onBack }) {
   const { activeTheme, customThemes, saveSetting } = useContext(SettingsContext);
@@ -188,7 +188,7 @@ export default function ThemeConfigScreen({ onBack }) {
           </TouchableOpacity>
         </ScrollView>
 
-        <BaseModal
+        <BaseModalBottom
           visible={showPicker}
           title="Escolha a Cor"
           onClose={() => setShowPicker(false)}
@@ -214,7 +214,7 @@ export default function ThemeConfigScreen({ onBack }) {
             placeholder="#000000"
             placeholderTextColor={activeTheme.textSecondary}
           />
-        </BaseModal>
+        </BaseModalBottom>
       </View>
     );
   }

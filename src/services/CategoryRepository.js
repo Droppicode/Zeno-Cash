@@ -15,8 +15,8 @@ export const CategoryRepository = {
 
   add: async (catData) => {
     try {
-      await db.insert(categories).values(catData);
-      return true;
+      const result = await db.insert(categories).values(catData).returning();
+      return result[0].id;
     } catch (err) {
       Logger.error('CategoryRepository.add', err);
       throw err;

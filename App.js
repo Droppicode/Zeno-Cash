@@ -8,6 +8,7 @@ import * as Linking from 'expo-linking';
 import AppNavigator from './src/navigation/AppNavigator';
 import { seedDatabase } from './src/database/seed';
 import { SettingsProvider } from './src/context/SettingsContext';
+import { ExtractionProvider } from './src/context/ExtractionContext';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { registerBackgroundFetchAsync } from './src/services/BackgroundTasks';
@@ -35,7 +36,11 @@ export default function App() {
         await registerBackgroundFetchAsync();
 
         if (Platform.OS === 'android') {
-          await NavigationBar.setVisibilityAsync('hidden');
+          try {
+            await NavigationBar.setVisibilityAsync('hidden');
+          } catch (e) {
+            console.warn('Navigation bar hide failed (Activity not ready yet)');
+          }
         }
       } catch (error) {
         console.error("Erro durante a inicialização do app:", error);
@@ -69,10 +74,12 @@ export default function App() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SettingsProvider>
-          <NavigationContainer linking={linking}>
-            <AppNavigator />
-            <StatusBar style="light" hidden={true} />
-          </NavigationContainer>
+          <ExtractionProvider>
+            <NavigationContainer linking={linking}>
+              <AppNavigator />
+              <StatusBar style="light" hidden={true} />
+            </NavigationContainer>
+          </ExtractionProvider>
         </SettingsProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

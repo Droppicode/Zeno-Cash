@@ -14,12 +14,14 @@ export const useCategories = () => {
   }, []);
 
   const saveCategory = async (id, data) => {
+    let savedId = id;
     if (id) {
       await CategoryRepository.update(id, data);
     } else {
-      await CategoryRepository.add(data);
+      savedId = await CategoryRepository.add(data);
     }
     await loadCategories();
+    return savedId;
   };
 
   const deleteCategory = async (id) => {

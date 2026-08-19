@@ -5,7 +5,7 @@ import { SettingsContext } from '../context/SettingsContext';
 import { useCategories } from '../hooks/useCategories';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import BaseModal from '../components/ui/BaseModal';
+import BaseModalBottom from '../components/ui/BaseModalBottom';
 import ListCard from '../components/ui/ListCard';
 
 const CATEGORY_ICONS = ['cash', 'car', 'restaurant', 'cart', 'play-circle', 'medkit', 'home', 'book', 'fitness', 'airplane', 'bulb', 'gift', 'game-controller'];
@@ -118,7 +118,7 @@ export default function CategoriesConfigScreen({ onBack }) {
         </TouchableOpacity>
       </ScrollView>
 
-      <BaseModal
+      <BaseModalBottom
         visible={showEditor}
         title={editingId ? 'Editar Categoria' : 'Nova Categoria'}
         onClose={() => setShowEditor(false)}
@@ -170,7 +170,7 @@ export default function CategoriesConfigScreen({ onBack }) {
             />
           ))}
         </View>
-      </BaseModal>
+      </BaseModalBottom>
     </View>
   );
 }

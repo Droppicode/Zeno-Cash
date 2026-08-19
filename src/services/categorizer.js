@@ -79,7 +79,23 @@ export const categorizeTransaction = (description, amount) => {
 export const resolveCategory = (tx, categoryList) => {
   if (tx.categoryId && categoryList && categoryList.length > 0) {
     const cat = categoryList.find(c => c.id === tx.categoryId);
-    if (cat) return { categoryName: cat.name, icon: cat.icon, color: cat.color, type: tx.type, macro: cat.macro };
+    if (cat) return { id: cat.id, categoryName: cat.name, icon: cat.icon, color: cat.color, type: tx.type, macro: cat.macro };
   }
+
+  if (tx.category && categoryList && categoryList.length > 0) {
+    const catByName = categoryList.find(c => c.name.toLowerCase() === tx.category.toLowerCase());
+    if (catByName) return { id: catByName.id, categoryName: catByName.name, icon: catByName.icon, color: catByName.color, type: tx.type, macro: catByName.macro };
+    
+    if (tx.category.trim() !== '') {
+      return { 
+        categoryName: tx.category, 
+        icon: 'sparkles', 
+        color: '#9C27B0', 
+        type: tx.type || 'expense', 
+        isAiSuggestion: true 
+      };
+    }
+  }
+
   return categorizeTransaction(tx.description, tx.amount);
 };

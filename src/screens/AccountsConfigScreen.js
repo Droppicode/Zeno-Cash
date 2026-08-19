@@ -5,7 +5,7 @@ import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import BaseModal from '../components/ui/BaseModal';
+import BaseModalBottom from '../components/ui/BaseModalBottom';
 import ListCard from '../components/ui/ListCard';
 
 const ACCOUNT_ICONS = ['wallet-outline', 'card-outline', 'business-outline', 'cash-outline', 'logo-bitcoin', 'bar-chart-outline'];
@@ -134,7 +134,7 @@ export default function AccountsConfigScreen({ onBack }) {
         </TouchableOpacity>
       </ScrollView>
 
-      <BaseModal
+      <BaseModalBottom
         visible={showEditor}
         title={editingId ? 'Editar Conta' : 'Nova Conta'}
         onClose={() => setShowEditor(false)}
@@ -215,7 +215,7 @@ export default function AccountsConfigScreen({ onBack }) {
             />
           ))}
         </View>
-      </BaseModal>
+      </BaseModalBottom>
     </View>
   );
 }

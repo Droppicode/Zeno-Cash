@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,20 +25,25 @@ export default function SwipeableCard({ children, onDelete, deleteText = 'Apagar
     </TouchableOpacity>
   );
 
+  const flattenedStyle = StyleSheet.flatten(containerStyle) || {};
+  const [isSwiping, setIsSwiping] = useState(false);
+
   return (
     <View style={containerStyle}>
       <Swipeable 
         renderRightActions={renderRightActions} 
         overshootRight={false}
+        onSwipeableWillOpen={() => setIsSwiping(true)}
+        onSwipeableWillClose={() => setIsSwiping(false)}
         containerStyle={{ 
           overflow: 'hidden', 
-          borderTopLeftRadius: containerStyle?.borderTopLeftRadius || containerStyle?.borderRadius || 0,
-          borderTopRightRadius: containerStyle?.borderTopRightRadius || containerStyle?.borderRadius || 0,
-          borderBottomLeftRadius: containerStyle?.borderBottomLeftRadius || containerStyle?.borderRadius || 0,
-          borderBottomRightRadius: containerStyle?.borderBottomRightRadius || containerStyle?.borderRadius || 0,
+          borderTopLeftRadius: flattenedStyle.borderTopLeftRadius || flattenedStyle.borderRadius || 0,
+          borderTopRightRadius: flattenedStyle.borderTopRightRadius || flattenedStyle.borderRadius || 0,
+          borderBottomLeftRadius: flattenedStyle.borderBottomLeftRadius || flattenedStyle.borderRadius || 0,
+          borderBottomRightRadius: flattenedStyle.borderBottomRightRadius || flattenedStyle.borderRadius || 0,
         }}
       >
-        {children}
+        {typeof children === 'function' ? children(isSwiping) : children}
       </Swipeable>
     </View>
   );

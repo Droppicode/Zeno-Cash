@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Modal, TouchableOpacity, KeyboardAvoidingView, 
 import { SettingsContext } from '../../context/SettingsContext';
 import { getZoomFactor } from '../../utils/scaler';
 
-export default function BaseModal({ 
+export default function BaseModalBottom({ 
   visible, 
   title, 
   onClose, 
@@ -36,7 +36,7 @@ export default function BaseModal({
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={Keyboard.dismiss}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => { Keyboard.dismiss(); if (onClose) onClose(); }}>
           <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
             {title && <Text style={[styles.modalTitle, { color: activeTheme.text }]}>{title}</Text>}
             

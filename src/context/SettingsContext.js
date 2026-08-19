@@ -151,6 +151,8 @@ export const SettingsProvider = ({ children }) => {
   const [activeTheme, setActiveTheme] = useState(defaultTheme);
   const [customThemes, setCustomThemes] = useState([defaultTheme, defaultLightTheme, ...EXTRA_PRESETS]);
   const [defaultPeriod, setDefaultPeriod] = useState('30d');
+  const [llmProvider, setLlmProvider] = useState('openai');
+  const [llmModel, setLlmModel] = useState('');
   const [llmKey, setLlmKey] = useState('');
   
   const [uiConfig, setUiConfig] = useState({
@@ -197,6 +199,8 @@ export const SettingsProvider = ({ children }) => {
             loadedThemes = finalThemes;
           }
           if (item.key === 'defaultPeriod') setDefaultPeriod(item.value);
+          if (item.key === 'llmProvider') setLlmProvider(item.value);
+          if (item.key === 'llmModel') setLlmModel(item.value);
           if (item.key === 'llmKey') setLlmKey(item.value);
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
@@ -240,6 +244,8 @@ export const SettingsProvider = ({ children }) => {
     if (key === 'activeTheme') setActiveTheme(value);
     if (key === 'customThemes') setCustomThemes(value);
     if (key === 'defaultPeriod') setDefaultPeriod(value);
+    if (key === 'llmProvider') setLlmProvider(value);
+    if (key === 'llmModel') setLlmModel(value);
     if (key === 'llmKey') setLlmKey(value);
     if (key === 'uiConfig') setUiConfig(value);
     if (key === 'macroTargets') setMacroTargets(value);
@@ -251,7 +257,7 @@ export const SettingsProvider = ({ children }) => {
 
   return (
     <SettingsContext.Provider value={{ 
-      activeTheme, customThemes, defaultPeriod, llmKey, uiConfig, macroTargets,
+      activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
       macroOptions, macroMapping,
       isLoaded,
       saveSetting

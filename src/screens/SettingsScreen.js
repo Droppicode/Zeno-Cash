@@ -9,15 +9,14 @@ import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
+import ExtractionConfigScreen from './ExtractionConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
   
-  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations'
-  const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
-
+  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations', 'extraction'
   useEffect(() => {
     const backAction = () => {
       if (currentScreen !== 'hub') {
@@ -73,6 +72,14 @@ export default function SettingsScreen({ navigation }) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <AutomationsConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
+  if (currentScreen === 'extraction') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
+        <ExtractionConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
   }
@@ -149,19 +156,12 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Integrações LLM (Futuro) */}
-        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
-          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Integração LLM (Beta)</Text>
-          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Cole sua chave da OpenAI para habilitar a leitura de extratos em PDF no futuro.</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-            placeholder="sk-proj-..."
-            placeholderTextColor={activeTheme.textSecondary}
-            secureTextEntry
-            value={llmKeyLocal}
-            onChangeText={setLlmKeyLocal}
-            onBlur={() => saveSetting('llmKey', llmKeyLocal)}
-          />
+        <View style={styles.menuGrid}>
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('extraction')}>
+            <Ionicons name="document-text" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Extratos</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Leitura Inteligente</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Backup */}
