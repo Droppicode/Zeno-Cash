@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../../context/SettingsContext';
 import { getZoomFactor } from '../../utils/scaler';
 
-export default function SwipeableCard({ children, onDelete, deleteText = 'Apagar', containerStyle }) {
+export default function SwipeableCard({ children, onDelete, onAccept, deleteText = 'Apagar', acceptText = 'Aprovar', containerStyle }) {
   const { activeTheme } = useContext(SettingsContext);
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -15,15 +15,35 @@ export default function SwipeableCard({ children, onDelete, deleteText = 'Apagar
     deleteActionText: { fontSize: 12 * z, fontWeight: 'bold', marginTop: 4 * z, fontFamily: f, color: '#fff' }
   }), [z, f]);
 
-  const renderRightActions = () => (
-    <TouchableOpacity 
-      style={[styles.deleteAction, { backgroundColor: activeTheme.expense }]}
-      onPress={onDelete}
-    >
-      <Ionicons name="trash" size={24} color="#fff" />
-      <Text style={styles.deleteActionText}>{deleteText}</Text>
-    </TouchableOpacity>
-  );
+  const renderRightActions = () => {
+    if (!onDelete) return null;
+    return (
+      <View style={{ flex: 1, backgroundColor: activeTheme.expense, justifyContent: 'center', alignItems: 'flex-end' }}>
+        <TouchableOpacity 
+          style={[styles.deleteAction]}
+          onPress={onDelete}
+        >
+          <Ionicons name="trash" size={24} color="#fff" />
+          <Text style={styles.deleteActionText}>{deleteText}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderLeftActions = () => {
+    if (!onAccept) return null;
+    return (
+      <View style={{ flex: 1, backgroundColor: activeTheme.income || '#4CAF50', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <TouchableOpacity 
+          style={[styles.deleteAction]}
+          onPress={onAccept}
+        >
+          <Ionicons name="checkmark-circle" size={24} color="#fff" />
+          <Text style={styles.deleteActionText}>{acceptText}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const flattenedStyle = StyleSheet.flatten(containerStyle) || {};
   const [isSwiping, setIsSwiping] = useState(false);
@@ -32,7 +52,11 @@ export default function SwipeableCard({ children, onDelete, deleteText = 'Apagar
     <View style={containerStyle}>
       <Swipeable 
         renderRightActions={renderRightActions} 
-        overshootRight={false}
+        renderLeftActions={renderLeftActions}
+        overshootRight={true}
+        overshootLeft={true}
+        onSwipeableRightOpen={onDelete}
+        onSwipeableLeftOpen={onAccept}
         onSwipeableWillOpen={() => setIsSwiping(true)}
         onSwipeableWillClose={() => setIsSwiping(false)}
         containerStyle={{ 

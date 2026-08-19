@@ -15,10 +15,26 @@ export default function ExtractionReviewScreen({ route, navigation }) {
   const { activeTheme } = useContext(SettingsContext);
   const { categoryList, saveCategory } = useCategories();
   const { saveTransaction } = useTransactions();
-  const { loadAccounts } = useAccounts();
+  const { accountList, loadAccounts, saveAccount } = useAccounts();
   
   const initialTxs = route.params?.transactions || [];
-  const [txs, setTxs] = useState(initialTxs.map((t, idx) => ({ ...t, _tempId: idx })));
+  
+  // Mapeia contas e categorias por ID assim que carrega os dados da IA
+  const [txs, setTxs] = useState(() => {
+    return initialTxs.map((t, idx) => {
+      let mappedAccountId = t.accountId;
+      let isAccountAiSuggestion = false;
+      if (!mappedAccountId && t.account) {
+        const accMatch = accountList.find(a => a.name.toLowerCase() === t.account.toLowerCase());
+        if (accMatch) {
+          mappedAccountId = accMatch.id;
+        } else {
+          isAccountAiSuggestion = true;
+        }
+      }
+      return { ...t, accountId: mappedAccountId, isAccountAiSuggestion, _tempId: idx };
+    });
+  });
   
   const [editingTx, setEditingTx] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -60,6 +76,20 @@ export default function ExtractionReviewScreen({ route, navigation }) {
             dbData.categoryId = catInfo.id || null;
           }
         }
+
+        // Conta
+        if (!dbData.accountId && dbData.account && dbData.isAccountAiSuggestion) {
+          const newAccId = await saveAccount(null, {
+            name: dbData.account,
+            balance: 0,
+            type: 'checking',
+            color: '#9E9E9E'
+          });
+          dbData.accountId = newAccId;
+        } else if (!dbData.accountId) {
+          dbData.accountId = accountList.length > 0 ? accountList[0].id : null;
+        }
+
         await saveTransaction(null, dbData);
       }
       await loadAccounts();
@@ -101,6 +131,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
           const catInfo = resolveCategory(item, categoryList);
           const needsReview = item.confidence !== undefined && item.confidence < 0.8;
           const dateStr = new Date(item.date).toLocaleDateString('pt-BR');
+          const accountName = item.accountId ? (accountList.find(a => a.id === item.accountId)?.name || 'Sem Conta') : (item.account || 'Sem Conta');
 
           return (
             <SwipeableCard key={item._tempId} onDelete={() => removeTx(item._tempId)}>
@@ -124,8 +155,14 @@ export default function ExtractionReviewScreen({ route, navigation }) {
                             <Text style={{ color: catInfo.color, fontSize: 10, fontWeight: 'bold' }}>IA</Text>
                           </View>
                         )}
+                        {item.isAccountAiSuggestion && (
+                          <View style={{ backgroundColor: '#9E9E9E20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 8, flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name="sparkles" size={10} color={'#9E9E9E'} style={{ marginRight: 2 }} />
+                            <Text style={{ color: '#9E9E9E', fontSize: 10, fontWeight: 'bold' }}>Conta Nova</Text>
+                          </View>
+                        )}
                       </View>
-                      <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName}</Text>
+                      <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {accountName}</Text>
                     </View>
                   </View>
                   <Text style={[styles.amount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>

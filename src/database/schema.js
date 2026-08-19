@@ -19,6 +19,7 @@ export const transactions = sqliteTable('transactions', {
   accountId: integer('account_id'),
   note: text('note'),
   isPending: integer('is_pending').default(0),
+  isIgnored: integer('is_ignored').default(0),
   recurrenceId: integer('recurrence_id'), // ID from recurrences table
 });
 

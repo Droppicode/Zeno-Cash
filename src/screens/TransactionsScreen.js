@@ -18,8 +18,9 @@ import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 import { DocumentScanner } from '../services/DocumentScanner';
 import { ExtractionContext } from '../context/ExtractionContext';
 
-const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, styles, onEdit, onDelete }) => {
+const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, accountList, styles, onEdit, onDelete, onAccept }) => {
   const catInfo = resolveCategory(item, categoryList);
+  const accountName = accountList?.find(a => a.id === item.accountId)?.name || 'Sem Conta';
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   
   const isFirst = index === 0;
@@ -28,6 +29,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
   return (
     <SwipeableCard 
       onDelete={onDelete}
+      onAccept={onAccept}
       containerStyle={[
         isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
         isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }
@@ -38,8 +40,6 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
           <View style={[
             styles.card, 
             { backgroundColor: activeTheme.card },
-            isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: isSwiping ? 0 : 16 },
-            isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: isSwiping ? 0 : 16 },
             !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
           ]}>
           <View style={styles.cardLeft}>
@@ -67,7 +67,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
                 )}
               </View>
               {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
-              <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {item.account}</Text>
+              <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {accountName}</Text>
             </View>
           </View>
           <Text style={[
@@ -85,6 +85,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
   return prevProps.item === nextProps.item && 
          prevProps.activeTheme === nextProps.activeTheme && 
          prevProps.categoryList === nextProps.categoryList &&
+         prevProps.accountList === nextProps.accountList &&
          prevProps.sectionLength === nextProps.sectionLength &&
          prevProps.index === nextProps.index;
 });
@@ -92,7 +93,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
 export default function TransactionsScreen({ navigation }) {
   const { activeTheme, uiConfig, defaultPeriod, llmProvider, llmModel, llmKey } = React.useContext(SettingsContext);
   const { startExtraction, status } = React.useContext(ExtractionContext);
-  const { txList, loadTransactions, saveTransaction, removeTransaction } = useTransactions();
+  const { txList, loadTransactions, saveTransaction, removeTransaction, updateTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
   const { accountList, loadAccounts } = useAccounts();
 
@@ -138,7 +139,8 @@ export default function TransactionsScreen({ navigation }) {
     if (!pendingDoc) return;
     setContextModalVisible(false);
     const categoriesStr = categoryList.map(c => c.name).join(', ');
-    startExtraction(pendingDoc, llmProvider, llmModel, llmKey, categoriesStr, userContextText);
+    const accountsStr = accountList.map(a => a.name).join(', ');
+    startExtraction(pendingDoc, llmProvider, llmModel, llmKey, categoriesStr, accountsStr, userContextText);
     setPendingDoc(null);
   };
 
@@ -181,12 +183,14 @@ export default function TransactionsScreen({ navigation }) {
   );
 
   const filteredList = useMemo(() => {
-    return txList.filter(item => {
+    let result = txList.filter(item => {
+      if (item.isIgnored === 1) return false;
       const limit = DateUtils.getLimitDateForPeriod(period);
       if (item.date < limit) return false;
 
       if (filter === 'income' && item.type !== 'income') return false;
       if (filter === 'expense' && item.type !== 'expense') return false;
+      if (filter === 'recurrence' && !item.recurrenceId && !item.isVirtual) return false;
       if (accountFilter !== 'all' && item.accountId !== accountFilter) return false;
       
       const catInfo = resolveCategory(item, categoryList);
@@ -250,8 +254,6 @@ export default function TransactionsScreen({ navigation }) {
     }
   };
 
-
-
   const paginatedList = filteredList.slice(0, visibleCount);
 
   const groupedData = paginatedList.reduce((acc, tx) => {
@@ -270,10 +272,9 @@ export default function TransactionsScreen({ navigation }) {
   }));
 
   const handleSave = async (data) => {
-    // Se a transação for salva/editada, ela deixa de ser pendente
     data.isPending = 0;
     await saveTransaction(data.id, data);
-    await loadAccounts(); // Atualizar saldo
+    await loadAccounts(); 
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -284,9 +285,18 @@ export default function TransactionsScreen({ navigation }) {
   }, []);
 
   const handleDelete = useCallback(async (item) => {
-    await removeTransaction(item.id);
+    if (item.recurrenceId) {
+      await updateTransaction(item.id, { isIgnored: 1 });
+    } else {
+      await removeTransaction(item.id);
+    }
     await loadAccounts();
-  }, [removeTransaction, loadAccounts]);
+  }, [removeTransaction, updateTransaction, loadAccounts]);
+
+  const handleAccept = useCallback(async (item) => {
+    await updateTransaction(item.id, { isPending: 0 });
+    await loadAccounts();
+  }, [updateTransaction, loadAccounts]);
 
   const renderItem = useCallback(({ item, index, section }) => {
     return (
@@ -296,12 +306,14 @@ export default function TransactionsScreen({ navigation }) {
         sectionLength={section.data.length}
         activeTheme={activeTheme}
         categoryList={categoryList}
+        accountList={accountList}
         styles={styles}
         onEdit={() => handleEdit(item)}
         onDelete={() => handleDelete(item)}
+        onAccept={item.isPending === 1 ? () => handleAccept(item) : undefined}
       />
     );
-  }, [activeTheme, categoryList, styles, handleEdit, handleDelete]);
+  }, [activeTheme, categoryList, styles, handleEdit, handleDelete, handleAccept]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
@@ -371,6 +383,9 @@ export default function TransactionsScreen({ navigation }) {
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.filterBtn, filter === 'expense' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('expense')}>
                       <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'expense' && { color: '#121212' }]}>Despesas</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.filterBtn, filter === 'recurrence' && { backgroundColor: activeTheme.accent }]} onPress={() => setFilter('recurrence')}>
+                      <Text style={[styles.filterText, { color: activeTheme.textSecondary }, filter === 'recurrence' && { color: '#121212' }]}>Recorrências</Text>
                     </TouchableOpacity>
                   </View>
                   
@@ -477,8 +492,12 @@ export default function TransactionsScreen({ navigation }) {
         visible={modalVisible}
         onClose={() => { setModalVisible(false); setEditingTx(null); }}
         onSave={handleSave}
-        onDelete={async (id) => {
-          await removeTransaction(id);
+        onDelete={async (tx) => {
+          if (tx.recurrenceId) {
+            await updateTransaction(tx.id, { isIgnored: 1 });
+          } else {
+            await removeTransaction(tx.id);
+          }
           await loadAccounts();
         }}
         initialData={editingTx}

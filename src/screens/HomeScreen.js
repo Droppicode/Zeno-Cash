@@ -30,7 +30,7 @@ export default function HomeScreen({ route, navigation }) {
     }
   }, [route?.params?.type]);
   
-  const { txList, loadTransactions, saveTransaction: saveTx, removeTransaction, filterByPeriod } = useTransactions();
+  const { txList, loadTransactions, saveTransaction: saveTx, updateTransaction, removeTransaction, filterByPeriod } = useTransactions();
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
   const { debtsList, loadDebts } = useDebts();
@@ -59,15 +59,16 @@ export default function HomeScreen({ route, navigation }) {
     let inTotal = 0;
     let outTotal = 0;
     filteredTxList.forEach(t => {
+      if (t.isIgnored === 1) return;
       if (t.type === 'income') inTotal += t.amount;
       else outTotal += t.amount;
     });
     return { total: inTotal - outTotal, income: inTotal, expense: outTotal };
   }, [filteredTxList]);
 
-  const pendingTxList = txList.filter(t => t.isPending === 1).sort((a, b) => a.date - b.date);
+  const pendingTxList = txList.filter(t => t.isPending === 1 && t.isIgnored !== 1).sort((a, b) => a.date - b.date);
   const displayPendingList = pendingTxList.slice(0, 10);
-  const recentTxList = txList.filter(t => t.isPending !== 1 && t.date <= Date.now());
+  const recentTxList = txList.filter(t => t.isPending !== 1 && t.isIgnored !== 1 && t.date <= Date.now());
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
   const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
 
@@ -163,19 +164,31 @@ export default function HomeScreen({ route, navigation }) {
                     const isLast = idx === displayPendingList.length - 1;
                     
                     return (
-                      <SwipeableCard key={item.id} onDelete={async () => {
-                        await removeTransaction(item.id);
-                        await loadAccounts();
-                      }}>
+                      <SwipeableCard key={item.id} 
+                        onDelete={async () => {
+                          if (item.recurrenceId) {
+                            await updateTransaction(item.id, { isIgnored: 1 });
+                          } else {
+                            await removeTransaction(item.id);
+                          }
+                          await loadAccounts();
+                        }}
+                        onAccept={async () => {
+                          await updateTransaction(item.id, { isPending: 0 });
+                          await loadAccounts();
+                        }}
+                      >
                         <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
-                          <View style={[styles.groupedItem, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
+                          <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                               <View style={[styles.groupedIcon, { backgroundColor: activeTheme.expense + '20' }]}>
                                 <Ionicons name="time" size={18} color={activeTheme.expense} />
                               </View>
                               <View style={{ flex: 1, paddingRight: 8 }}>
                                 <Text style={[styles.groupedText, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
-                                {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
+                                <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>
+                                  {new Date(item.date).toLocaleDateString('pt-BR')} {item.note ? `- ${item.note}` : ''}
+                                </Text>
                               </View>
                             </View>
                             <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
@@ -208,11 +221,15 @@ export default function HomeScreen({ route, navigation }) {
                       
                       return (
                         <SwipeableCard key={item.id} onDelete={async () => {
-                          await removeTransaction(item.id);
+                          if (item.recurrenceId) {
+                            await updateTransaction(item.id, { isIgnored: 1 });
+                          } else {
+                            await removeTransaction(item.id);
+                          }
                           await loadAccounts();
                         }}>
                           <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
-                            <View style={[styles.groupedItem, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
+                            <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                 <View style={[styles.groupedIcon, { backgroundColor: catInfo.color + '20' }]}>
                                   <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
@@ -293,8 +310,12 @@ export default function HomeScreen({ route, navigation }) {
         visible={modalVisible}
         onClose={() => { setModalVisible(false); setEditingTx(null); }}
         onSave={saveTransaction}
-        onDelete={async (id) => {
-          await removeTransaction(id);
+        onDelete={async (tx) => {
+          if (tx.recurrenceId) {
+            await updateTransaction(tx.id, { isIgnored: 1 });
+          } else {
+            await removeTransaction(tx.id);
+          }
           await loadAccounts();
         }}
         initialData={editingTx}

@@ -442,7 +442,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                 <TouchableOpacity 
                   style={styles.deleteButton} 
                   onPress={() => {
-                    onDelete(initialData.id);
+                    onDelete(initialData);
                     onClose();
                   }}
                 >

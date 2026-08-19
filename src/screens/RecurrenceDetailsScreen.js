@@ -18,7 +18,7 @@ import TransactionModal from '../components/TransactionModal';
 export default function RecurrenceDetailsScreen({ route, navigation }) {
   const { id } = route.params;
   const { activeTheme } = useContext(SettingsContext);
-  const { txList, loadTransactions } = useTransactions();
+  const { txList, loadTransactions, updateTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
   
   const [recurrence, setRecurrence] = useState(null);
@@ -113,6 +113,11 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
         }
       ]
     );
+  };
+
+  const recoverTransaction = async (id) => {
+    await updateTransaction(id, { isIgnored: 0, isPending: 1 });
+    await loadTransactions();
   };
 
   const combinedList = useMemo(() => {
@@ -241,13 +246,18 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
           {combinedList.map((item, index) => {
             const isVirtual = item.isVirtual;
             const isPending = item.isPending === 1;
-            const isPaid = !isVirtual && !isPending;
+            const isIgnored = item.isIgnored === 1;
+            const isPaid = !isVirtual && !isPending && !isIgnored;
             
             let statusColor = activeTheme.textSecondary;
             let statusText = 'Desconhecido';
             let iconName = 'help-circle';
             
-            if (isPaid) {
+            if (isIgnored) {
+              statusColor = '#9E9E9E';
+              statusText = 'Excluído';
+              iconName = 'close-circle';
+            } else if (isPaid) {
               statusColor = '#4CAF50';
               statusText = 'Pago';
               iconName = 'checkmark-circle';
@@ -262,25 +272,32 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
             }
 
             return (
-              <View key={item.id} style={[styles.txCard, { backgroundColor: activeTheme.card }]}>
+              <View key={item.id} style={[styles.txCard, { backgroundColor: activeTheme.card, opacity: isIgnored ? 0.6 : 1 }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold' }}>
+                  <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold', textDecorationLine: isIgnored ? 'line-through' : 'none' }}>
                     {item.note || `Ocorrência ${index + 1}`}
                   </Text>
                   <Text style={{ color: activeTheme.textSecondary, fontSize: 14 * z, marginTop: 4 * z }}>
                     {new Date(item.date).toLocaleDateString('pt-BR')}
                   </Text>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold' }}>
-                    R$ {item.amount.toFixed(2)}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 * z }}>
-                    <Ionicons name={iconName} size={14 * z} color={statusColor} />
-                    <Text style={{ color: statusColor, fontSize: 12 * z, fontWeight: 'bold', marginLeft: 4 * z }}>
-                      {statusText}
+                <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 12 * z }}>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold', textDecorationLine: isIgnored ? 'line-through' : 'none' }}>
+                      R$ {item.amount.toFixed(2)}
                     </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 * z }}>
+                      <Ionicons name={iconName} size={14 * z} color={statusColor} />
+                      <Text style={{ color: statusColor, fontSize: 12 * z, fontWeight: 'bold', marginLeft: 4 * z }}>
+                        {statusText}
+                      </Text>
+                    </View>
                   </View>
+                  {isIgnored && (
+                    <TouchableOpacity onPress={() => recoverTransaction(item.id)} style={{ padding: 8 * z, backgroundColor: activeTheme.background, borderRadius: 8 * z }}>
+                      <Ionicons name="arrow-undo" size={20 * z} color={activeTheme.accent} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );

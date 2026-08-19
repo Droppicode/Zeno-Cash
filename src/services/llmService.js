@@ -1,6 +1,6 @@
 import { Logger } from '../utils/logger';
 
-const getSystemPrompt = (categoriesStr, userContext) => `Você é um extrator inteligente de dados financeiros.
+const getSystemPrompt = (categoriesStr, accountsStr, userContext) => `Você é um extrator inteligente de dados financeiros.
 Seu objetivo é analisar um documento (extrato bancário em PDF ou Nota Fiscal/Recibo em imagem) e extrair TODAS as transações financeiras.
 
 REGRAS IMPORTANTES PARA O TÍTULO (description):
@@ -13,6 +13,12 @@ CATEGORIAS DISPONÍVEIS DO USUÁRIO:
 Tente classificar usando EXATAMENTE uma das categorias desta lista.
 No entanto, se você tiver altíssima confiança de que a transação NÃO se encaixa bem em nenhuma delas, você PODE sugerir uma nova categoria enviando o nome ideal no campo "category".
 Lista: ${categoriesStr || 'Nenhuma lista fornecida'}
+
+CONTAS DISPONÍVEIS DO USUÁRIO:
+Tente classificar usando EXATAMENTE uma das contas desta lista.
+Se for uma conta nova e óbvia (ex: um banco não listado), você pode sugerir o nome exato no campo "account".
+Lista de contas: ${accountsStr || 'Nenhuma lista fornecida'}
+
 
 ${userContext && userContext.trim() !== '' ? `INSTRUÇÕES ESPECÍFICAS DO USUÁRIO PARA ESTE DOCUMENTO:
 "${userContext.trim()}"
@@ -35,16 +41,16 @@ Retorne EXCLUSIVAMENTE um array de objetos JSON. Exemplo:
 Se for uma nota fiscal, geralmente será apenas 1 transação (o valor total da nota). Extratos terão múltiplas.`;
 
 export class LLMService {
-  static async extractTransactions(provider, model, apiKey, fileBase64, mimeType, categoriesStr, userContext) {
+  static async extractTransactions(provider, model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext) {
     if (!apiKey) throw new Error("Chave da API não configurada.");
     
     try {
       if (provider === 'openai') {
-        return await this.callOpenAI(model, apiKey, fileBase64, mimeType, categoriesStr, userContext);
+        return await this.callOpenAI(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext);
       } else if (provider === 'gemini') {
-        return await this.callGemini(model, apiKey, fileBase64, mimeType, categoriesStr, userContext);
+        return await this.callGemini(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext);
       } else if (provider === 'claude') {
-        return await this.callClaude(model, apiKey, fileBase64, mimeType, categoriesStr, userContext);
+        return await this.callClaude(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext);
       } else {
         throw new Error("Provedor não suportado: " + provider);
       }
@@ -67,7 +73,7 @@ export class LLMService {
     }
   }
 
-  static async callOpenAI(model, apiKey, fileBase64, mimeType, categoriesStr, userContext) {
+  static async callOpenAI(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext) {
     const isPdf = mimeType === 'application/pdf';
     // OpenAI suporta visão. Para PDFs muito longos poderíamos precisar de extração de texto, 
     // mas vamos enviar como imagem/pdf (GPT-4o suporta documentos e imagens).
@@ -83,7 +89,7 @@ export class LLMService {
       body: JSON.stringify({
         model: model || "gpt-4o",
         messages: [
-          { role: "system", content: getSystemPrompt(categoriesStr, userContext) },
+          { role: "system", content: getSystemPrompt(categoriesStr, accountsStr, userContext) },
           { role: "user", content: [
             { type: "text", text: "Extraia as transações deste documento:" },
             { type: "image_url", image_url: { url: prefix + fileBase64 } }
@@ -102,13 +108,13 @@ export class LLMService {
     return this.parseJSONResponse(data.choices[0].message.content);
   }
 
-  static async callGemini(model, apiKey, fileBase64, mimeType, categoriesStr, userContext) {
+  static async callGemini(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext) {
     const modelName = model || 'gemini-3.5-flash';
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: getSystemPrompt(categoriesStr, userContext) }] },
+        system_instruction: { parts: [{ text: getSystemPrompt(categoriesStr, accountsStr, userContext) }] },
         contents: [{
           parts: [
             { text: "Extraia as transações deste documento:" },
@@ -131,7 +137,7 @@ export class LLMService {
     return this.parseJSONResponse(content);
   }
 
-  static async callClaude(model, apiKey, fileBase64, mimeType, categoriesStr, userContext) {
+  static async callClaude(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext) {
     // Claude Vision
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -142,7 +148,7 @@ export class LLMService {
       },
       body: JSON.stringify({
         model: model || "claude-3-5-sonnet-20240620",
-        system: getSystemPrompt(categoriesStr, userContext),
+        system: getSystemPrompt(categoriesStr, accountsStr, userContext),
         max_tokens: 4000,
         temperature: 0.1,
         messages: [

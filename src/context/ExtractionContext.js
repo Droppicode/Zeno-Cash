@@ -17,7 +17,7 @@ export const ExtractionProvider = ({ children }) => {
     setErrorMessage('');
   };
 
-  const startExtraction = async (doc, provider, model, apiKey, categoriesStr, userContext = '') => {
+  const startExtraction = async (doc, provider, model, apiKey, categoriesStr, accountsStr, userContext = '') => {
     if (status === 'processing' || status === 'uploading') return;
     
     resetExtraction();
@@ -52,7 +52,7 @@ export const ExtractionProvider = ({ children }) => {
     }, 4000); // Muda a mensagem a cada 4 segundos
 
     try {
-      const data = await LLMService.extractTransactions(provider, model, apiKey, doc.base64, doc.mimeType, categoriesStr, userContext);
+      const data = await LLMService.extractTransactions(provider, model, apiKey, doc.base64, doc.mimeType, categoriesStr, accountsStr, userContext);
       isExtracting = false;
       clearInterval(progressInterval);
 
