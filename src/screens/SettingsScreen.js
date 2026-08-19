@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, BackHandler, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -9,12 +9,14 @@ import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
-import ExtractionConfigScreen from './ExtractionConfigScreen';
+import { ExtractionConfigScreen } from './ExtractionConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { configureGoogleAuth, uploadDatabaseToDrive, downloadLatestBackup } from '../services/GoogleDriveBackup';
 
 export default function SettingsScreen({ navigation }) {
-  const { activeTheme, defaultPeriod, llmKey, saveSetting } = useContext(SettingsContext);
+  const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
   
   const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations', 'extraction'
   useEffect(() => {
@@ -30,8 +32,72 @@ export default function SettingsScreen({ navigation }) {
     return () => backHandler.remove();
   }, [currentScreen]);
 
-  const handleBackup = () => {
-    Alert.alert('Backup Local', 'Funcionalidade de backup será integrada com Google Drive na Fase 4.');
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  useEffect(() => {
+    configureGoogleAuth();
+  }, []);
+
+  const getFriendlyErrorMessage = (error) => {
+    const msg = error.message || String(error);
+    if (msg.includes('Network request failed')) return 'Verifique sua conexão com a internet e tente novamente.';
+    if (msg.includes('DEVELOPER_ERROR')) return 'Erro de configuração do Google (Falta de SHA-1 ou credenciais inválidas).';
+    if (msg.includes('PLAY_SERVICES_NOT_AVAILABLE')) return 'Os serviços do Google Play não estão disponíveis no seu celular.';
+    if (msg.includes('Insufficient Permission')) return 'Permissão negada pelo Google. Tente fazer o login novamente.';
+    if (msg.includes('invalid_grant')) return 'Sua sessão expirou. Por favor, faça login novamente.';
+    return msg;
+  };
+
+  const handleBackup = async () => {
+    try {
+      setIsBackingUp(true);
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      
+      await uploadDatabaseToDrive(tokens.accessToken);
+      Alert.alert('Sucesso', 'Backup realizado com sucesso no Google Drive!');
+    } catch (error) {
+      if (error.code !== statusCodes.SIGN_IN_CANCELLED && error.code !== statusCodes.IN_PROGRESS) {
+        console.error(error);
+        Alert.alert('Erro', 'Não foi possível realizar o backup:\n\n' + getFriendlyErrorMessage(error));
+      }
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    Alert.alert(
+      'Restaurar Backup',
+      'Isso irá substituir todos os dados atuais do aplicativo pelo backup mais recente do Google Drive. Deseja continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Restaurar', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsRestoring(true);
+              await GoogleSignin.hasPlayServices();
+              await GoogleSignin.signIn();
+              const tokens = await GoogleSignin.getTokens();
+              
+              await downloadLatestBackup(tokens.accessToken);
+              Alert.alert('Sucesso', 'Backup restaurado com sucesso! Reinicie o aplicativo para aplicar as mudanças.');
+            } catch (error) {
+              if (error.code !== statusCodes.SIGN_IN_CANCELLED && error.code !== statusCodes.IN_PROGRESS) {
+                console.error(error);
+                Alert.alert('Erro', 'Não foi possível restaurar o backup:\n\n' + getFriendlyErrorMessage(error));
+              }
+            } finally {
+              setIsRestoring(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
@@ -167,10 +233,66 @@ export default function SettingsScreen({ navigation }) {
         {/* Backup */}
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Segurança e Backup</Text>
-          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Gere cópias de segurança do seu banco SQLite.</Text>
-          <TouchableOpacity style={[styles.backupBtn, { borderColor: activeTheme.accent }]} onPress={handleBackup}>
-            <Ionicons name="cloud-download-outline" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
-            <Text style={[styles.backupText, { color: activeTheme.accent }]}>Exportar Banco de Dados</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Sincronize seus dados com o Google Drive de forma segura.</Text>
+          
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary, marginBottom: 8, marginTop: 8 }]}>Frequência Automática:</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            {['daily', 'weekly', 'monthly'].map(f => (
+              <TouchableOpacity
+                key={f}
+                style={[styles.chip, { backgroundColor: activeTheme.cardSecondary }, backupFrequency === f && { backgroundColor: activeTheme.accent }]}
+                onPress={() => saveSetting('backupFrequency', f)}
+              >
+                <Text style={[styles.chipText, { color: activeTheme.textSecondary }, backupFrequency === f && { color: '#121212' }]}>
+                  {f === 'daily' ? 'Diário' : f === 'weekly' ? 'Semanal' : 'Mensal'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary, marginBottom: 8 }]}>Limite de Backups Salvos:</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            {['1', '5', '10'].map(l => (
+              <TouchableOpacity
+                key={l}
+                style={[styles.chip, { backgroundColor: activeTheme.cardSecondary }, backupLimit === l && { backgroundColor: activeTheme.accent }]}
+                onPress={() => saveSetting('backupLimit', l)}
+              >
+                <Text style={[styles.chipText, { color: activeTheme.textSecondary }, backupLimit === l && { color: '#121212' }]}>
+                  {l}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.backupBtn, { borderColor: activeTheme.accent, opacity: (isBackingUp || isRestoring) ? 0.5 : 1 }]} 
+            onPress={handleBackup}
+            disabled={isBackingUp || isRestoring}
+          >
+            {isBackingUp ? (
+                <ActivityIndicator color={activeTheme.accent} size="small" style={{ marginRight: 8 }} />
+            ) : (
+                <Ionicons name="cloud-upload-outline" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
+            )}
+            <Text style={[styles.backupText, { color: activeTheme.accent }]}>
+              {isBackingUp ? 'Enviando Backup...' : 'Fazer Backup Agora'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.backupBtn, { borderColor: activeTheme.expense, marginTop: 12, opacity: (isBackingUp || isRestoring) ? 0.5 : 1 }]} 
+            onPress={handleRestore}
+            disabled={isBackingUp || isRestoring}
+          >
+            {isRestoring ? (
+                <ActivityIndicator color={activeTheme.expense} size="small" style={{ marginRight: 8 }} />
+            ) : (
+                <Ionicons name="cloud-download-outline" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
+            )}
+            <Text style={[styles.backupText, { color: activeTheme.expense }]}>
+              {isRestoring ? 'Restaurando...' : 'Restaurar Backup'}
+            </Text>
           </TouchableOpacity>
         </View>
 

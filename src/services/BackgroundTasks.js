@@ -6,6 +6,7 @@ import { recurrences, transactions } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { RecurrenceGenerator } from './RecurrenceGenerator';
 import { Logger } from '../utils/logger';
+import { performSilentDailyBackup } from './GoogleDriveBackup';
 
 const BACKGROUND_FETCH_TASK = 'background-recurrence-fetch';
 
@@ -55,6 +56,13 @@ export const materializeRecurrencesUpToToday = async () => {
 
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   const insertedCount = await materializeRecurrencesUpToToday();
+  
+  try {
+    await performSilentDailyBackup();
+  } catch (e) {
+    Logger.error('Background Backup Error', e);
+  }
+
   return insertedCount > 0 
     ? BackgroundTask.BackgroundTaskResult.Success 
     : BackgroundTask.BackgroundTaskResult.NoData;

@@ -162,8 +162,12 @@ export const SettingsProvider = ({ children }) => {
     analyticsShowVilao: true,
     analyticsShowCharts: true,
     transactionsShowFilters: true,
+    transactionsShowFilters: true,
     showInvestmentsTab: false,
   });
+
+  const [backupLimit, setBackupLimit] = useState('5');
+  const [backupFrequency, setBackupFrequency] = useState('daily');
 
   const [macroTargets, setMacroTargets] = useState({
     'Essenciais': 50,
@@ -207,6 +211,8 @@ export const SettingsProvider = ({ children }) => {
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
           if (item.key === 'macroMapping') setMacroMapping(JSON.parse(item.value));
           if (item.key === 'macroOptions') setMacroOptions(JSON.parse(item.value));
+          if (item.key === 'backupLimit') setBackupLimit(item.value);
+          if (item.key === 'backupFrequency') setBackupFrequency(item.value);
         });
         
         if (!hasInitializedThemes) {
@@ -268,6 +274,8 @@ export const SettingsProvider = ({ children }) => {
     if (key === 'macroTargets') setMacroTargets(value);
     if (key === 'macroMapping') setMacroMapping(value);
     if (key === 'macroOptions') setMacroOptions(value);
+    if (key === 'backupLimit') setBackupLimit(value);
+    if (key === 'backupFrequency') setBackupFrequency(value);
 
     if (key !== 'llmKey') {
       await saveSettingInternal(key, value);
@@ -301,7 +309,7 @@ export const SettingsProvider = ({ children }) => {
   return (
     <SettingsContext.Provider value={{ 
       activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
-      macroOptions, macroMapping,
+      macroOptions, macroMapping, backupLimit, backupFrequency,
       isLoaded,
       saveSetting,
       getSecureKey,

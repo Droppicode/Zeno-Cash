@@ -14,6 +14,7 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import { registerBackgroundFetchAsync } from './src/services/BackgroundTasks';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
+import { performSilentDailyBackup } from './src/services/GoogleDriveBackup';
 
 const prefix = Linking.createURL('/');
 
@@ -34,6 +35,9 @@ export default function App() {
 
         // Registra a tarefa diária em background
         await registerBackgroundFetchAsync();
+
+        // Tenta executar o backup diário silencioso do Google Drive
+        await performSilentDailyBackup();
 
         if (Platform.OS === 'android') {
           try {
