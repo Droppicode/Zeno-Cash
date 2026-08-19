@@ -1,10 +1,10 @@
 import React, { useContext } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import ExtractionBanner from '../components/ui/ExtractionBanner';
-import { View } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
@@ -15,30 +15,63 @@ import RecurrenceDetailsScreen from '../screens/RecurrenceDetailsScreen';
 import DebtsScreen from '../screens/DebtsScreen';
 import ExtractionReviewScreen from '../screens/ExtractionReviewScreen';
 
-const Tab = createBottomTabNavigator();
+const Tab = createMaterialTopTabNavigator();
 const Stack = createNativeStackNavigator();
+
+function CustomTabBar({ state, descriptors, navigation, activeTheme }) {
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: activeTheme.card, paddingBottom: 24, paddingTop: 8, height: 70 }}>
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+        const color = isFocused ? activeTheme.accent : activeTheme.textSecondary;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        let iconName;
+        if (route.name === 'Home') iconName = isFocused ? 'home' : 'home-outline';
+        else if (route.name === 'Transações') iconName = isFocused ? 'list' : 'list-outline';
+        else if (route.name === 'Análise') iconName = isFocused ? 'pie-chart' : 'pie-chart-outline';
+        else if (route.name === 'Investimentos') iconName = isFocused ? 'trending-up' : 'trending-up-outline';
+        else if (route.name === 'Config') iconName = isFocused ? 'settings' : 'settings-outline';
+
+        return (
+          <TouchableOpacity
+            key={index}
+            onPress={onPress}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name={iconName} size={24} color={color} />
+            <Text style={{ fontSize: 10, color: color, marginTop: 4, fontFamily: activeTheme.fontFamily || 'monospace', fontWeight: isFocused ? 'bold' : 'normal' }}>
+              {route.name}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
 
 function MainTabs() {
   const { activeTheme, uiConfig } = useContext(SettingsContext);
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Transações') iconName = focused ? 'list' : 'list-outline';
-          else if (route.name === 'Análise') iconName = focused ? 'pie-chart' : 'pie-chart-outline';
-          else if (route.name === 'Investimentos') iconName = focused ? 'trending-up' : 'trending-up-outline';
-          else if (route.name === 'Config') iconName = focused ? 'settings' : 'settings-outline';
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: activeTheme.accent,
-        tabBarInactiveTintColor: activeTheme.textSecondary,
-        headerShown: false,
-        tabBarStyle: { backgroundColor: activeTheme.card, borderTopWidth: 0, paddingBottom: 24, paddingTop: 8, height: 70 },
-        sceneStyle: { backgroundColor: activeTheme.background }
-      })}
+      tabBarPosition="bottom"
+      tabBar={props => <CustomTabBar {...props} activeTheme={activeTheme} />}
+      screenOptions={{ swipeEnabled: true }}
+      sceneContainerStyle={{ backgroundColor: activeTheme.background }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Transações" component={TransactionsScreen} />
