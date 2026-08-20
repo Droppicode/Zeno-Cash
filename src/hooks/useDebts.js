@@ -31,6 +31,10 @@ export const useDebts = () => {
     await loadDebts();
   };
 
+  const getByTransactionId = async (txId) => {
+    return await DebtsRepository.getByTransactionId(txId);
+  };
+
   const getUniqueNames = async () => {
     return await DebtsRepository.getUniqueNames();
   };
@@ -42,6 +46,7 @@ export const useDebts = () => {
     addDebt,
     updateDebt,
     removeDebt,
+    getByTransactionId,
     getUniqueNames
   };
 };

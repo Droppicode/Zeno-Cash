@@ -59,7 +59,13 @@ expoDb.execSync(`
     type TEXT NOT NULL,
     amount REAL NOT NULL,
     date INTEGER NOT NULL,
-    account_id INTEGER
+    account_id INTEGER,
+    transaction_id INTEGER,
+    recurrence_id INTEGER,
+    is_paid INTEGER DEFAULT 0,
+    is_percentage INTEGER DEFAULT 0,
+    ignores_interest INTEGER DEFAULT 0,
+    description TEXT
   );
 
   -- Insert a default account if the table is completely empty
@@ -73,6 +79,12 @@ try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_pending INTEGER DE
 try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_ignored INTEGER DEFAULT 0;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN recurrence_id INTEGER;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE categories ADD COLUMN macro TEXT;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN transaction_id INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN recurrence_id INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_paid INTEGER DEFAULT 0;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_percentage INTEGER DEFAULT 0;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN ignores_interest INTEGER DEFAULT 0;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN description TEXT;'); } catch (e) {}
 
 expoDb.execSync(`
   INSERT INTO categories (name, icon, color, macro)

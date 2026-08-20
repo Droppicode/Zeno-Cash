@@ -15,8 +15,8 @@ export const TransactionRepository = {
 
   add: async (txData) => {
     try {
-      await db.insert(transactions).values(txData);
-      return true;
+      const res = await db.insert(transactions).values(txData).returning();
+      return res[0]?.id;
     } catch (err) {
       Logger.error('TransactionRepository.add', err);
       throw err;

@@ -76,6 +76,7 @@ export default function HomeScreen({ route, navigation }) {
     data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente
     await saveTx(data.id, data);
     await loadAccounts(); // Recarrega os saldos do DB
+    await loadDebts(); // Recarrega dívidas caso a transação envolva divisão
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -172,6 +173,7 @@ export default function HomeScreen({ route, navigation }) {
                             await removeTransaction(item.id);
                           }
                           await loadAccounts();
+                          await loadDebts();
                         }}
                         onAccept={async () => {
                           await updateTransaction(item.id, { isPending: 0 });
@@ -227,6 +229,7 @@ export default function HomeScreen({ route, navigation }) {
                             await removeTransaction(item.id);
                           }
                           await loadAccounts();
+                          await loadDebts();
                         }}>
                           <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
                             <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
@@ -317,6 +320,7 @@ export default function HomeScreen({ route, navigation }) {
             await removeTransaction(tx.id);
           }
           await loadAccounts();
+          await loadDebts();
         }}
         initialData={editingTx}
       />

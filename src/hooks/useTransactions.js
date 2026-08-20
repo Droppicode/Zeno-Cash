@@ -19,10 +19,11 @@ export const useTransactions = () => {
   }, []);
 
   const addTransaction = async (data) => {
-    const { recurrenceType, recurrenceData, ...txParams } = data;
+    const { recurrenceType, recurrenceData, splitDebts, ...txParams } = data;
     
+    let newTxId = null;
     if (recurrenceType && recurrenceType !== 'single' && recurrenceData) {
-      const recId = await RecurrenceRepository.add({
+      newTxId = await RecurrenceRepository.add({
         amount: txParams.amount,
         description: txParams.description,
         categoryId: txParams.categoryId,
@@ -32,21 +33,64 @@ export const useTransactions = () => {
         ...recurrenceData
       });
 
-      // Em vez de criar apenas a primeira parcela (que pode ser passada ou futura),
-      // pedimos para a engine de background materializar tudo que está atrasado ou é de hoje.
       await materializeRecurrencesUpToToday();
     } else {
-      await TransactionRepository.add({
+      newTxId = await TransactionRepository.add({
         ...txParams,
         date: txParams.date || Date.now()
       });
     }
     
+    const isRecurrence = recurrenceType && recurrenceType !== 'single' && recurrenceData;
+    
+    if (newTxId && splitDebts && splitDebts.length > 0) {
+      const { DebtsRepository } = require('../services/DebtsRepository');
+      for (const debt of splitDebts) {
+        await DebtsRepository.add({
+          personName: debt.personName,
+          type: debt.type || 'owed',
+          amount: debt.amount,
+          date: debt.date || txParams.date || Date.now(),
+          accountId: txParams.accountId,
+          transactionId: isRecurrence ? null : newTxId,
+          recurrenceId: isRecurrence ? newTxId : null,
+          isPaid: debt.isPaid ? 1 : 0,
+          isPercentage: debt.isPercentage ? 1 : 0,
+          ignoresInterest: debt.ignoresInterest ? 1 : 0,
+          description: debt.description || txParams.description
+        });
+      }
+    }
+
     await loadTransactions();
   };
 
   const updateTransaction = async (id, data) => {
-    await TransactionRepository.update(id, data);
+    const { splitDebts, ...txParams } = data;
+    await TransactionRepository.update(id, txParams);
+    
+    if (splitDebts) {
+      const { DebtsRepository } = require('../services/DebtsRepository');
+      // Recalculate percentage debts if transaction amount changed
+      // But it's easier to just remove old and insert new ones
+      await DebtsRepository.removeByTransactionId(id);
+      
+      for (const debt of splitDebts) {
+        await DebtsRepository.add({
+          personName: debt.personName,
+          type: debt.type || 'owed',
+          amount: debt.amount,
+          date: debt.date || txParams.date || Date.now(),
+          accountId: txParams.accountId,
+          transactionId: id,
+          isPaid: debt.isPaid ? 1 : 0,
+          isPercentage: debt.isPercentage ? 1 : 0,
+          ignoresInterest: debt.ignoresInterest ? 1 : 0,
+          description: debt.description || txParams.description
+        });
+      }
+    }
+    
     await loadTransactions();
   };
 
@@ -60,6 +104,8 @@ export const useTransactions = () => {
 
   const removeTransaction = async (id) => {
     await TransactionRepository.remove(id);
+    const { DebtsRepository } = require('../services/DebtsRepository');
+    await DebtsRepository.removeByTransactionId(id);
     await loadTransactions();
   };
 

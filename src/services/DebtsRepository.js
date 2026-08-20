@@ -43,6 +43,46 @@ export const DebtsRepository = {
     }
   },
 
+  getByTransactionId: async (txId) => {
+    try {
+      const data = await db.select().from(debts).where(eq(debts.transactionId, txId));
+      return data || [];
+    } catch (e) {
+      console.error('Error fetching debts by txId:', e);
+      return [];
+    }
+  },
+
+  removeByTransactionId: async (txId) => {
+    try {
+      await db.delete(debts).where(eq(debts.transactionId, txId));
+      return true;
+    } catch (e) {
+      console.error('Error removing debts by txId:', e);
+      return false;
+    }
+  },
+
+  getByRecurrenceId: async (recId) => {
+    try {
+      const data = await db.select().from(debts).where(sql`${debts.recurrenceId} = ${recId} AND ${debts.transactionId} IS NULL`);
+      return data || [];
+    } catch (e) {
+      console.error('Error fetching debts by recId:', e);
+      return [];
+    }
+  },
+
+  removeByRecurrenceId: async (recId) => {
+    try {
+      await db.delete(debts).where(sql`${debts.recurrenceId} = ${recId} AND ${debts.transactionId} IS NULL`);
+      return true;
+    } catch (e) {
+      console.error('Error removing debts by recId:', e);
+      return false;
+    }
+  },
+
   getUniqueNames: async () => {
     try {
       // Drizzle doesn't have a direct distinct() for SQLite in all versions yet, so we use raw SQL or group by

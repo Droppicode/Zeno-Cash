@@ -12,13 +12,14 @@ import { DateUtils } from '../utils/dateUtils';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import TransactionModal from '../components/TransactionModal';
 import BaseModalCenter from '../components/ui/BaseModalCenter';
+import { useDebts } from '../hooks/useDebts';
 import { getZoomFactor } from '../utils/scaler';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 import { DocumentScanner } from '../services/DocumentScanner';
 import { ExtractionContext } from '../context/ExtractionContext';
 
-const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, accountList, styles, onEdit, onDelete, onAccept }) => {
+const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, accountList, styles, onEdit, onDelete, onAccept, onSplit, hasSplit }) => {
   const catInfo = resolveCategory(item, categoryList);
   const accountName = accountList?.find(a => a.id === item.accountId)?.name || 'Sem Conta';
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
@@ -65,9 +66,13 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
                     <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
                   </View>
                 )}
+                {hasSplit && (
+                  <TouchableOpacity onPress={onSplit} style={{ marginLeft: 6, padding: 4 }}>
+                    <Ionicons name="people" size={14} color={activeTheme.accent} />
+                  </TouchableOpacity>
+                )}
               </View>
-              {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
-              <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {catInfo.categoryName} • {accountName}</Text>
+              <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {accountName}</Text>
             </View>
           </View>
           <Text style={[
@@ -87,7 +92,8 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
          prevProps.categoryList === nextProps.categoryList &&
          prevProps.accountList === nextProps.accountList &&
          prevProps.sectionLength === nextProps.sectionLength &&
-         prevProps.index === nextProps.index;
+         prevProps.index === nextProps.index &&
+         prevProps.hasSplit === nextProps.hasSplit;
 });
 
 export default function TransactionsScreen({ navigation }) {
@@ -96,9 +102,11 @@ export default function TransactionsScreen({ navigation }) {
   const { txList, loadTransactions, saveTransaction, removeTransaction, updateTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
   const { accountList, loadAccounts } = useAccounts();
+  const { debtsList, loadDebts } = useDebts();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
+  const [initialSplitMode, setInitialSplitMode] = useState(false);
 
   const [contextModalVisible, setContextModalVisible] = useState(false);
   const [pendingDoc, setPendingDoc] = useState(null);
@@ -275,23 +283,26 @@ export default function TransactionsScreen({ navigation }) {
     data.isPending = 0;
     await saveTransaction(data.id, data);
     await loadAccounts(); 
+    await loadDebts();
     setModalVisible(false);
     setEditingTx(null);
   };
 
-  const handleEdit = useCallback((item) => {
+  const handleEdit = useCallback((item, isSplit = false) => {
     setEditingTx(item);
+    setInitialSplitMode(isSplit);
     setModalVisible(true);
   }, []);
 
   const handleDelete = useCallback(async (item) => {
     if (item.recurrenceId) {
-      await updateTransaction(item.id, { isIgnored: 1 });
+      await updateTransaction(item.id, { isIgnored: 1, splitDebts: [] });
     } else {
       await removeTransaction(item.id);
     }
     await loadAccounts();
-  }, [removeTransaction, updateTransaction, loadAccounts]);
+    await loadDebts();
+  }, [removeTransaction, updateTransaction, loadAccounts, loadDebts]);
 
   const handleAccept = useCallback(async (item) => {
     await updateTransaction(item.id, { isPending: 0 });
@@ -299,6 +310,10 @@ export default function TransactionsScreen({ navigation }) {
   }, [updateTransaction, loadAccounts]);
 
   const renderItem = useCallback(({ item, index, section }) => {
+    const hasSplit = item.isVirtual
+      ? debtsList.some(d => d.recurrenceId === item.recurrenceId && !d.transactionId)
+      : debtsList.some(d => d.transactionId === item.id);
+
     return (
       <TransactionItem
         item={item}
@@ -308,12 +323,14 @@ export default function TransactionsScreen({ navigation }) {
         categoryList={categoryList}
         accountList={accountList}
         styles={styles}
-        onEdit={() => handleEdit(item)}
+        onEdit={() => handleEdit(item, false)}
         onDelete={() => handleDelete(item)}
         onAccept={item.isPending === 1 ? () => handleAccept(item) : undefined}
+        onSplit={() => handleEdit(item, true)}
+        hasSplit={hasSplit}
       />
     );
-  }, [activeTheme, categoryList, styles, handleEdit, handleDelete, handleAccept]);
+  }, [activeTheme, categoryList, styles, handleEdit, handleDelete, handleAccept, debtsList]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
@@ -332,7 +349,7 @@ export default function TransactionsScreen({ navigation }) {
           
           <TouchableOpacity 
             style={[styles.importBtn, { backgroundColor: activeTheme.cardSecondary }]}
-            onPress={() => { setEditingTx(null); setModalVisible(true); }}
+            onPress={() => { setEditingTx(null); setInitialSplitMode(false); setModalVisible(true); }}
           >
             <Ionicons name="add" size={24} color={activeTheme.text} />
           </TouchableOpacity>
@@ -490,17 +507,19 @@ export default function TransactionsScreen({ navigation }) {
 
       <TransactionModal 
         visible={modalVisible}
-        onClose={() => { setModalVisible(false); setEditingTx(null); }}
+        onClose={() => { setModalVisible(false); setEditingTx(null); setInitialSplitMode(false); }}
         onSave={handleSave}
         onDelete={async (tx) => {
           if (tx.recurrenceId) {
-            await updateTransaction(tx.id, { isIgnored: 1 });
+            await updateTransaction(tx.id, { isIgnored: 1, splitDebts: [] });
           } else {
             await removeTransaction(tx.id);
           }
           await loadAccounts();
+          await loadDebts();
         }}
         initialData={editingTx}
+        initialSplitMode={initialSplitMode}
       />
 
       <BaseModalCenter

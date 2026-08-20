@@ -3,10 +3,11 @@ import * as TaskManager from 'expo-task-manager';
 import * as Notifications from 'expo-notifications';
 import { db } from '../database/db';
 import { recurrences, transactions } from '../database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { RecurrenceGenerator } from './RecurrenceGenerator';
 import { Logger } from '../utils/logger';
 import { performSilentDailyBackup } from './GoogleDriveBackup';
+import { DebtsRepository } from './DebtsRepository';
 
 const BACKGROUND_FETCH_TASK = 'background-recurrence-fetch';
 
@@ -30,11 +31,50 @@ export const materializeRecurrencesUpToToday = async () => {
     for (const vtx of virtualTxs) {
       if (vtx.date <= todayEnd.getTime()) {
         const { id, isVirtual, iteration, ...txData } = vtx;
-        await db.insert(transactions).values({
+        const res = await db.insert(transactions).values({
           ...txData,
           isPending: 1, // force pending
-        });
+        }).returning();
         insertedCount++;
+
+        const newTxId = res[0]?.id;
+        if (newTxId && txData.recurrenceId) {
+          const globalDebts = await DebtsRepository.getByRecurrenceId(txData.recurrenceId);
+          if (globalDebts && globalDebts.length > 0) {
+            const parentRec = activeRecurrences.find(r => r.id === txData.recurrenceId);
+            const parentAmount = parentRec ? parentRec.amount : 0;
+
+            for (const d of globalDebts) {
+              let newAmount = d.amount;
+              if (d.ignoresInterest) {
+                if (parentRec && parentRec.installments) {
+                  newAmount = d.amount / parentRec.installments;
+                } else {
+                  newAmount = d.amount;
+                }
+              } else {
+                if (parentAmount > 0) {
+                  // Escala proporcionalmente para parcelamentos ou juros
+                  newAmount = d.amount * (txData.amount / parentAmount);
+                }
+              }
+
+              await DebtsRepository.add({
+                personName: d.personName,
+                type: d.type,
+                amount: newAmount,
+                date: txData.date, // align date with the transaction
+                accountId: txData.accountId,
+                transactionId: newTxId, // link specifically to this transaction
+                recurrenceId: txData.recurrenceId,
+                isPaid: d.isPaid,
+                isPercentage: d.isPercentage,
+                ignoresInterest: d.ignoresInterest,
+                description: d.description || txData.note
+              });
+            }
+          }
+        }
 
         await Notifications.scheduleNotificationAsync({
           content: {

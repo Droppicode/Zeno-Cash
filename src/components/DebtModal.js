@@ -6,21 +6,23 @@ import { useDebts } from '../hooks/useDebts';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function DebtModal({ visible, onClose, onDelete, initialData = null }) {
+export default function DebtModal({ visible, onClose, onDelete, onViewTransaction, initialData = null }) {
   const { activeTheme } = useContext(SettingsContext);
   const { addDebt, updateDebt, getUniqueNames } = useDebts();
   const { accountList, loadAccounts } = useAccounts();
 
   const [personName, setPersonName] = useState('');
+  const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('owe'); // 'owe' or 'owed'
   const [date, setDate] = useState('');
-  const [accountId, setAccountId] = useState(null);
+  const [isPaid, setIsPaid] = useState(false);
 
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const z = getZoomFactor(activeTheme);
+  const f = activeTheme.fontFamily || 'monospace';
   const styles = useMemo(() => getStyles(activeTheme), [activeTheme]);
 
   const formatCurrency = (value) => {
@@ -38,17 +40,19 @@ export default function DebtModal({ visible, onClose, onDelete, initialData = nu
     if (visible) {
       if (initialData) {
         setPersonName(initialData.personName);
+        setDescription(initialData.description || '');
         const numStr = (initialData.amount * 100).toFixed(0);
         setAmount(formatCurrency(numStr));
         setType(initialData.type);
         setDate(new Date(initialData.date).toLocaleDateString('pt-BR'));
-        setAccountId(initialData.accountId);
+        setIsPaid(initialData.isPaid === 1);
       } else {
         setPersonName('');
+        setDescription('');
         setAmount('');
         setType('owe');
         setDate(new Date().toLocaleDateString('pt-BR'));
-        setAccountId(null);
+        setIsPaid(false);
       }
       loadAccounts();
     }
@@ -97,10 +101,11 @@ export default function DebtModal({ visible, onClose, onDelete, initialData = nu
 
     const data = {
       personName,
+      description: description.trim(),
       amount: numAmount,
       type,
       date: parsedDate,
-      accountId
+      isPaid: isPaid ? 1 : 0
     };
 
     if (initialData) {
@@ -129,6 +134,21 @@ export default function DebtModal({ visible, onClose, onDelete, initialData = nu
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <View style={{ alignItems: 'center', marginVertical: 24 * z }}>
+              <Text style={{ color: activeTheme.textSecondary, fontSize: 16 * z, marginBottom: 8 * z, fontFamily: f }}>Valor</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: activeTheme.text, fontSize: 24 * z, fontWeight: 'bold', marginRight: 8 * z, fontFamily: f }}>R$</Text>
+                <TextInput
+                  style={{ fontSize: 40 * z, fontWeight: 'bold', color: type === 'owe' ? activeTheme.expense : activeTheme.income, minWidth: 120 * z, textAlign: 'center', fontFamily: f }}
+                  value={amount}
+                  onChangeText={(val) => setAmount(formatCurrency(val))}
+                  placeholder="0,00"
+                  keyboardType="numeric"
+                  placeholderTextColor={activeTheme.textSecondary}
+                />
+              </View>
+            </View>
+
             {/* Type Switch */}
             <View style={styles.typeContainer}>
               <TouchableOpacity
@@ -166,15 +186,14 @@ export default function DebtModal({ visible, onClose, onDelete, initialData = nu
               )}
             </View>
 
-            {/* Amount */}
+            {/* Description */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Valor</Text>
+              <Text style={styles.label}>Nota / Título (Opcional)</Text>
               <TextInput
                 style={styles.input}
-                value={amount}
-                onChangeText={(val) => setAmount(formatCurrency(val))}
-                placeholder="0,00"
-                keyboardType="numeric"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Ex: Almoço"
                 placeholderTextColor={activeTheme.textSecondary}
               />
             </View>
@@ -193,30 +212,31 @@ export default function DebtModal({ visible, onClose, onDelete, initialData = nu
               />
             </View>
 
-            {/* Account Optional */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Conta Relacionada (Opcional)</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountScroll}>
-                <TouchableOpacity
-                  style={[styles.accountBtn, accountId === null && styles.accountBtnActive]}
-                  onPress={() => setAccountId(null)}
-                >
-                  <Text style={[styles.accountText, accountId === null && styles.accountTextActive]}>Nenhuma</Text>
-                </TouchableOpacity>
-                {accountList.map(acc => (
-                  <TouchableOpacity
-                    key={acc.id}
-                    style={[styles.accountBtn, accountId === acc.id && styles.accountBtnActive]}
-                    onPress={() => setAccountId(acc.id)}
-                  >
-                    <Text style={[styles.accountText, accountId === acc.id && styles.accountTextActive]}>{acc.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+            {/* Is Paid Toggle */}
+            <View style={[styles.inputGroup, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+              <Text style={[styles.label, { marginBottom: 0 }]}>Já foi pago?</Text>
+              <Switch
+                value={isPaid}
+                onValueChange={setIsPaid}
+                trackColor={{ false: activeTheme.cardSecondary, true: activeTheme.accent }}
+                thumbColor={isPaid ? '#121212' : activeTheme.textSecondary}
+              />
             </View>
+
+            {/* Date */}
 
           </ScrollView>
           <View style={styles.footer}>
+            {initialData && (initialData.transactionId || initialData.recurrenceId) && onViewTransaction && (
+              <TouchableOpacity 
+                style={[styles.deleteButton, { backgroundColor: activeTheme.accent + '20', marginRight: 12 * z }]} 
+                onPress={() => onViewTransaction(initialData)}
+              >
+                <Ionicons name="link" size={20 * z} color={activeTheme.accent} style={{ marginRight: 8 * z }} />
+                <Text style={[styles.deleteButtonText, { color: activeTheme.accent }]}>Transação</Text>
+              </TouchableOpacity>
+            )}
+            
             {initialData && onDelete && (
               <TouchableOpacity 
                 style={styles.deleteButton} 
@@ -226,7 +246,7 @@ export default function DebtModal({ visible, onClose, onDelete, initialData = nu
                 }}
               >
                 <Ionicons name="trash-outline" size={20 * z} color={activeTheme.expense} style={{ marginRight: 8 * z }} />
-                <Text style={styles.deleteButtonText}>Apagar Dívida</Text>
+                <Text style={styles.deleteButtonText}>Apagar</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>

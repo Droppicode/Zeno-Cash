@@ -1,30 +1,35 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../database/db';
 import { recurrences, transactions } from '../database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { SettingsContext } from '../context/SettingsContext';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
+import { useDebts } from '../hooks/useDebts';
 import { getZoomFactor } from '../utils/scaler';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 import { resolveCategory } from '../services/categorizer';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
 import TransactionModal from '../components/TransactionModal';
+import { DebtsRepository } from '../services/DebtsRepository';
 
 export default function RecurrenceDetailsScreen({ route, navigation }) {
   const { id } = route.params;
   const { activeTheme } = useContext(SettingsContext);
-  const { txList, loadTransactions, updateTransaction } = useTransactions();
+  const { txList, loadTransactions, updateTransaction, saveTransaction, removeTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
+  const { debtsList, loadDebts } = useDebts();
   
   const [recurrence, setRecurrence] = useState(null);
   const [loading, setLoading] = useState(true);
   
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [txModalVisible, setTxModalVisible] = useState(false);
+  const [editingTx, setEditingTx] = useState(null);
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -33,6 +38,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
   useEffect(() => {
     loadTransactions();
     loadCategories();
+    loadDebts();
     fetchRecurrence();
   }, []);
 
@@ -50,7 +56,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
   };
 
   const handleSaveContract = async (data) => {
-    const { recurrenceType, recurrenceData, date, ...txParams } = data;
+    const { recurrenceType, recurrenceData, date, splitDebts, ...txParams } = data;
     
     // We only update if it is still a recurrence. If they set it to "single", we could technically
     // cancel the contract and leave it as a single transaction, but for simplicity we assume they just update it.
@@ -64,15 +70,43 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
         startDate: date,
         ...recurrenceData
       });
+
+      if (splitDebts) {
+        await DebtsRepository.removeByRecurrenceId(id);
+        for (const debt of splitDebts) {
+          await DebtsRepository.add({
+            personName: debt.personName,
+            type: debt.type || 'owed',
+            amount: debt.amount,
+            date: debt.date || date || Date.now(),
+            accountId: txParams.accountId,
+            transactionId: null,
+            recurrenceId: id,
+            isPaid: debt.isPaid ? 1 : 0,
+            isPercentage: debt.isPercentage ? 1 : 0,
+            ignoresInterest: debt.ignoresInterest ? 1 : 0,
+            description: debt.description || txParams.description || recurrence.description
+          });
+        }
+      }
       
-      // Excluir todas as transações (pendentes/pagas) antigas deste contrato
-      await db.delete(transactions).where(eq(transactions.recurrenceId, id));
+      // Limpar as dívidas antigas atreladas às transações pendentes que serão apagadas
+      const pendingTxs = await db.select({ id: transactions.id }).from(transactions)
+        .where(and(eq(transactions.recurrenceId, id), eq(transactions.isPending, 1)));
+        
+      for (const pt of pendingTxs) {
+        await DebtsRepository.removeByTransactionId(pt.id);
+      }
+
+      // Excluir apenas as transações PENDENTES deste contrato. As pagas ou antigas são mantidas!
+      await db.delete(transactions).where(and(eq(transactions.recurrenceId, id), eq(transactions.isPending, 1)));
 
       // Re-materializar as novas transações baseadas no contrato atualizado
       await materializeRecurrencesUpToToday();
       
       await loadTransactions();
       await fetchRecurrence();
+      await loadDebts();
     } else {
       Alert.alert('Erro', 'O contrato não pode ser convertido em uma transação única por aqui.');
     }
@@ -120,6 +154,81 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
     await loadTransactions();
   };
 
+  const handleSaveSpecificTx = async (data) => {
+    if (editingTx && editingTx.id) {
+      await updateTransaction(editingTx.id, data);
+    } else {
+      await saveTransaction(data);
+    }
+    setTxModalVisible(false);
+    setEditingTx(null);
+    await loadTransactions();
+    await loadDebts();
+  };
+
+  const materializeVirtual = async (item) => {
+    const { id, isVirtual, iteration, ...txData } = item;
+    const res = await db.insert(transactions).values({ ...txData, isPending: 1 }).returning();
+    const newTxId = res[0]?.id;
+    
+    if (newTxId && txData.recurrenceId) {
+      const parentAmount = recurrence.amount;
+      const splitDebts = debtsList.filter(d => d.recurrenceId === recurrence.id && !d.transactionId);
+
+      if (splitDebts && splitDebts.length > 0) {
+        for (const d of splitDebts) {
+          let newAmount = d.amount;
+          if (d.ignoresInterest) {
+            if (recurrence.installments) {
+              newAmount = d.amount / recurrence.installments;
+            } else {
+              newAmount = d.amount;
+            }
+          } else {
+            if (parentAmount > 0) {
+              newAmount = d.amount * (txData.amount / parentAmount);
+            }
+          }
+          await DebtsRepository.add({
+            personName: d.personName,
+            type: d.type,
+            amount: newAmount,
+            date: txData.date,
+            accountId: txData.accountId,
+            transactionId: newTxId,
+            recurrenceId: txData.recurrenceId,
+            isPaid: d.isPaid,
+            isPercentage: d.isPercentage,
+            ignoresInterest: d.ignoresInterest,
+            description: d.description || txData.note
+          });
+        }
+      }
+    }
+    
+    await loadTransactions();
+    await loadDebts();
+    
+    setEditingTx({ ...item, id: newTxId, isVirtual: false, isPending: 1 });
+    setTxModalVisible(true);
+  };
+
+  const handleTxPress = (item) => {
+    if (item.isVirtual) {
+      Alert.alert(
+        "Materializar Ocorrência", 
+        "Essa fatura ainda não ocorreu. Deseja adiantá-la e materializá-la agora como Pendente para edição?",
+        [
+          { text: "Cancelar", style: 'cancel' },
+          { text: "Materializar", onPress: () => materializeVirtual(item) }
+        ]
+      );
+    } else {
+      setEditingTx(item);
+      setTxModalVisible(true);
+    }
+  };
+
   const combinedList = useMemo(() => {
     if (!recurrence) return [];
 
@@ -146,6 +255,45 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
     return merged.sort((a, b) => a.date - b.date);
 
   }, [recurrence, txList]);
+
+  const globalSplits = useMemo(() => {
+    return debtsList.filter(d => d.recurrenceId === recurrence?.id && !d.transactionId);
+  }, [debtsList, recurrence]);
+
+  const isSplitOverridden = useCallback((tx) => {
+    if (tx.isVirtual) return false;
+    const txSplits = debtsList.filter(d => d.transactionId === tx.id);
+    
+    if (txSplits.length === 0 && globalSplits.length > 0) return true;
+    if (txSplits.length > 0 && globalSplits.length === 0) return true;
+    if (txSplits.length === 0 && globalSplits.length === 0) return false;
+    
+    if (txSplits.length !== globalSplits.length) return true;
+    
+    const parentAmount = recurrence?.amount || 0;
+
+    for (const g of globalSplits) {
+      const t = txSplits.find(ts => ts.personName === g.personName);
+      if (!t) return true;
+      if (g.isPercentage !== t.isPercentage) return true;
+      
+      let expectedAmount = g.amount;
+      if (g.ignoresInterest) {
+        if (recurrence?.installments) {
+          expectedAmount = g.amount / recurrence.installments;
+        } else {
+          expectedAmount = g.amount;
+        }
+      } else {
+        if (parentAmount > 0) {
+          expectedAmount = g.amount * (tx.amount / parentAmount);
+        }
+      }
+
+      if (Math.abs(expectedAmount - t.amount) > 0.05) return true;
+    }
+    return false;
+  }, [debtsList, globalSplits, recurrence]);
 
   if (loading) {
     return (
@@ -218,6 +366,13 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
             </Text>
           </View>
 
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 * z }}>
+            <Text style={{ color: activeTheme.textSecondary }}>Divisão Global</Text>
+            <Text style={{ color: activeTheme.text, fontWeight: 'bold' }}>
+              {globalSplits.length > 0 ? `${globalSplits.length} pessoa(s)` : 'Nenhuma'}
+            </Text>
+          </View>
+
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={{ color: activeTheme.textSecondary }}>Status</Text>
             <Text style={{ color: recurrence.isActive === 1 ? '#4CAF50' : '#F44336', fontWeight: 'bold' }}>
@@ -272,7 +427,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
             }
 
             return (
-              <View key={item.id} style={[styles.txCard, { backgroundColor: activeTheme.card, opacity: isIgnored ? 0.6 : 1 }]}>
+              <TouchableOpacity key={item.id} onPress={() => handleTxPress(item)} style={[styles.txCard, { backgroundColor: activeTheme.card, opacity: isIgnored ? 0.6 : 1 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold', textDecorationLine: isIgnored ? 'line-through' : 'none' }}>
                     {item.note || `Ocorrência ${index + 1}`}
@@ -292,6 +447,14 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
                         {statusText}
                       </Text>
                     </View>
+                    {isSplitOverridden(item) && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 * z }}>
+                        <Ionicons name="people" size={14 * z} color="#9C27B0" />
+                        <Text style={{ color: "#9C27B0", fontSize: 12 * z, fontWeight: 'bold', marginLeft: 4 * z }}>
+                          Divisão Específica
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   {isIgnored && (
                     <TouchableOpacity onPress={() => recoverTransaction(item.id)} style={{ padding: 8 * z, backgroundColor: activeTheme.background, borderRadius: 8 * z }}>
@@ -299,7 +462,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
                     </TouchableOpacity>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -311,6 +474,23 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
         onClose={() => setEditModalVisible(false)} 
         onSave={handleSaveContract} 
         isContractEdit={true}
+      />
+
+      <TransactionModal 
+        visible={txModalVisible} 
+        initialData={editingTx} 
+        onClose={() => { setTxModalVisible(false); setEditingTx(null); }} 
+        onSave={handleSaveSpecificTx}
+        onDelete={async () => {
+          if (editingTx && editingTx.id) {
+            await updateTransaction(editingTx.id, { isIgnored: 1, splitDebts: [] });
+            await loadTransactions();
+            await loadDebts();
+          }
+          setTxModalVisible(false);
+          setEditingTx(null);
+        }}
+        isContractEdit={false}
       />
     </SafeAreaView>
   );

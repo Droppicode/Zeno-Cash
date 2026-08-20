@@ -9,7 +9,7 @@ import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
-import { ExtractionConfigScreen } from './ExtractionConfigScreen';
+import ExtractionConfigScreen from './ExtractionConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';

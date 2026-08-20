@@ -55,8 +55,14 @@ export const recurrences = sqliteTable('recurrences', {
 export const debts = sqliteTable('debts', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   personName: text('person_name').notNull(),
+  description: text('description'),
   type: text('type').notNull(), // 'owe' or 'owed'
   amount: real('amount').notNull(),
   date: integer('date').notNull(), // unix timestamp
   accountId: integer('account_id'),
+  transactionId: integer('transaction_id'),
+  recurrenceId: integer('recurrence_id'),
+  isPaid: integer('is_paid').default(0),
+  isPercentage: integer('is_percentage').default(0),
+  ignoresInterest: integer('ignores_interest').default(0),
 });
