@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
 import SwipeableCard from '../components/ui/SwipeableCard';
+import MonthSelector from '../components/ui/MonthSelector';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { resolveCategory } from '../services/categorizer';
@@ -17,7 +18,9 @@ export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
-  const [period, setPeriod] = useState(defaultPeriod || '30d');
+  
+  const [centerMonthDate, setCenterMonthDate] = useState(new Date());
+  const [selectedMonths, setSelectedMonths] = useState([`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`]);
   
   useEffect(() => {
     if (route?.params?.type) {
@@ -30,7 +33,16 @@ export default function HomeScreen({ route, navigation }) {
     }
   }, [route?.params?.type]);
   
-  const { txList, loadTransactions, saveTransaction: saveTx, updateTransaction, removeTransaction, filterByPeriod } = useTransactions();
+  const { 
+    txList, 
+    loadTransactions, 
+    saveTransaction: saveTx, 
+    updateTransaction, 
+    removeTransaction, 
+    filterByPeriod,
+    cachedBalances,
+    loadMonthlyBalances 
+  } = useTransactions();
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
   const { debtsList, loadDebts } = useDebts();
@@ -53,22 +65,22 @@ export default function HomeScreen({ route, navigation }) {
     });
   }, [accountList]);
 
-  const filteredTxList = useMemo(() => filterByPeriod(txList, period), [txList, period, filterByPeriod]);
+  const filteredTxList = useMemo(() => filterByPeriod(txList, selectedMonths), [txList, selectedMonths, filterByPeriod]);
   
-  const balance = useMemo(() => {
-    let inTotal = 0;
-    let outTotal = 0;
-    filteredTxList.forEach(t => {
-      if (t.isIgnored === 1) return;
-      if (t.type === 'income') inTotal += t.amount;
-      else outTotal += t.amount;
-    });
-    return { total: inTotal - outTotal, income: inTotal, expense: outTotal };
-  }, [filteredTxList]);
+  useEffect(() => {
+    loadMonthlyBalances(selectedMonths);
+  }, [selectedMonths, txList, loadMonthlyBalances]);
 
-  const pendingTxList = txList.filter(t => t.isPending === 1 && t.isIgnored !== 1).sort((a, b) => a.date - b.date);
-  const displayPendingList = pendingTxList.slice(0, 10);
-  const recentTxList = txList.filter(t => t.isPending !== 1 && t.isIgnored !== 1 && t.date <= Date.now());
+  const balance = cachedBalances;
+
+  const { pendingTxList, displayPendingList, recentTxList } = useMemo(() => {
+    const pending = txList.filter(t => t.isPending === 1 && t.isIgnored !== 1).sort((a, b) => a.date - b.date);
+    return {
+      pendingTxList: pending,
+      displayPendingList: pending.slice(0, 10),
+      recentTxList: txList.filter(t => t.isPending !== 1 && t.isIgnored !== 1 && t.date <= Date.now())
+    };
+  }, [txList]);
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
   const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
 
@@ -87,24 +99,21 @@ export default function HomeScreen({ route, navigation }) {
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 * getZoomFactor(activeTheme) }}>
         {/* Filtro Temporal na Home */}
-        <View style={styles.headerRow}>
-          <Text style={[styles.headerTitle, { color: activeTheme.text }]}>Visão Geral</Text>
-          <View style={[styles.periodBox, { backgroundColor: activeTheme.cardSecondary }]}>
-            <TouchableOpacity onPress={() => setPeriod('30d')}>
-              <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '30d' && { color: '#121212', backgroundColor: activeTheme.accent, borderRadius: 16 }]}>30D</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setPeriod('90d')}>
-              <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === '90d' && { color: '#121212', backgroundColor: activeTheme.accent, borderRadius: 16 }]}>90D</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setPeriod('all')}>
-              <Text style={[styles.periodText, { color: activeTheme.textSecondary }, period === 'all' && { color: '#121212', backgroundColor: activeTheme.accent, borderRadius: 16 }]}>Tudo</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Spacer if needed or just empty */}
+        <View style={{ height: 16 * getZoomFactor(activeTheme) }} />
 
         {/* Resumo Dinâmico (Total do Período) */}
         <View style={[styles.summaryCard, { backgroundColor: activeTheme.card }]}>
-          <Text style={[styles.summaryTitle, { color: activeTheme.textSecondary }]}>Balanço do Período</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={[styles.summaryTitle, { color: activeTheme.textSecondary }]}>Balanço do Período</Text>
+            <MonthSelector 
+              theme={activeTheme}
+              centerDate={centerMonthDate}
+              selectedMonths={selectedMonths}
+              onCenterChange={setCenterMonthDate}
+              onSelectionChange={setSelectedMonths}
+            />
+          </View>
           <Text style={[styles.summaryAmount, { color: activeTheme.text }]}>R$ {balance.total.toFixed(2)}</Text>
           
           <View style={styles.row}>

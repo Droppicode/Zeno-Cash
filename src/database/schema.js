@@ -66,3 +66,11 @@ export const debts = sqliteTable('debts', {
   isPercentage: integer('is_percentage').default(0),
   ignoresInterest: integer('ignores_interest').default(0),
 });
+
+export const monthlyBalances = sqliteTable('monthly_balances', {
+  monthKey: text('month_key').primaryKey(), // format 'YYYY-MM'
+  income: real('income').default(0),
+  expense: real('expense').default(0),
+  total: real('total').default(0),
+});
+

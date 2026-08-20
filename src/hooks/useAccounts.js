@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AccountRepository } from '../services/AccountRepository';
 
 export const useAccounts = () => {
@@ -13,19 +13,23 @@ export const useAccounts = () => {
     return data;
   }, []);
 
-  const saveAccount = async (id, data) => {
+  const saveAccount = useCallback(async (id, data) => {
     if (id) {
       await AccountRepository.update(id, data);
     } else {
       await AccountRepository.add(data);
     }
     await loadAccounts();
-  };
+  }, [loadAccounts]);
 
-  const deleteAccount = async (id) => {
+  const deleteAccount = useCallback(async (id) => {
     await AccountRepository.remove(id);
     await loadAccounts();
-  };
+  }, [loadAccounts]);
 
-  return { accountList, loading, loadAccounts, saveAccount, deleteAccount };
+  const hookValue = useMemo(() => ({
+    accountList, loading, loadAccounts, saveAccount, deleteAccount
+  }), [accountList, loading, loadAccounts, saveAccount, deleteAccount]);
+
+  return hookValue;
 };

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { db } from '../database/db';
 import { settings } from '../database/schema';
 import { eq } from 'drizzle-orm';
@@ -306,15 +306,21 @@ export const SettingsProvider = ({ children }) => {
     }
   };
 
+  const contextValue = useMemo(() => ({
+    activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
+    macroOptions, macroMapping, backupLimit, backupFrequency,
+    isLoaded,
+    saveSetting,
+    getSecureKey,
+    saveSecureKey
+  }), [
+    activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
+    macroOptions, macroMapping, backupLimit, backupFrequency, isLoaded,
+    saveSetting, getSecureKey, saveSecureKey
+  ]);
+
   return (
-    <SettingsContext.Provider value={{ 
-      activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
-      macroOptions, macroMapping, backupLimit, backupFrequency,
-      isLoaded,
-      saveSetting,
-      getSecureKey,
-      saveSecureKey
-    }}>
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );

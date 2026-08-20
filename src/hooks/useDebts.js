@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { DebtsRepository } from '../services/DebtsRepository';
 
 export const useDebts = () => {
@@ -13,33 +13,33 @@ export const useDebts = () => {
     return data;
   }, []);
 
-  const addDebt = async (data) => {
+  const addDebt = useCallback(async (data) => {
     await DebtsRepository.add({
       ...data,
       date: data.date || Date.now()
     });
     await loadDebts();
-  };
+  }, [loadDebts]);
 
-  const updateDebt = async (id, data) => {
+  const updateDebt = useCallback(async (id, data) => {
     await DebtsRepository.update(id, data);
     await loadDebts();
-  };
+  }, [loadDebts]);
 
-  const removeDebt = async (id) => {
+  const removeDebt = useCallback(async (id) => {
     await DebtsRepository.remove(id);
     await loadDebts();
-  };
+  }, [loadDebts]);
 
-  const getByTransactionId = async (txId) => {
+  const getByTransactionId = useCallback(async (txId) => {
     return await DebtsRepository.getByTransactionId(txId);
-  };
+  }, []);
 
-  const getUniqueNames = async () => {
+  const getUniqueNames = useCallback(async () => {
     return await DebtsRepository.getUniqueNames();
-  };
+  }, []);
 
-  return {
+  const hookValue = useMemo(() => ({
     debtsList,
     loading,
     loadDebts,
@@ -48,5 +48,7 @@ export const useDebts = () => {
     removeDebt,
     getByTransactionId,
     getUniqueNames
-  };
+  }), [debtsList, loading, loadDebts, addDebt, updateDebt, removeDebt, getByTransactionId, getUniqueNames]);
+
+  return hookValue;
 };

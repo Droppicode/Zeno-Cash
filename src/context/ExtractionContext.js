@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { LLMService } from '../services/llmService';
 import { Logger } from '../utils/logger';
 
@@ -10,14 +10,14 @@ export const ExtractionProvider = ({ children }) => {
   const [extractedData, setExtractedData] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const resetExtraction = () => {
+  const resetExtraction = useCallback(() => {
     setStatus('idle');
     setProgressMessage('');
     setExtractedData(null);
     setErrorMessage('');
-  };
+  }, []);
 
-  const startExtraction = async (doc, provider, model, apiKey, categoriesStr, accountsStr, userContext = '') => {
+  const startExtraction = useCallback(async (doc, provider, model, apiKey, categoriesStr, accountsStr, userContext = '') => {
     if (status === 'processing' || status === 'uploading') return;
     
     resetExtraction();
@@ -70,13 +70,15 @@ export const ExtractionProvider = ({ children }) => {
       setStatus('error');
       setErrorMessage(error.message || 'Erro inesperado ao processar documento.');
     }
-  };
+  }, [status, resetExtraction]);
+
+  const contextValue = useMemo(() => ({
+    status, progressMessage, extractedData, errorMessage,
+    startExtraction, resetExtraction
+  }), [status, progressMessage, extractedData, errorMessage, startExtraction, resetExtraction]);
 
   return (
-    <ExtractionContext.Provider value={{
-      status, progressMessage, extractedData, errorMessage,
-      startExtraction, resetExtraction
-    }}>
+    <ExtractionContext.Provider value={contextValue}>
       {children}
     </ExtractionContext.Provider>
   );

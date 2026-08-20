@@ -1,8 +1,9 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useState, useContext, useMemo, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, BackHandler, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 import ThemeConfigScreen from './ThemeConfigScreen';
 import ModuleConfigScreen from './ModuleConfigScreen';
@@ -19,18 +20,21 @@ export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
   
   const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations', 'extraction'
-  useEffect(() => {
-    const backAction = () => {
-      if (currentScreen !== 'hub') {
-        setCurrentScreen('hub');
-        return true;
-      }
-      return false;
-    };
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-    return () => backHandler.remove();
-  }, [currentScreen]);
+  useFocusEffect(
+    useCallback(() => {
+      const backAction = () => {
+        if (currentScreen !== 'hub') {
+          setCurrentScreen('hub');
+          return true;
+        }
+        return false;
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+      return () => backHandler.remove();
+    }, [currentScreen])
+  );
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);

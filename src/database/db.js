@@ -68,6 +68,13 @@ expoDb.execSync(`
     description TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS monthly_balances (
+    month_key TEXT PRIMARY KEY,
+    income REAL DEFAULT 0,
+    expense REAL DEFAULT 0,
+    total REAL DEFAULT 0
+  );
+
   -- Insert a default account if the table is completely empty
   INSERT INTO accounts (name, type, balance, icon, color)
   SELECT 'Dinheiro', 'cash', 0, 'wallet-outline', '#4CAF50'
@@ -85,6 +92,12 @@ try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_paid INTEGER DEFAULT 0;')
 try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_percentage INTEGER DEFAULT 0;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE debts ADD COLUMN ignores_interest INTEGER DEFAULT 0;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE debts ADD COLUMN description TEXT;'); } catch (e) {}
+
+// Índices para otimização de performance
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);'); } catch (e) {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);'); } catch (e) {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);'); } catch (e) {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_debts_transaction ON debts(transaction_id);'); } catch (e) {}
 
 expoDb.execSync(`
   INSERT INTO categories (name, icon, color, macro)

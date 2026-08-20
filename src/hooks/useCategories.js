@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { CategoryRepository } from '../services/CategoryRepository';
 
 export const useCategories = () => {
@@ -13,7 +13,7 @@ export const useCategories = () => {
     return data;
   }, []);
 
-  const saveCategory = async (id, data) => {
+  const saveCategory = useCallback(async (id, data) => {
     let savedId = id;
     if (id) {
       await CategoryRepository.update(id, data);
@@ -22,12 +22,16 @@ export const useCategories = () => {
     }
     await loadCategories();
     return savedId;
-  };
+  }, [loadCategories]);
 
-  const deleteCategory = async (id) => {
+  const deleteCategory = useCallback(async (id) => {
     await CategoryRepository.remove(id);
     await loadCategories();
-  };
+  }, [loadCategories]);
 
-  return { categoryList, loading, loadCategories, saveCategory, deleteCategory };
+  const hookValue = useMemo(() => ({
+    categoryList, loading, loadCategories, saveCategory, deleteCategory
+  }), [categoryList, loading, loadCategories, saveCategory, deleteCategory]);
+
+  return hookValue;
 };
