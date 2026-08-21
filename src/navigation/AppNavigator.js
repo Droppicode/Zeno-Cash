@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import ExtractionBanner from '../components/ui/ExtractionBanner';
 import { View, TouchableOpacity, Text } from 'react-native';
+import { HapticFeedback } from '../utils/haptics';
 
 import HomeScreen from '../screens/HomeScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
@@ -34,6 +35,7 @@ function CustomTabBar({ state, descriptors, navigation, activeTheme }) {
           });
 
           if (!isFocused && !event.defaultPrevented) {
+            HapticFeedback.select();
             navigation.navigate(route.name);
           }
         };

@@ -15,6 +15,7 @@ import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { configureGoogleAuth, uploadDatabaseToDrive, downloadLatestBackup } from '../services/GoogleDriveBackup';
+import { DataExportService } from '../services/DataExportService';
 
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
@@ -298,6 +299,57 @@ export default function SettingsScreen({ navigation }) {
               {isRestoring ? 'Restaurando...' : 'Restaurar Backup'}
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Import/Export Local */}
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Exportação & Importação Local</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Gerencie seus dados em arquivos JSON (backup) ou CSV (planilhas).</Text>
+          
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+            <TouchableOpacity 
+              style={[styles.backupBtn, { borderColor: activeTheme.accent, flex: 1, marginTop: 0 }]} 
+              onPress={() => DataExportService.exportToJSON()}
+            >
+              <Ionicons name="document-text" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
+              <Text style={[styles.backupText, { color: activeTheme.accent, fontSize: 14 }]}>Exportar JSON</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.backupBtn, { borderColor: activeTheme.accent, flex: 1, marginTop: 0 }]} 
+              onPress={() => DataExportService.exportToCSV()}
+            >
+              <Ionicons name="stats-chart" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
+              <Text style={[styles.backupText, { color: activeTheme.accent, fontSize: 14 }]}>Exportar CSV</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity 
+              style={[styles.backupBtn, { borderColor: activeTheme.expense, flex: 1, marginTop: 0 }]} 
+              onPress={() => {
+                Alert.alert(
+                  'Importar JSON',
+                  'Isso irá adicionar os dados do arquivo ao seu banco atual, não substituindo o que você já tem.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Importar', style: 'destructive', onPress: () => DataExportService.importFromJSON() }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="download" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
+              <Text style={[styles.backupText, { color: activeTheme.expense, fontSize: 14 }]}>Importar JSON</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.backupBtn, { borderColor: activeTheme.expense, flex: 1, marginTop: 0 }]} 
+              onPress={() => DataExportService.importFromCSV()}
+            >
+              <Ionicons name="list" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
+              <Text style={[styles.backupText, { color: activeTheme.expense, fontSize: 14 }]}>Importar CSV</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ height: 40 }} />

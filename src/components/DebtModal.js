@@ -6,6 +6,7 @@ import { SettingsContext } from '../context/SettingsContext';
 import { useDebts } from '../hooks/useDebts';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
+import { HapticFeedback } from '../utils/haptics';
 
 export default function DebtModal({ visible, onClose, onDelete, onViewTransaction, initialData = null }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -113,6 +114,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
       await addDebt(data);
     }
 
+    HapticFeedback.success();
     onClose();
   };
 

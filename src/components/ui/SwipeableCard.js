@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../../context/SettingsContext';
-import { getZoomFactor } from '../../utils/scaler';
+import { getZoomFactor } from '../../utils/scaler';import { HapticFeedback } from '../../utils/haptics';
 
 export default function SwipeableCard({ children, onDelete, onAccept, deleteText = 'Apagar', acceptText = 'Aprovar', containerStyle }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -55,8 +55,8 @@ export default function SwipeableCard({ children, onDelete, onAccept, deleteText
         renderLeftActions={renderLeftActions}
         overshootRight={true}
         overshootLeft={true}
-        onSwipeableLeftOpen={onAccept}
-        onSwipeableWillOpen={() => setIsSwiping(true)}
+        onSwipeableLeftOpen={() => { HapticFeedback.success(); if(onAccept) onAccept(); }}
+        onSwipeableWillOpen={() => { HapticFeedback.medium(); setIsSwiping(true); }}
         onSwipeableWillClose={() => setIsSwiping(false)}
         containerStyle={{ 
           overflow: 'hidden', 

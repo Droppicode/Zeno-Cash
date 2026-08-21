@@ -10,6 +10,7 @@ import { DateUtils } from '../utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { getZoomFactor } from '../utils/scaler';
 import { DebtsRepository } from '../services/DebtsRepository';
+import { HapticFeedback } from '../utils/haptics';
 
 export default function TransactionModal({ visible, onClose, onSave, onDelete, initialData, isContractEdit = false, initialSplitMode = false }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -200,6 +201,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       }
     }
 
+    HapticFeedback.success();
     onSave({
       id: initialData?.id,
       amount: numAmount,
