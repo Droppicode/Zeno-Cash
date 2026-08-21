@@ -100,8 +100,12 @@ export const TransactionRepository = {
       
       if (oldTx.length > 0) {
         await TransactionRepository.recalculateMonth(oldTx[0].date);
-        if (txData.date && new Date(oldTx[0].date).getMonth() !== new Date(txData.date).getMonth()) {
-          await TransactionRepository.recalculateMonth(txData.date);
+        if (txData.date) {
+          const oldD = new Date(oldTx[0].date);
+          const newD = new Date(txData.date);
+          if (oldD.getFullYear() !== newD.getFullYear() || oldD.getMonth() !== newD.getMonth()) {
+            await TransactionRepository.recalculateMonth(txData.date);
+          }
         }
       }
       return true;

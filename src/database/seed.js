@@ -3,9 +3,11 @@ import { transactions } from './schema';
 import { categorizeTransaction } from '../services/categorizer';
 
 export const seedDatabase = async () => {
+  if (!__DEV__) return;
+  
   try {
     const existing = await db.select().from(transactions);
-    if (existing.length > 50) return; // Já tem bastante dado, não recriar
+    if (existing.length > 0) return; // Já tem dado, não recriar
 
     console.log('Populando banco com transações mock...');
     const mocks = [];

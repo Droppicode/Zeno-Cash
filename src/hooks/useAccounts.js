@@ -14,12 +14,14 @@ export const useAccounts = () => {
   }, []);
 
   const saveAccount = useCallback(async (id, data) => {
+    let savedId = id;
     if (id) {
       await AccountRepository.update(id, data);
     } else {
-      await AccountRepository.add(data);
+      savedId = await AccountRepository.add(data);
     }
     await loadAccounts();
+    return savedId;
   }, [loadAccounts]);
 
   const deleteAccount = useCallback(async (id) => {

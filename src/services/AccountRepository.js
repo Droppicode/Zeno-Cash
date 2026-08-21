@@ -23,8 +23,8 @@ export const AccountRepository = {
 
   add: async (accData) => {
     try {
-      await db.insert(accounts).values(accData);
-      return true;
+      const result = await db.insert(accounts).values(accData).returning();
+      return result[0]?.id;
     } catch (err) {
       Logger.error('AccountRepository.add', err);
       throw err;

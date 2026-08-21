@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Modal, ScrollView, Switch, KeyboardAvoidingView, Platform, FlatList, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SettingsContext } from '../context/SettingsContext';
 import { useDebts } from '../hooks/useDebts';
 import { useAccounts } from '../hooks/useAccounts';
@@ -15,7 +16,8 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('owe'); // 'owe' or 'owed'
-  const [date, setDate] = useState('');
+  const [debtDateObj, setDebtDateObj] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
 
   const [suggestions, setSuggestions] = useState([]);
@@ -44,14 +46,14 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
         const numStr = (initialData.amount * 100).toFixed(0);
         setAmount(formatCurrency(numStr));
         setType(initialData.type);
-        setDate(new Date(initialData.date).toLocaleDateString('pt-BR'));
+        setDebtDateObj(initialData.date ? new Date(initialData.date) : new Date());
         setIsPaid(initialData.isPaid === 1);
       } else {
         setPersonName('');
         setDescription('');
         setAmount('');
         setType('owe');
-        setDate(new Date().toLocaleDateString('pt-BR'));
+        setDebtDateObj(new Date());
         setIsPaid(false);
       }
       loadAccounts();
@@ -87,12 +89,9 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
   };
 
   const handleSave = async () => {
-    if (!personName || !amount || !date) return;
+    if (!personName || !amount) return;
     
-    // Parse Date DD/MM/YYYY
-    const parts = date.split('/');
-    if (parts.length !== 3) return; // simple validation
-    const parsedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`).getTime();
+    const parsedDate = debtDateObj ? debtDateObj.getTime() : Date.now();
 
     const rawAmount = amount.replace(/\./g, '').replace(',', '.');
     const numAmount = parseFloat(rawAmount);
@@ -201,15 +200,43 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
             {/* Date */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Data</Text>
-              <TextInput
-                style={styles.input}
-                value={date}
-                onChangeText={setDate}
-                placeholder="DD/MM/AAAA"
-                keyboardType="numeric"
-                placeholderTextColor={activeTheme.textSecondary}
-                maxLength={10}
-              />
+              {Platform.OS === 'ios' ? (
+                <DateTimePicker
+                  value={debtDateObj}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) setDebtDateObj(selectedDate);
+                  }}
+                  themeVariant={activeTheme.card === '#121212' ? 'dark' : 'light'}
+                  style={{ alignSelf: 'flex-start', marginTop: 4 * z }}
+                />
+              ) : (
+                <>
+                  <TouchableOpacity 
+                    style={[styles.input, { justifyContent: 'center', paddingVertical: 14 * z }]}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontFamily: f }}>
+                        {debtDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </Text>
+                      <Ionicons name="calendar-outline" size={20 * z} color={activeTheme.accent} />
+                    </View>
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={debtDateObj}
+                      mode="date"
+                      display="default"
+                      onChange={(event, selectedDate) => {
+                        setShowDatePicker(false);
+                        if (selectedDate) setDebtDateObj(selectedDate);
+                      }}
+                    />
+                  )}
+                </>
+              )}
             </View>
 
             {/* Is Paid Toggle */}

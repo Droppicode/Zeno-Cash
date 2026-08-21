@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { resolveCategory } from '../services/categorizer';
@@ -167,8 +168,10 @@ export default function TransactionsScreen({ navigation }) {
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDateObj, setStartDateObj] = useState(null);
+  const [endDateObj, setEndDateObj] = useState(null);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   
   const [recurrences, setRecurrences] = useState([]);
   const [forecastPeriod, setForecastPeriod] = useState('none');
@@ -179,7 +182,7 @@ export default function TransactionsScreen({ navigation }) {
 
   React.useEffect(() => {
     setVisibleCount(50);
-  }, [filter, accountFilter, period, search, startDate, endDate, selectedCats, forecastPeriod]);
+  }, [filter, accountFilter, period, search, startDateObj, endDateObj, selectedCats, forecastPeriod]);
 
   useFocusEffect(
     useCallback(() => {
@@ -210,14 +213,16 @@ export default function TransactionsScreen({ navigation }) {
         return false;
       }
 
-      if (startDate.length === 10) {
-        const sDate = DateUtils.parseDateInput(startDate);
-        if (sDate && item.date < sDate) return false;
+      if (startDateObj) {
+        const sDate = new Date(startDateObj);
+        sDate.setHours(0, 0, 0, 0);
+        if (item.date < sDate.getTime()) return false;
       }
       
-      if (endDate.length === 10) {
-        const eDate = DateUtils.parseDateInput(endDate);
-        if (eDate && item.date > (eDate + 86400000)) return false; 
+      if (endDateObj) {
+        const eDate = new Date(endDateObj);
+        eDate.setHours(23, 59, 59, 999);
+        if (item.date > eDate.getTime()) return false; 
       }
 
       return true;
@@ -434,27 +439,65 @@ export default function TransactionsScreen({ navigation }) {
                 <View style={styles.dateInputsRow}>
                   <View style={styles.dateInputContainer}>
                     <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Inicial</Text>
-                    <TextInput 
-                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-                      placeholder="DD/MM/AAAA"
-                      placeholderTextColor={activeTheme.textSecondary}
-                      keyboardType="numeric"
-                      value={startDate}
-                      onChangeText={(text) => setStartDate(DateUtils.formatDateInput(text))}
-                      maxLength={10}
-                    />
+                    <TouchableOpacity
+                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                      onPress={() => setShowStartDatePicker(true)}
+                    >
+                      <Text style={{ color: startDateObj ? activeTheme.text : activeTheme.textSecondary, fontSize: 13, fontFamily: activeTheme.fontFamily || 'monospace' }}>
+                        {startDateObj ? startDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Selecionar...'}
+                      </Text>
+                      {startDateObj ? (
+                        <TouchableOpacity onPress={() => setStartDateObj(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                          <Ionicons name="close-circle" size={16} color={activeTheme.textSecondary} />
+                        </TouchableOpacity>
+                      ) : (
+                        <Ionicons name="calendar-outline" size={16} color={activeTheme.accent} />
+                      )}
+                    </TouchableOpacity>
+                    {showStartDatePicker && (
+                      <DateTimePicker
+                        value={startDateObj || new Date()}
+                        mode="date"
+                        display="default"
+                        onChange={(event, selectedDate) => {
+                          setShowStartDatePicker(false);
+                          if (event.type === 'set' && selectedDate) {
+                            setStartDateObj(selectedDate);
+                          }
+                        }}
+                      />
+                    )}
                   </View>
                   <View style={styles.dateInputContainer}>
                     <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Final</Text>
-                    <TextInput 
-                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-                      placeholder="DD/MM/AAAA"
-                      placeholderTextColor={activeTheme.textSecondary}
-                      keyboardType="numeric"
-                      value={endDate}
-                      onChangeText={(text) => setEndDate(DateUtils.formatDateInput(text))}
-                      maxLength={10}
-                    />
+                    <TouchableOpacity
+                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                      onPress={() => setShowEndDatePicker(true)}
+                    >
+                      <Text style={{ color: endDateObj ? activeTheme.text : activeTheme.textSecondary, fontSize: 13, fontFamily: activeTheme.fontFamily || 'monospace' }}>
+                        {endDateObj ? endDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Selecionar...'}
+                      </Text>
+                      {endDateObj ? (
+                        <TouchableOpacity onPress={() => setEndDateObj(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                          <Ionicons name="close-circle" size={16} color={activeTheme.textSecondary} />
+                        </TouchableOpacity>
+                      ) : (
+                        <Ionicons name="calendar-outline" size={16} color={activeTheme.accent} />
+                      )}
+                    </TouchableOpacity>
+                    {showEndDatePicker && (
+                      <DateTimePicker
+                        value={endDateObj || new Date()}
+                        mode="date"
+                        display="default"
+                        onChange={(event, selectedDate) => {
+                          setShowEndDatePicker(false);
+                          if (event.type === 'set' && selectedDate) {
+                            setEndDateObj(selectedDate);
+                          }
+                        }}
+                      />
+                    )}
                   </View>
                 </View>
 

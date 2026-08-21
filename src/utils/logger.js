@@ -1,11 +1,11 @@
 export const Logger = {
   error: (context, error) => {
-    console.error(`[ERROR] ${context}:`, error);
+    if (__DEV__) console.error(`[ERROR] ${context}:`, error);
   },
   warn: (context, msg) => {
-    console.warn(`[WARN] ${context}:`, msg);
+    if (__DEV__) console.warn(`[WARN] ${context}:`, msg);
   },
   info: (context, msg) => {
-    console.log(`[INFO] ${context}:`, msg);
+    if (__DEV__) console.log(`[INFO] ${context}:`, msg);
   }
 };

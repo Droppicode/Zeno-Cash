@@ -5,6 +5,7 @@ import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import BaseModalBottom from '../components/ui/BaseModalBottom';
+import { CategoryRepository } from '../services/CategoryRepository';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -149,11 +150,22 @@ export default function ModuleConfigScreen({ onBack }) {
     }
   };
 
-  const cycleMacroMapping = (microCat) => {
+  const cycleMacroMapping = async (microCat) => {
     const availableMacros = [...macroOptions, 'Outros'];
     const current = macroMapping[microCat] || 'Outros';
     const nextIdx = (availableMacros.indexOf(current) + 1) % availableMacros.length;
-    saveSetting('macroMapping', { ...macroMapping, [microCat]: availableMacros[nextIdx] });
+    const newMacro = availableMacros[nextIdx];
+    saveSetting('macroMapping', { ...macroMapping, [microCat]: newMacro });
+    
+    try {
+      const allCats = await CategoryRepository.getAll();
+      const cat = allCats.find(c => c.name === microCat);
+      if (cat) {
+        await CategoryRepository.update(cat.id, { macro: newMacro });
+      }
+    } catch (e) {
+      console.log('Erro ao sincronizar macro no BD', e);
+    }
   };
 
   return (

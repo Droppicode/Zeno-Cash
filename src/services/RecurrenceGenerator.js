@@ -21,7 +21,7 @@ export class RecurrenceGenerator {
         // To be safe, we can match by checking if any real tx is within a 15-day window of the expected date
         // or just rely on 'iteration' if we add an 'iteration' column to transactions later.
         // For MVP: check if any real tx has the exact same date (since it was materialized from virtual)
-        const isPaid = txs.some(t => t.date === currentDate);
+        const isPaid = txs.some(t => t.iteration === iteration || t.date === currentDate);
 
         if (!isPaid) {
           // Calculate interest if applicable
@@ -67,7 +67,11 @@ export class RecurrenceGenerator {
     if (type === 'custom_days') {
       d.setDate(d.getDate() + interval);
     } else if (type === 'monthly') {
+      const originalDay = d.getDate();
       d.setMonth(d.getMonth() + interval);
+      if (d.getDate() !== originalDay) {
+        d.setDate(0);
+      }
     } else if (type === 'yearly') {
       d.setFullYear(d.getFullYear() + interval);
     }

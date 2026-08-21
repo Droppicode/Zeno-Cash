@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useCallback } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, FlatList } from 'react-native';
 import { getZoomFactor } from '../../utils/scaler';
 
@@ -45,13 +45,13 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
   const VISIBLE_ITEMS = 5;
   const SELECTOR_WIDTH = ITEM_WIDTH * VISIBLE_ITEMS;
   
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const flatListRef = useRef(null);
-  const currentIndexRef = useRef(-1);
-  const selectedMonthsRef = useRef(selectedMonths);
+  const scrollX = React.useRef(new Animated.Value(0)).current;
+  const flatListRef = React.useRef(null);
+  const currentIndexRef = React.useRef(-1);
+  const selectedMonthsRef = React.useRef(selectedMonths);
   selectedMonthsRef.current = selectedMonths; // Sincroniza imediatamente durante o render
 
-  const monthData = useMemo(() => {
+  const monthData = React.useMemo(() => {
     const today = new Date();
     const data = [];
     for (let i = -60; i <= 60; i++) {
@@ -65,7 +65,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
     return data;
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const initialIndex = monthData.findIndex(m => m.key === toYYYYMM(centerDate));
     if (initialIndex >= 0 && flatListRef.current) {
       setTimeout(() => {
@@ -74,7 +74,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
     }
   }, []);
 
-  const styles = useMemo(() => StyleSheet.create({
+  const styles = React.useMemo(() => StyleSheet.create({
     container: {
       width: SELECTOR_WIDTH,
       height: 30 * z,
@@ -103,7 +103,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
     { useNativeDriver: true }
   );
 
-  const handleScrollEnd = useCallback((event) => {
+  const handleScrollEnd = React.useCallback((event) => {
     const x = event.nativeEvent.contentOffset.x;
     const centerIndex = Math.round(x / ITEM_WIDTH);
     
@@ -116,7 +116,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
     }
   }, [ITEM_WIDTH, monthData, onCenterChange, onSelectionChange]);
 
-  const handlePress = useCallback((item) => {
+  const handlePress = React.useCallback((item) => {
      let newSelection = [...selectedMonthsRef.current];
      if (newSelection.includes(item.key)) {
        newSelection = newSelection.filter(k => k !== item.key);
@@ -127,7 +127,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
      onSelectionChange(newSelection);
   }, [onSelectionChange]);
 
-  const renderItem = useCallback(({ item, index }) => {
+  const renderItem = React.useCallback(({ item, index }) => {
     const isSelected = selectedMonthsRef.current.includes(item.key);
     return (
       <MonthItem 

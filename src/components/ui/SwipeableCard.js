@@ -55,7 +55,6 @@ export default function SwipeableCard({ children, onDelete, onAccept, deleteText
         renderLeftActions={renderLeftActions}
         overshootRight={true}
         overshootLeft={true}
-        onSwipeableRightOpen={onDelete}
         onSwipeableLeftOpen={onAccept}
         onSwipeableWillOpen={() => setIsSwiping(true)}
         onSwipeableWillClose={() => setIsSwiping(false)}
