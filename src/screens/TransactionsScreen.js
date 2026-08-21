@@ -22,7 +22,10 @@ import { ExtractionContext } from '../context/ExtractionContext';
 
 const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, categoryList, accountList, styles, onEdit, onDelete, onAccept, onSplit, hasSplit }) => {
   const catInfo = resolveCategory(item, categoryList);
-  const accountName = accountList?.find(a => a.id === item.accountId)?.name || 'Sem Conta';
+  const accId = item.accountId ?? item.account_id;
+  const accountName = (accId && accountList && accountList.length > 0)
+    ? (accountList.find(a => String(a.id) === String(accId))?.name || 'Sem Conta')
+    : 'Sem Conta';
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   
   const isFirst = index === 0;
@@ -53,8 +56,8 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[styles.desc, { color: activeTheme.text, flexShrink: 1 }]} numberOfLines={1}>{item.description}</Text>
                 {item.isVirtual && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: activeTheme.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
                     <Ionicons name="calendar-outline" size={10} color={activeTheme.accent} />
@@ -71,6 +74,11 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
                   <TouchableOpacity onPress={onSplit} style={{ marginLeft: 6, padding: 4 }}>
                     <Ionicons name="people" size={14} color={activeTheme.accent} />
                   </TouchableOpacity>
+                )}
+                {item.recurrenceId && (
+                  <View style={{ marginLeft: 6, padding: 4 }}>
+                    <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} />
+                  </View>
                 )}
               </View>
               <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {accountName}</Text>
@@ -189,8 +197,9 @@ export default function TransactionsScreen({ navigation }) {
       loadTransactions();
       loadCategories();
       loadAccounts();
+      loadDebts();
       RecurrenceRepository.getActive().then(setRecurrences);
-    }, [loadTransactions, loadCategories, loadAccounts])
+    }, [loadTransactions, loadCategories, loadAccounts, loadDebts])
   );
 
   const filteredList = useMemo(() => {
@@ -255,7 +264,7 @@ export default function TransactionsScreen({ navigation }) {
     }
 
     return result.sort((a, b) => b.date - a.date);
-  }, [txList, period, filter, accountFilter, selectedCats, search, startDate, endDate, categoryList, forecastPeriod, recurrences]);
+  }, [txList, period, filter, accountFilter, selectedCats, search, startDateObj, endDateObj, categoryList, forecastPeriod, recurrences]);
 
   const uniqueCategories = Array.from(new Set(txList.map(item => resolveCategory(item, categoryList).categoryName)));
 
@@ -335,7 +344,7 @@ export default function TransactionsScreen({ navigation }) {
         hasSplit={hasSplit}
       />
     );
-  }, [activeTheme, categoryList, styles, handleEdit, handleDelete, handleAccept, debtsList]);
+  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>

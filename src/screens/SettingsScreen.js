@@ -16,6 +16,7 @@ import { getSharedStyles } from '../utils/StyleHub';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { configureGoogleAuth, uploadDatabaseToDrive, downloadLatestBackup } from '../services/GoogleDriveBackup';
 import { DataExportService } from '../services/DataExportService';
+import { resetDatabase, seedDatabase } from '../database/seed';
 
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
@@ -39,6 +40,57 @@ export default function SettingsScreen({ navigation }) {
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const handleReset = () => {
+    Alert.alert(
+      'Resetar Aplicativo',
+      'ATENÇÃO: Isso apagará todas as suas transações, dívidas, recorrências e contas salvas. Deseja continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir Tudo',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsResetting(true);
+              await resetDatabase();
+              Alert.alert('Sucesso', 'Aplicativo resetado com sucesso! Reinicie o app para recarregar.');
+            } catch (err) {
+              Alert.alert('Erro', 'Não foi possível resetar os dados.');
+            } finally {
+              setIsResetting(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleSeed = () => {
+    Alert.alert(
+      'Gerar Dados Mock (Seed)',
+      'Isso irá resetar o banco e criar uma base completa de testes com bancos, assinaturas, parcelas e divisões.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Gerar Seed',
+          onPress: async () => {
+            try {
+              setIsSeeding(true);
+              await seedDatabase(true);
+              Alert.alert('Sucesso', 'Base de dados gerada com sucesso! Reinicie o app para visualizar todas as novidades.');
+            } catch (err) {
+              Alert.alert('Erro', 'Não foi possível gerar a base de dados.');
+            } finally {
+              setIsSeeding(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   useEffect(() => {
     configureGoogleAuth();
@@ -350,6 +402,44 @@ export default function SettingsScreen({ navigation }) {
               <Text style={[styles.backupText, { color: activeTheme.expense, fontSize: 14 }]}>Importar CSV</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Zona de Perigo / Gestão de Dados */}
+        <View style={[styles.section, { backgroundColor: activeTheme.card, borderColor: activeTheme.expense + '40', borderWidth: 1 }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.expense }]}>Zona de Perigo</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Apague todos os dados ou recrie uma base de testes completa.</Text>
+          
+          <TouchableOpacity 
+            style={[styles.backupBtn, { borderColor: activeTheme.expense, backgroundColor: activeTheme.expense + '15', marginTop: 0 }]} 
+            onPress={handleReset}
+            disabled={isResetting || isSeeding}
+          >
+            {isResetting ? (
+              <ActivityIndicator color={activeTheme.expense} size="small" style={{ marginRight: 8 }} />
+            ) : (
+              <Ionicons name="trash" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
+            )}
+            <Text style={[styles.backupText, { color: activeTheme.expense }]}>
+              {isResetting ? 'Excluindo dados...' : 'Excluir Tudo / Resetar App'}
+            </Text>
+          </TouchableOpacity>
+
+          {__DEV__ && (
+            <TouchableOpacity 
+              style={[styles.backupBtn, { borderColor: activeTheme.accent, backgroundColor: activeTheme.accent + '15', marginTop: 12 }]} 
+              onPress={handleSeed}
+              disabled={isResetting || isSeeding}
+            >
+              {isSeeding ? (
+                <ActivityIndicator color={activeTheme.accent} size="small" style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="flask" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
+              )}
+              <Text style={[styles.backupText, { color: activeTheme.accent }]}>
+                {isSeeding ? 'Gerando dados mock...' : 'Popular Dados Mock (Seed Dev)'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={{ height: 40 }} />

@@ -35,6 +35,25 @@ export default function ExtractionReviewScreen({ route, navigation }) {
       return { ...t, accountId: mappedAccountId, isAccountAiSuggestion, _tempId: idx };
     });
   });
+
+  React.useEffect(() => {
+    loadAccounts();
+    loadCategories();
+  }, []);
+
+  React.useEffect(() => {
+    if (accountList.length > 0) {
+      setTxs(prevTxs => prevTxs.map(t => {
+        if (!t.accountId && t.account) {
+          const match = accountList.find(a => a.name.toLowerCase() === t.account.toLowerCase());
+          if (match) {
+            return { ...t, accountId: match.id, isAccountAiSuggestion: false };
+          }
+        }
+        return t;
+      }));
+    }
+  }, [accountList]);
   
   const [editingTx, setEditingTx] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,7 +66,8 @@ export default function ExtractionReviewScreen({ route, navigation }) {
   };
 
   const handleEditSave = (data) => {
-    setTxs(prev => prev.map(t => t._tempId === data._tempId ? { ...t, ...data, confidence: 1 } : t));
+    const targetTempId = editingTx?._tempId ?? data._tempId;
+    setTxs(prev => prev.map(t => t._tempId === targetTempId ? { ...t, ...data, confidence: 1, _tempId: targetTempId } : t));
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -59,18 +79,27 @@ export default function ExtractionReviewScreen({ route, navigation }) {
     }
     setIsSaving(true);
     try {
+      const createdAccounts = {};
+      const createdCategories = {};
+
       for (let tx of txs) {
-        const { _tempId, confidence, ...dbData } = tx;
+        const { _tempId, confidence, isAccountAiSuggestion, ...dbData } = tx;
         dbData.isPending = 0; // Se o usuário aprovou a tela, não é mais pendente
+
+        // Categoria
         if (!dbData.categoryId) {
           const catInfo = resolveCategory(dbData, categoryList);
-          if (catInfo.isAiSuggestion) {
+          const catNameKey = (catInfo.categoryName || '').toLowerCase();
+          if (createdCategories[catNameKey]) {
+            dbData.categoryId = createdCategories[catNameKey];
+          } else if (catInfo.isAiSuggestion) {
             const newCatId = await saveCategory(null, {
               name: catInfo.categoryName,
-              icon: catInfo.icon,
-              color: catInfo.color,
+              icon: catInfo.icon || 'pricetag-outline',
+              color: catInfo.color || '#2196F3',
               macro: 'Outros'
             });
+            createdCategories[catNameKey] = newCatId;
             dbData.categoryId = newCatId;
           } else {
             dbData.categoryId = catInfo.id || null;
@@ -78,15 +107,29 @@ export default function ExtractionReviewScreen({ route, navigation }) {
         }
 
         // Conta
-        if (!dbData.accountId && dbData.account && dbData.isAccountAiSuggestion) {
-          const newAccId = await saveAccount(null, {
-            name: dbData.account,
-            balance: 0,
-            type: 'checking',
-            color: '#9E9E9E'
-          });
-          dbData.accountId = newAccId;
-        } else if (!dbData.accountId) {
+        const accNameKey = (dbData.account || '').toLowerCase();
+        if (!dbData.accountId && dbData.account) {
+          if (createdAccounts[accNameKey]) {
+            dbData.accountId = createdAccounts[accNameKey];
+          } else {
+            const existingAcc = accountList.find(a => a.name.toLowerCase() === accNameKey);
+            if (existingAcc) {
+              dbData.accountId = existingAcc.id;
+            } else if (isAccountAiSuggestion) {
+              const newAccId = await saveAccount(null, {
+                name: dbData.account,
+                balance: 0,
+                type: 'checking',
+                color: '#8A05BE',
+                icon: 'wallet-outline'
+              });
+              createdAccounts[accNameKey] = newAccId;
+              dbData.accountId = newAccId;
+            }
+          }
+        }
+
+        if (!dbData.accountId) {
           dbData.accountId = accountList.length > 0 ? accountList[0].id : null;
         }
 
@@ -131,7 +174,8 @@ export default function ExtractionReviewScreen({ route, navigation }) {
           const catInfo = resolveCategory(item, categoryList);
           const needsReview = item.confidence !== undefined && item.confidence < 0.8;
           const dateStr = new Date(item.date).toLocaleDateString('pt-BR');
-          const accountName = item.accountId ? (accountList.find(a => a.id === item.accountId)?.name || 'Sem Conta') : (item.account || 'Sem Conta');
+          const accId = item.accountId ?? item.account_id;
+          const accountName = accId ? (accountList.find(a => String(a.id) === String(accId))?.name || 'Sem Conta') : (item.account || 'Sem Conta');
 
           return (
             <SwipeableCard key={item._tempId} onDelete={() => removeTx(item._tempId)}>

@@ -69,7 +69,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
     const initialIndex = monthData.findIndex(m => m.key === toYYYYMM(centerDate));
     if (initialIndex >= 0 && flatListRef.current) {
       setTimeout(() => {
-        flatListRef.current?.scrollToIndex({ index: initialIndex, animated: false, viewPosition: 0.5 });
+        flatListRef.current?.scrollToOffset({ offset: initialIndex * ITEM_WIDTH, animated: false });
       }, 100);
     }
   }, []);

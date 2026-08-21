@@ -97,11 +97,14 @@ export default function HomeScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 * getZoomFactor(activeTheme) }}>
-        {/* Filtro Temporal na Home */}
-        {/* Spacer if needed or just empty */}
-        <View style={{ height: 16 * getZoomFactor(activeTheme) }} />
-
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ 
+          paddingHorizontal: 16 * getZoomFactor(activeTheme), 
+          paddingTop: 4 * getZoomFactor(activeTheme), 
+          paddingBottom: 32 * getZoomFactor(activeTheme) 
+        }}
+      >
         {/* Resumo Dinâmico (Total do Período) */}
         <View style={[styles.summaryCard, { backgroundColor: activeTheme.card }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -196,7 +199,15 @@ export default function HomeScreen({ route, navigation }) {
                                 <Ionicons name="time" size={18} color={activeTheme.expense} />
                               </View>
                               <View style={{ flex: 1, paddingRight: 8 }}>
-                                <Text style={[styles.groupedText, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                  <Text style={[styles.groupedText, { color: activeTheme.text, flexShrink: 1 }]} numberOfLines={1}>{item.description}</Text>
+                                  {debtsList.some(d => d.transactionId === item.id) && (
+                                    <Ionicons name="people" size={14} color={activeTheme.accent} style={{ marginLeft: 4 }} />
+                                  )}
+                                  {item.recurrenceId && (
+                                    <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
+                                  )}
+                                </View>
                                 <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>
                                   {new Date(item.date).toLocaleDateString('pt-BR')} {item.note ? `- ${item.note}` : ''}
                                 </Text>
@@ -247,7 +258,15 @@ export default function HomeScreen({ route, navigation }) {
                                   <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
                                 </View>
                                 <View style={{ flex: 1, paddingRight: 8 }}>
-                                  <Text style={[styles.groupedText, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={[styles.groupedText, { color: activeTheme.text, flexShrink: 1 }]} numberOfLines={1}>{item.description}</Text>
+                                    {debtsList.some(d => d.transactionId === item.id) && (
+                                      <Ionicons name="people" size={14} color={activeTheme.accent} style={{ marginLeft: 4 }} />
+                                    )}
+                                    {item.recurrenceId && (
+                                      <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
+                                    )}
+                                  </View>
                                   {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
                                 </View>
                               </View>

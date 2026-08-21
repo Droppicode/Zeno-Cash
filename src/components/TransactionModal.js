@@ -26,6 +26,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
   const [txType, setTxType] = useState('expense');
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const isManuallyCategoryModified = useRef(false);
   const [txDateObj, setTxDateObj] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -145,12 +146,13 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       
       setTxDateObj(new Date());
     }
+    isManuallyCategoryModified.current = false;
   }, [visible, initialData, accountList]);
 
   // Auto-categorize only if the user hasn't manually selected a category and we are not editing
   // Auto-categorize only if the user hasn't manually selected a category and we are not editing (or if editing a pending tx and title changed)
   useEffect(() => {
-    if (visible && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {
+    if (visible && !isManuallyCategoryModified.current && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {
       // Evita re-categorizar uma transação oficial editada, mas permite para as pendentes
       if (!initialData || initialData.isPending === 1) {
         const rawAmount = amount.replace(/\./g, '').replace(',', '.');
@@ -204,6 +206,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
     HapticFeedback.success();
     onSave({
       id: initialData?.id,
+      _tempId: initialData?._tempId,
       amount: numAmount,
       description: description.trim(),
       note: note.trim(),
@@ -385,7 +388,10 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                 placeholder="Título (Ex: Uber, Ifood...)"
                 placeholderTextColor={activeTheme.textSecondary}
                 value={description}
-                onChangeText={setDescription}
+                onChangeText={(text) => {
+                  isManuallyCategoryModified.current = false;
+                  setDescription(text);
+                }}
               />
               {initialData?.isPending === 1 && (
                 <TouchableOpacity style={styles.clearBtn} onPress={() => setDescription('')}>
@@ -422,7 +428,11 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                         { backgroundColor: cat.color + '20', borderColor: cat.color },
                         selectedCategoryId === cat.id && { backgroundColor: cat.color }
                       ]}
-                      onPress={() => setSelectedCategoryId(cat.id)}
+                      onPress={() => {
+                        HapticFeedback.select();
+                        isManuallyCategoryModified.current = true;
+                        setSelectedCategoryId(prev => prev === cat.id ? null : cat.id);
+                      }}
                     >
                       <Ionicons name={cat.icon} size={16} color={selectedCategoryId === cat.id ? '#fff' : cat.color} style={{ marginRight: 4 }} />
                       <Text style={[
