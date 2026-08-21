@@ -159,11 +159,10 @@ export const SettingsProvider = ({ children }) => {
   const [uiConfig, setUiConfig] = useState({
     homeShowPending: true,
     homeShowAccounts: true,
-    analyticsShowVilao: true,
     analyticsShowCharts: true,
     transactionsShowFilters: true,
-    transactionsShowFilters: true,
     showInvestmentsTab: false,
+    analyticsModulesOrder: ['kpis', 'monthly', 'composition', 'cashflow', 'heatmap', 'ranking', 'accounts', 'recurrence', 'villains', 'insights'],
   });
 
   const [backupLimit, setBackupLimit] = useState('5');

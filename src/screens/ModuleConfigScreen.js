@@ -73,6 +73,7 @@ export default function ModuleConfigScreen({ onBack }) {
 
   const [newMacroName, setNewMacroName] = useState('');
   const [showMappingModal, setShowMappingModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'analytics' | 'macros'
 
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
   const z = getZoomFactor(activeTheme);
@@ -82,8 +83,20 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', newConfig);
   };
 
+  const handleToggleAnalyticsModule = (modKey) => {
+    const disabled = uiConfig.analyticsDisabledModules || [];
+    let newDisabled;
+    if (disabled.includes(modKey)) {
+       newDisabled = disabled.filter(k => k !== modKey);
+    } else {
+       newDisabled = [...disabled, modKey];
+    }
+    saveSetting('uiConfig', { ...uiConfig, analyticsDisabledModules: newDisabled });
+  };
+
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
   const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  const analyticsOrder = uiConfig.analyticsModulesOrder || ['kpis', 'heatmap', 'composition', 'recurrence', 'monthly', 'cashflow', 'ranking', 'accounts', 'villains', 'insights'];
 
   const moveModule = (index, direction) => {
     if (index + direction < 0 || index + direction >= homeOrder.length) return;
@@ -93,6 +106,15 @@ export default function ModuleConfigScreen({ onBack }) {
     newOrder[index + direction] = temp;
     saveSetting('uiConfig', { ...uiConfig, homeModulesOrder: newOrder });
   };
+
+  const moveAnalyticsModule = (index, direction) => {
+    if (index + direction < 0 || index + direction >= analyticsOrder.length) return;
+    const newOrder = [...analyticsOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[index + direction];
+    newOrder[index + direction] = temp;
+    saveSetting('uiConfig', { ...uiConfig, analyticsModulesOrder: newOrder });
+  };
   
   const getModuleName = (key) => {
     if (key === 'accounts') return 'Suas Contas';
@@ -100,6 +122,22 @@ export default function ModuleConfigScreen({ onBack }) {
     if (key === 'recent') return 'Últimas Transações';
     if (key === 'debts') return 'Controle de Dívidas';
     return key;
+  };
+
+  const getAnalyticsModuleName = (key) => {
+    const map = {
+      kpis: 'Resumo Financeiro (KPIs)',
+      monthly: 'Evolução Mensal',
+      composition: 'Composição de Gastos',
+      cashflow: 'Fluxo de Caixa',
+      heatmap: 'Heatmap Semanal',
+      ranking: 'Ranking de Categorias',
+      accounts: 'Análise por Conta',
+      recurrence: 'Recorrências',
+      villains: 'Top Vilões',
+      insights: 'Insights Inteligentes'
+    };
+    return map[key] || key;
   };
 
   // Mutações de Macros Dinâmicos (agora salvam no Contexto/DB)
@@ -178,9 +216,23 @@ export default function ModuleConfigScreen({ onBack }) {
         <View style={{ width: 40 }} />
       </View>
 
+      <View style={{ flexDirection: 'row', backgroundColor: activeTheme.card, borderBottomWidth: 1, borderBottomColor: activeTheme.cardSecondary }}>
+         {['home', 'analytics', 'macros'].map(tab => (
+            <TouchableOpacity 
+               key={tab}
+               style={{ flex: 1, paddingVertical: 12 * z, borderBottomWidth: activeTab === tab ? 2 : 0, borderBottomColor: activeTheme.accent, alignItems: 'center' }}
+               onPress={() => setActiveTab(tab)}
+            >
+               <Text style={{ color: activeTab === tab ? activeTheme.text : activeTheme.textSecondary, fontWeight: 'bold', fontSize: 13 * z }}>
+                 {tab === 'home' ? 'Tela Inicial' : tab === 'analytics' ? 'Análise' : 'Macros'}
+               </Text>
+            </TouchableOpacity>
+         ))}
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll}>
         
-        {/* MODULARIDADE DE UI */}
+        {activeTab === 'home' && (
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Visibilidade de Módulos</Text>
           <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Ligue ou desligue recursos inteiros do app.</Text>
@@ -231,21 +283,57 @@ export default function ModuleConfigScreen({ onBack }) {
               </View>
             ))}
           </View>
-          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
-            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Análise] Mostrar Gráficos</Text>
-            <Switch value={uiConfig.analyticsShowCharts} onValueChange={() => handleToggleUi('analyticsShowCharts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
-          </View>
-          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
-            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Análise] Top 3 Vilões</Text>
-            <Switch value={uiConfig.analyticsShowVilao} onValueChange={() => handleToggleUi('analyticsShowVilao')} trackColor={{ false: '#333', true: activeTheme.accent }} />
-          </View>
-          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
-            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Transações] Filtros</Text>
-            <Switch value={uiConfig.transactionsShowFilters} onValueChange={() => handleToggleUi('transactionsShowFilters')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+        </View>
+        )}
+
+        {activeTab === 'analytics' && (
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Módulos de Análise</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Ligue ou desligue módulos da tela de gráficos.</Text>
+          
+          {['kpis', 'heatmap', 'composition', 'recurrence', 'monthly', 'cashflow', 'ranking', 'accounts', 'villains', 'insights'].map(modKey => (
+             <View key={modKey} style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+               <Text style={[styles.switchLabel, { color: activeTheme.text }]}>{getAnalyticsModuleName(modKey)}</Text>
+               <Switch 
+                 value={!(uiConfig.analyticsDisabledModules || []).includes(modKey)} 
+                 onValueChange={() => handleToggleAnalyticsModule(modKey)} 
+                 trackColor={{ false: '#333', true: activeTheme.accent }} 
+               />
+             </View>
+          ))}
+
+          <Text style={[styles.sectionTitle, { color: activeTheme.text, marginTop: 24 * z }]}>Ordem na Tela de Análise</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Mova para cima ou para baixo para reordenar os módulos ativados.</Text>
+          <View style={{ marginTop: 8 * z, marginBottom: 16 * z }}>
+            {analyticsOrder.map((modKey, idx) => {
+              const isDisabled = (uiConfig.analyticsDisabledModules || []).includes(modKey);
+              if (isDisabled) return null;
+              return (
+              <View key={modKey} style={[styles.orderRow, { backgroundColor: activeTheme.cardSecondary }]}>
+                <Text style={[styles.orderLabel, { color: activeTheme.text }]}>{getAnalyticsModuleName(modKey)}</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity 
+                    style={[styles.orderBtn, idx === 0 && { opacity: 0.3 }]} 
+                    onPress={() => moveAnalyticsModule(idx, -1)} 
+                    disabled={idx === 0}
+                  >
+                    <Ionicons name="chevron-up" size={24} color={activeTheme.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.orderBtn, idx === analyticsOrder.length - 1 && { opacity: 0.3 }]} 
+                    onPress={() => moveAnalyticsModule(idx, 1)} 
+                    disabled={idx === analyticsOrder.length - 1}
+                  >
+                    <Ionicons name="chevron-down" size={24} color={activeTheme.text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )})}
           </View>
         </View>
+        )}
 
-        {/* METAS MACRO */}
+        {activeTab === 'macros' && (
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Metas e Macros</Text>
           <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Crie grandes grupos de categorias e defina uma meta % para o orçamento.</Text>
@@ -281,6 +369,7 @@ export default function ModuleConfigScreen({ onBack }) {
             <Text style={[styles.outlineBtnText, { color: activeTheme.accent }]}>Mapear Categorias para Macros</Text>
           </TouchableOpacity>
         </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
