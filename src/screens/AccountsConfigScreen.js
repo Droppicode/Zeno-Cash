@@ -29,9 +29,16 @@ export default function AccountsConfigScreen({ onBack }) {
   
   // Form State
   const [name, setName] = useState('');
+  const [type, setType] = useState('checking'); // checking, credit, cash
   const [balance, setBalance] = useState('0');
   const [icon, setIcon] = useState(ACCOUNT_ICONS[0]);
   const [color, setColor] = useState(ACCOUNT_COLORS[0]);
+  
+  // Credit specific state
+  const [closingDay, setClosingDay] = useState('');
+  const [dueDay, setDueDay] = useState('');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [associatedAccountId, setAssociatedAccountId] = useState(null);
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -41,12 +48,19 @@ export default function AccountsConfigScreen({ onBack }) {
     loadAccounts();
   }, [loadAccounts]);
 
+  const checkingAccounts = useMemo(() => accountList.filter(a => a.type !== 'credit'), [accountList]);
+
   const openNew = () => {
     setEditingId(null);
     setName('');
+    setType('checking');
     setBalance('0');
     setIcon(ACCOUNT_ICONS[0]);
     setColor(ACCOUNT_COLORS[0]);
+    setClosingDay('');
+    setDueDay('');
+    setCreditLimit('');
+    setAssociatedAccountId(checkingAccounts.length > 0 ? checkingAccounts[0].id : null);
     setErrorMsg('');
     setShowEditor(true);
   };
@@ -54,9 +68,14 @@ export default function AccountsConfigScreen({ onBack }) {
   const openEdit = (acc) => {
     setEditingId(acc.id);
     setName(acc.name);
+    setType(acc.type || 'checking');
     setBalance(acc.balance.toString());
     setIcon(acc.icon || ACCOUNT_ICONS[0]);
     setColor(acc.color || ACCOUNT_COLORS[0]);
+    setClosingDay(acc.closingDay ? acc.closingDay.toString() : '');
+    setDueDay(acc.dueDay ? acc.dueDay.toString() : '');
+    setCreditLimit(acc.creditLimit ? acc.creditLimit.toString() : '');
+    setAssociatedAccountId(acc.associatedAccountId || null);
     setErrorMsg('');
     setShowEditor(true);
   };
@@ -71,14 +90,36 @@ export default function AccountsConfigScreen({ onBack }) {
     let numBalance = parseFloat(balance.replace(',', '.'));
     if (isNaN(numBalance)) numBalance = 0;
 
-    await saveAcc(editingId, {
+    let payload = {
       name: name.trim(),
-      balance: numBalance,
+      type,
       icon,
       color,
-      type: 'checking'
-    });
-    
+    };
+
+    if (type === 'credit') {
+      let cDay = parseInt(closingDay);
+      let dDay = parseInt(dueDay);
+      let limit = parseFloat(creditLimit.replace(',', '.'));
+      if (isNaN(cDay) || cDay < 1 || cDay > 31) return setErrorMsg('Dia de fechamento inválido.');
+      if (isNaN(dDay) || dDay < 1 || dDay > 31) return setErrorMsg('Dia de vencimento inválido.');
+      if (isNaN(limit)) return setErrorMsg('Limite de crédito inválido.');
+      if (!associatedAccountId) return setErrorMsg('Selecione uma conta corrente associada.');
+
+      payload.balance = 0; // Credit cards balance starts at 0 (debt)
+      payload.closingDay = cDay;
+      payload.dueDay = dDay;
+      payload.creditLimit = limit;
+      payload.associatedAccountId = associatedAccountId;
+    } else {
+      payload.balance = numBalance;
+      payload.closingDay = null;
+      payload.dueDay = null;
+      payload.creditLimit = null;
+      payload.associatedAccountId = null;
+    }
+
+    await saveAcc(editingId, payload);
     setShowEditor(false);
   };
 
@@ -97,7 +138,7 @@ export default function AccountsConfigScreen({ onBack }) {
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: activeTheme.text }]}>Contas</Text>
+        <Text style={[styles.title, { color: activeTheme.text }]}>Contas e Cartões</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -114,7 +155,11 @@ export default function AccountsConfigScreen({ onBack }) {
               </View>
               <View style={{ marginLeft: 12 }}>
                 <Text style={[styles.accName, { color: activeTheme.text }]}>{acc.name}</Text>
-                <Text style={[styles.accBalance, { color: activeTheme.textSecondary }]}>Saldo Inicial: R$ {acc.balance.toFixed(2)}</Text>
+                {acc.type === 'credit' ? (
+                  <Text style={[styles.accBalance, { color: activeTheme.textSecondary }]}>Cartão de Crédito • Limite: R$ {acc.creditLimit?.toFixed(2)}</Text>
+                ) : (
+                  <Text style={[styles.accBalance, { color: activeTheme.textSecondary }]}>{acc.type === 'cash' ? 'Dinheiro' : 'Conta Corrente'} • Saldo Inic: R$ {acc.balance.toFixed(2)}</Text>
+                )}
               </View>
             </View>
             <View style={{ flexDirection: 'row' }}>
@@ -130,18 +175,33 @@ export default function AccountsConfigScreen({ onBack }) {
 
         <TouchableOpacity style={[styles.addBtn, { borderColor: activeTheme.accent }]} onPress={openNew}>
           <Ionicons name="add" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
-          <Text style={[styles.addBtnText, { color: activeTheme.accent }]}>Nova Conta</Text>
+          <Text style={[styles.addBtnText, { color: activeTheme.accent }]}>Nova Conta ou Cartão</Text>
         </TouchableOpacity>
       </ScrollView>
 
       <BaseModalBottom
         visible={showEditor}
-        title={editingId ? 'Editar Conta' : 'Nova Conta'}
+        title={editingId ? 'Editar Conta/Cartão' : 'Nova Conta/Cartão'}
         onClose={() => setShowEditor(false)}
         onSave={saveAccount}
         errorMsg={errorMsg}
       >
-        {!editingId && (
+        <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: 0 }]}>Tipo</Text>
+        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+          {['checking', 'credit', 'cash'].map(t => (
+            <TouchableOpacity 
+              key={t}
+              style={{ flex: 1, padding: 10, borderWidth: 1, borderColor: type === t ? activeTheme.accent : activeTheme.cardSecondary, backgroundColor: type === t ? activeTheme.accent + '20' : 'transparent', borderRadius: 8, marginRight: 8, alignItems: 'center' }}
+              onPress={() => setType(t)}
+            >
+              <Text style={{ color: type === t ? activeTheme.accent : activeTheme.textSecondary, fontFamily: f, fontSize: 12*z }}>
+                {t === 'checking' ? 'Corrente' : t === 'credit' ? 'Cartão' : 'Dinheiro'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {!editingId && type !== 'credit' && (
           <View>
             <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: 0 }]}>Bancos Rápidos</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
@@ -167,24 +227,83 @@ export default function AccountsConfigScreen({ onBack }) {
           </View>
         )}
 
-        <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: editingId ? 12 : 0 }]}>Nome da Conta</Text>
+        <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: 0 }]}>Nome da Conta/Cartão</Text>
         <TextInput
           style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
           value={name}
           onChangeText={setName}
-          placeholder="Ex: Nubank, Inter, Dinheiro"
+          placeholder={type === 'credit' ? "Ex: Cartão Nubank" : "Ex: Conta Nubank, Dinheiro"}
           placeholderTextColor={activeTheme.textSecondary}
         />
 
-        <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Saldo Inicial (R$)</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-          value={balance}
-          onChangeText={setBalance}
-          keyboardType="numeric"
-          placeholder="0,00"
-          placeholderTextColor={activeTheme.textSecondary}
-        />
+        {type !== 'credit' ? (
+          <>
+            <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Saldo Inicial (R$)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+              value={balance}
+              onChangeText={setBalance}
+              keyboardType="numeric"
+              placeholder="0,00"
+              placeholderTextColor={activeTheme.textSecondary}
+            />
+          </>
+        ) : (
+          <>
+            <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Limite de Crédito Total (R$)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+              value={creditLimit}
+              onChangeText={setCreditLimit}
+              keyboardType="numeric"
+              placeholder="Ex: 5000,00"
+              placeholderTextColor={activeTheme.textSecondary}
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Dia Fechamento</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+                  value={closingDay}
+                  onChangeText={setClosingDay}
+                  keyboardType="numeric"
+                  placeholder="Ex: 25"
+                  maxLength={2}
+                  placeholderTextColor={activeTheme.textSecondary}
+                />
+              </View>
+              <View style={{ flex: 1, marginLeft: 8 }}>
+                <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Dia Vencimento</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+                  value={dueDay}
+                  onChangeText={setDueDay}
+                  keyboardType="numeric"
+                  placeholder="Ex: 05"
+                  maxLength={2}
+                  placeholderTextColor={activeTheme.textSecondary}
+                />
+              </View>
+            </View>
+
+            <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Débito Automático da Fatura na Conta:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {checkingAccounts.map(acc => (
+                <TouchableOpacity 
+                  key={acc.id}
+                  style={[styles.quickBankPill, { borderColor: associatedAccountId === acc.id ? activeTheme.accent : activeTheme.cardSecondary, backgroundColor: associatedAccountId === acc.id ? activeTheme.accent + '20' : 'transparent' }]}
+                  onPress={() => setAssociatedAccountId(acc.id)}
+                >
+                  <Text style={[styles.quickBankText, { color: associatedAccountId === acc.id ? activeTheme.text : activeTheme.textSecondary }]}>{acc.name}</Text>
+                </TouchableOpacity>
+              ))}
+              {checkingAccounts.length === 0 && (
+                <Text style={{ color: activeTheme.expense, fontSize: 12, fontFamily: f }}>Você precisa criar uma conta corrente primeiro.</Text>
+              )}
+            </ScrollView>
+          </>
+        )}
 
         <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Ícone</Text>
         {icon && icon.startsWith('http') && (

@@ -15,6 +15,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import RecurrenceDetailsScreen from '../screens/RecurrenceDetailsScreen';
 import DebtsScreen from '../screens/DebtsScreen';
 import ExtractionReviewScreen from '../screens/ExtractionReviewScreen';
+import CreditCardScreen from '../screens/CreditCardScreen';
 
 const Tab = createMaterialTopTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -97,6 +98,7 @@ export default function AppNavigator() {
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal', animation: 'none' }} />
         <Stack.Screen name="Debts" component={DebtsScreen} options={{ animation: 'none' }} />
+        <Stack.Screen name="CreditCard" component={CreditCardScreen} options={{ animation: 'none' }} />
         <Stack.Screen name="ExtractionReview" component={ExtractionReviewScreen} options={{ presentation: 'fullScreenModal' }} />
       </Stack.Navigator>
       <ExtractionBanner />

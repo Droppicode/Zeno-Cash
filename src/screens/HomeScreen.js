@@ -81,8 +81,13 @@ export default function HomeScreen({ route, navigation }) {
       recentTxList: txList.filter(t => t.isPending !== 1 && t.isIgnored !== 1 && t.date <= Date.now())
     };
   }, [txList]);
-  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
-  const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
+  let homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  if (!homeOrder.includes('creditCards')) {
+    const idx = homeOrder.indexOf('accounts');
+    if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
+    else homeOrder.push('creditCards');
+  }
 
   const saveTransaction = async (data) => {
     data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente
@@ -133,33 +138,89 @@ export default function HomeScreen({ route, navigation }) {
 
         {/* Renderização Dinâmica dos Módulos baseada na Ordem */}
         {homeOrder.map((modKey) => {
-          if (modKey === 'accounts' && uiConfig.homeShowAccounts !== false && accountBalances.length > 0) {
+          if (modKey === 'accounts' && uiConfig.homeShowAccounts !== false && accountBalances.some(a => a.type !== 'credit')) {
+            const bankAccounts = accountBalances.filter(a => a.type !== 'credit');
             return (
               <View key="accounts" style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Suas Contas</Text>
                 <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                  {accountBalances.map((acc, idx) => (
-                    <View key={acc.id} style={[
-                      styles.groupedItem, 
-                      idx !== accountBalances.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
-                    ]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
-                          {acc.icon && acc.icon.startsWith('http') ? (
-                            <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
-                          ) : (
-                            <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
-                          )}
+                  {bankAccounts.map((acc, idx) => (
+                    <TouchableOpacity 
+                      key={acc.id} 
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        navigation.navigate('Transações', { filterAccountId: acc.id });
+                      }}
+                    >
+                      <View style={[
+                        styles.groupedItem, 
+                        idx !== bankAccounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
+                      ]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
+                            {acc.icon && acc.icon.startsWith('http') ? (
+                              <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
+                            ) : (
+                              <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
+                            )}
+                          </View>
+                          <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
                         </View>
-                        <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
+                        <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
+                          {acc.currentBalance <= -0.01 ? `- R$ ${Math.abs(acc.currentBalance).toFixed(2)}` : `R$ ${Math.abs(acc.currentBalance).toFixed(2)}`}
+                        </Text>
                       </View>
-                      <Text style={[styles.groupedAmount, { color: activeTheme.text }]}>R$ {acc.currentBalance.toFixed(2)}</Text>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                   <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
-                    <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Geral</Text>
+                    <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Contas</Text>
                     <Text style={[styles.groupedAmount, { color: activeTheme.text, fontWeight: 'bold' }]}>
-                      R$ {accountBalances.reduce((acc, curr) => acc + curr.currentBalance, 0).toFixed(2)}
+                      R$ {bankAccounts.reduce((acc, curr) => acc + curr.currentBalance, 0).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          }
+
+          if (modKey === 'creditCards' && uiConfig.homeShowCreditCards !== false && accountBalances.some(a => a.type === 'credit')) {
+            const creditCards = accountBalances.filter(a => a.type === 'credit');
+            return (
+              <View key="creditCards" style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Cartões de Crédito</Text>
+                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
+                  {creditCards.map((acc, idx) => (
+                    <TouchableOpacity 
+                      key={acc.id} 
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        navigation.navigate('CreditCard', { account: acc });
+                      }}
+                    >
+                      <View style={[
+                        styles.groupedItem, 
+                        idx !== creditCards.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
+                      ]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
+                            {acc.icon && acc.icon.startsWith('http') ? (
+                              <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
+                            ) : (
+                              <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
+                            )}
+                          </View>
+                          <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
+                        </View>
+                        <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
+                          {acc.currentBalance <= -0.01 ? `- R$ ${Math.abs(acc.currentBalance).toFixed(2)}` : `R$ ${Math.abs(acc.currentBalance).toFixed(2)}`}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                  <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
+                    <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Faturas</Text>
+                    <Text style={[styles.groupedAmount, { color: activeTheme.expense, fontWeight: 'bold' }]}>
+                      R$ {Math.abs(creditCards.reduce((acc, curr) => acc + curr.currentBalance, 0)).toFixed(2)}
                     </Text>
                   </View>
                 </View>
@@ -214,7 +275,7 @@ export default function HomeScreen({ route, navigation }) {
                               </View>
                             </View>
                             <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                              {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                              {item.type === 'income' ? '+' : '-'} R$ {Math.abs(item.amount).toFixed(2)}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -271,7 +332,7 @@ export default function HomeScreen({ route, navigation }) {
                                 </View>
                               </View>
                               <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                                {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                                {item.type === 'income' ? '+' : '-'} R$ {Math.abs(item.amount).toFixed(2)}
                               </Text>
                             </View>
                           </TouchableOpacity>

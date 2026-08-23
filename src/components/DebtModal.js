@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Modal, ScrollView, Switch, KeyboardAvoidingView, Platform, FlatList, Keyboard } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch, FlatList, Keyboard } from 'react-native';
+import BaseModalBottom from './ui/BaseModalBottom';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SettingsContext } from '../context/SettingsContext';
@@ -23,6 +24,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
 
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [settlementAccountId, setSettlementAccountId] = useState(null);
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -49,6 +51,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
         setType(initialData.type);
         setDebtDateObj(initialData.date ? new Date(initialData.date) : new Date());
         setIsPaid(initialData.isPaid === 1);
+        setSettlementAccountId(null);
       } else {
         setPersonName('');
         setDescription('');
@@ -56,6 +59,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
         setType('owe');
         setDebtDateObj(new Date());
         setIsPaid(false);
+        setSettlementAccountId(null);
       }
       loadAccounts();
     }
@@ -114,28 +118,56 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
       await addDebt(data);
     }
 
+    if (isPaid && (!initialData || initialData.isPaid !== 1) && settlementAccountId) {
+      if (onClose) onClose({ settlementAccountId, amount: numAmount, type, personName, description });
+    } else {
+      if (onClose) onClose();
+    }
+
     HapticFeedback.success();
-    onClose();
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView 
-        style={styles.modalOverlay}
-        behavior="position"
-        contentContainerStyle={{ flex: 1, justifyContent: 'flex-end' }}
-        enabled={Platform.OS === 'ios' ? true : isKeyboardVisible}
-      >
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{initialData ? 'Editar Dívida' : 'Nova Dívida'}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={activeTheme.textSecondary} />
+    <BaseModalBottom
+      visible={visible}
+      title={initialData ? 'Editar Dívida' : 'Nova Dívida'}
+      onClose={onClose}
+      headerRight={
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color={activeTheme.textSecondary} />
+        </TouchableOpacity>
+      }
+      footerComponent={
+        <View style={styles.footer}>
+          {initialData && (initialData.transactionId || initialData.recurrenceId) && onViewTransaction && (
+            <TouchableOpacity 
+              style={[styles.deleteButton, { backgroundColor: activeTheme.accent + '20', marginRight: 12 * z }]} 
+              onPress={() => onViewTransaction(initialData)}
+            >
+              <Ionicons name="link" size={20 * z} color={activeTheme.accent} style={{ marginRight: 8 * z }} />
+              <Text style={[styles.deleteButtonText, { color: activeTheme.accent }]}>Transação</Text>
             </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <View style={{ alignItems: 'center', marginVertical: 24 * z }}>
+          )}
+          
+          {initialData && onDelete && (
+            <TouchableOpacity 
+              style={styles.deleteButton} 
+              onPress={() => {
+                onDelete(initialData.id);
+                onClose();
+              }}
+            >
+              <Ionicons name="trash-outline" size={20 * z} color={activeTheme.expense} style={{ marginRight: 8 * z }} />
+              <Text style={styles.deleteButtonText}>Apagar</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Salvar</Text>
+          </TouchableOpacity>
+        </View>
+      }
+    >
+      <View style={{ alignItems: 'center', marginVertical: 24 * z }}>
               <Text style={{ color: activeTheme.textSecondary, fontSize: 16 * z, marginBottom: 8 * z, fontFamily: f }}>Valor</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ color: activeTheme.text, fontSize: 24 * z, fontWeight: 'bold', marginRight: 8 * z, fontFamily: f }}>R$</Text>
@@ -252,39 +284,26 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
               />
             </View>
 
+            {isPaid && (!initialData || initialData.isPaid !== 1) && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Em qual conta o dinheiro movimentou?</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountScroll}>
+                  {accountList.filter(a => a.type !== 'credit').map((acc) => (
+                    <TouchableOpacity
+                      key={acc.id}
+                      style={[styles.accountBtn, settlementAccountId === acc.id && styles.accountBtnActive]}
+                      onPress={() => setSettlementAccountId(acc.id)}
+                    >
+                      <Text style={[styles.accountText, settlementAccountId === acc.id && styles.accountTextActive]}>{acc.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             {/* Date */}
 
-          </ScrollView>
-          <View style={styles.footer}>
-            {initialData && (initialData.transactionId || initialData.recurrenceId) && onViewTransaction && (
-              <TouchableOpacity 
-                style={[styles.deleteButton, { backgroundColor: activeTheme.accent + '20', marginRight: 12 * z }]} 
-                onPress={() => onViewTransaction(initialData)}
-              >
-                <Ionicons name="link" size={20 * z} color={activeTheme.accent} style={{ marginRight: 8 * z }} />
-                <Text style={[styles.deleteButtonText, { color: activeTheme.accent }]}>Transação</Text>
-              </TouchableOpacity>
-            )}
-            
-            {initialData && onDelete && (
-              <TouchableOpacity 
-                style={styles.deleteButton} 
-                onPress={() => {
-                  onDelete(initialData.id);
-                  onClose();
-                }}
-              >
-                <Ionicons name="trash-outline" size={20 * z} color={activeTheme.expense} style={{ marginRight: 8 * z }} />
-                <Text style={styles.deleteButtonText}>Apagar</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Salvar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </BaseModalBottom>
   );
 }
 
@@ -293,10 +312,6 @@ const getStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: theme.card, borderTopLeftRadius: 24 * z, borderTopRightRadius: 24 * z, padding: 24 * z, maxHeight: '90%' },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 * z },
-    modalTitle: { fontSize: 20 * z, fontWeight: 'bold', color: theme.text, fontFamily: f },
     closeButton: { padding: 4 * z },
     typeContainer: { flexDirection: 'row', backgroundColor: theme.background, borderRadius: 12 * z, padding: 4 * z, marginBottom: 24 * z },
     typeButton: { flex: 1, paddingVertical: 12 * z, alignItems: 'center', borderRadius: 8 * z },

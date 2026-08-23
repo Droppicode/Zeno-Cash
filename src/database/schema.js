@@ -7,6 +7,10 @@ export const accounts = sqliteTable('accounts', {
   balance: real('balance').default(0), // Initial balance, calculated on the fly usually
   icon: text('icon'),
   color: text('color'),
+  associatedAccountId: integer('associated_account_id'),
+  closingDay: integer('closing_day'),
+  dueDay: integer('due_day'),
+  creditLimit: real('credit_limit'),
 });
 
 export const transactions = sqliteTable('transactions', {

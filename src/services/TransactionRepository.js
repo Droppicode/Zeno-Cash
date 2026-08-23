@@ -23,8 +23,8 @@ export const TransactionRepository = {
 
       const query = `
         SELECT 
-          SUM(CASE WHEN type = 'income' AND is_ignored = 0 THEN amount ELSE 0 END) as income,
-          SUM(CASE WHEN type = 'expense' AND is_ignored = 0 THEN amount ELSE 0 END) as expense
+          SUM(CASE WHEN type = 'income' AND is_ignored = 0 THEN ABS(amount) ELSE 0 END) as income,
+          SUM(CASE WHEN type = 'expense' AND is_ignored = 0 THEN ABS(amount) ELSE 0 END) as expense
         FROM transactions
         WHERE date >= ? AND date <= ?
       `;

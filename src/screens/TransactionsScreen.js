@@ -88,7 +88,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
             styles.amount, 
             { color: item.type === 'income' ? activeTheme.income : activeTheme.expense, opacity: item.isVirtual ? 0.6 : 1 }
           ]}>
-            {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+            {item.type === 'income' ? '+' : '-'} R$ {Math.abs(item.amount).toFixed(2)}
           </Text>
         </View>
       </TouchableOpacity>
@@ -105,7 +105,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
          prevProps.hasSplit === nextProps.hasSplit;
 });
 
-export default function TransactionsScreen({ navigation }) {
+export default function TransactionsScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod, llmProvider, llmModel, llmKey } = React.useContext(SettingsContext);
   const { startExtraction, status } = React.useContext(ExtractionContext);
   const { txList, loadTransactions, saveTransaction, removeTransaction, updateTransaction } = useTransactions();
@@ -173,6 +173,13 @@ export default function TransactionsScreen({ navigation }) {
   const [filter, setFilter] = useState('all'); 
   const [period, setPeriod] = useState(defaultPeriod || '30d'); 
   const [accountFilter, setAccountFilter] = useState('all');
+  
+  React.useEffect(() => {
+    if (route?.params?.filterAccountId) {
+      setAccountFilter(route.params.filterAccountId);
+      navigation.setParams({ filterAccountId: undefined });
+    }
+  }, [route?.params?.filterAccountId]);
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);

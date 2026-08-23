@@ -94,8 +94,13 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', { ...uiConfig, analyticsDisabledModules: newDisabled });
   };
 
-  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'pending', 'recent'];
-  const homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
+  let homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  if (!homeOrder.includes('creditCards')) {
+    const idx = homeOrder.indexOf('accounts');
+    if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
+    else homeOrder.push('creditCards');
+  }
   const analyticsOrder = uiConfig.analyticsModulesOrder || ['kpis', 'heatmap', 'composition', 'recurrence', 'monthly', 'cashflow', 'ranking', 'accounts', 'villains', 'insights'];
 
   const moveModule = (index, direction) => {
@@ -118,6 +123,7 @@ export default function ModuleConfigScreen({ onBack }) {
   
   const getModuleName = (key) => {
     if (key === 'accounts') return 'Suas Contas';
+    if (key === 'creditCards') return 'Cartões de Crédito';
     if (key === 'pending') return 'Transações Pendentes';
     if (key === 'recent') return 'Últimas Transações';
     if (key === 'debts') return 'Controle de Dívidas';
@@ -248,6 +254,10 @@ export default function ModuleConfigScreen({ onBack }) {
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Contas</Text>
             <Switch value={uiConfig.homeShowAccounts !== false} onValueChange={() => handleToggleUi('homeShowAccounts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Cartões</Text>
+            <Switch value={uiConfig.homeShowCreditCards !== false} onValueChange={() => handleToggleUi('homeShowCreditCards')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Últimas Trans.</Text>

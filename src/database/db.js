@@ -95,6 +95,10 @@ try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_paid INTEGER DEFAULT 0;')
 try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_percentage INTEGER DEFAULT 0;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE debts ADD COLUMN ignores_interest INTEGER DEFAULT 0;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE debts ADD COLUMN description TEXT;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN associated_account_id INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN closing_day INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN due_day INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN credit_limit REAL;'); } catch (e) {}
 
 // Índices para otimização de performance
 try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);'); } catch (e) {}

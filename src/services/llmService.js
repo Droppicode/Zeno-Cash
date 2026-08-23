@@ -16,6 +16,7 @@ Lista: ${categoriesStr || 'Nenhuma lista fornecida'}
 
 CONTAS DISPONÍVEIS DO USUÁRIO:
 Tente classificar usando EXATAMENTE uma das contas desta lista.
+Se o documento for uma fatura de cartão de crédito, tente associar à conta do cartão de crédito correspondente.
 Se for uma conta nova e óbvia (ex: um banco não listado), você pode sugerir o nome exato no campo "account".
 Lista de contas: ${accountsStr || 'Nenhuma lista fornecida'}
 

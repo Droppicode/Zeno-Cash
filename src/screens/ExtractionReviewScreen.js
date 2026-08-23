@@ -13,8 +13,8 @@ import { useAccounts } from '../hooks/useAccounts';
 
 export default function ExtractionReviewScreen({ route, navigation }) {
   const { activeTheme } = useContext(SettingsContext);
-  const { categoryList, saveCategory } = useCategories();
-  const { saveTransaction } = useTransactions();
+  const { categoryList, saveCategory, loadCategories } = useCategories();
+  const { saveTransaction, txList, loadTransactions } = useTransactions();
   const { accountList, loadAccounts, saveAccount } = useAccounts();
   
   const initialTxs = route.params?.transactions || [];
@@ -39,6 +39,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
   React.useEffect(() => {
     loadAccounts();
     loadCategories();
+    loadTransactions();
   }, []);
 
   React.useEffect(() => {
@@ -54,6 +55,24 @@ export default function ExtractionReviewScreen({ route, navigation }) {
       }));
     }
   }, [accountList]);
+
+  React.useEffect(() => {
+    if (txList && txList.length > 0) {
+      setTxs(prevTxs => prevTxs.filter(t => {
+        const isDuplicate = txList.some(existing => {
+          const d1 = new Date(existing.date);
+          const d2 = new Date(t.date);
+          const sameDay = d1.getFullYear() === d2.getFullYear() && 
+                          d1.getMonth() === d2.getMonth() && 
+                          d1.getDate() === d2.getDate();
+          return sameDay && 
+                 Math.abs(existing.amount - (Number(t.amount) || 0)) < 0.01 && 
+                 existing.type === t.type;
+        });
+        return !isDuplicate;
+      }));
+    }
+  }, [txList]);
   
   const [editingTx, setEditingTx] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -85,6 +104,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
       for (let tx of txs) {
         const { _tempId, confidence, isAccountAiSuggestion, ...dbData } = tx;
         dbData.isPending = 0; // Se o usuário aprovou a tela, não é mais pendente
+        dbData.amount = Math.abs(Number(dbData.amount) || 0); // Ensure amount is numeric and positive
 
         // Categoria
         if (!dbData.categoryId) {
@@ -210,7 +230,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
                     </View>
                   </View>
                   <Text style={[styles.amount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                    {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                    {item.type === 'income' ? '+' : '-'} R$ {Math.abs(Number(item.amount) || 0).toFixed(2)}
                   </Text>
                 </View>
               </TouchableOpacity>
