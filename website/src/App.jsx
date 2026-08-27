@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Shield, Zap, Bell, CheckCircle2, TrendingUp, Search, Sun, Moon, LayoutDashboard, Cloud, Target, Palette, Smartphone, Database, Code } from 'lucide-react';
+import { Download, Shield, Zap, Bell, CheckCircle2, TrendingUp, Search, Sun, Moon, LayoutDashboard, Cloud, Target, Palette, Smartphone, Database, Code, Brain, BarChart3, AppWindow } from 'lucide-react';
 import mockupImage from './assets/mockup.jpg';
 import './index.css';
 
@@ -66,14 +66,12 @@ function App() {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Add glass background if scrolled past 50px
       if (currentScrollY > 50) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
       }
 
-      // Hide navbar if scrolling down, show if scrolling up
       if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
         setIsHidden(true);
       } else {
@@ -108,14 +106,20 @@ function App() {
       <main>
         {/* Hero Section */}
         <section className="hero">
+          {/* Subtle Background Elements */}
+          <BarChart3 className="bg-element bg-element-1" size={150} />
+          <Bell className="bg-element bg-element-2" size={120} />
+          <AppWindow className="bg-element bg-element-3" size={180} />
+          <Zap className="bg-element bg-element-4" size={140} />
+
           <div className="container hero-grid">
             <div className="hero-content animate-slide-left">
               <h1>
-                Smart Finance.<br />
-                <span className="text-gradient">Fully Automated.</span>
+                Effortless Control.<br />
+                <span className="text-gradient">Complete Zen.</span>
               </h1>
               <p>
-                Zeno Cash leverages Android Notification Listening to automatically track your expenses frictionlessly. Secure, offline-first, and lightning fast.
+                Zeno Cash leverages Android Notification Listening to automatically track your expenses frictionlessly. Secure, offline-first, and beautifully customized.
               </p>
               <div className="hero-buttons">
                 <a href={LATEST_RELEASE_URL} className="btn-primary">
@@ -141,6 +145,14 @@ function App() {
             <div className="features-grid">
               <div className="feature-card glass">
                 <div className="feature-icon">
+                  <Brain size={24} />
+                </div>
+                <h3>AI Insights</h3>
+                <p>Receive smart tips, natural language categorization, and deep insights into your spending habits powered by Artificial Intelligence.</p>
+              </div>
+
+              <div className="feature-card glass">
+                <div className="feature-icon">
                   <Bell size={24} />
                 </div>
                 <h3>Automated Logging</h3>
@@ -153,14 +165,6 @@ function App() {
                 </div>
                 <h3>Fast & Offline-First</h3>
                 <p>Built with React Native and local SQLite. Your data is always accessible, even without an internet connection.</p>
-              </div>
-
-              <div className="feature-card glass">
-                <div className="feature-icon">
-                  <TrendingUp size={24} />
-                </div>
-                <h3>Beautiful Analytics</h3>
-                <p>Interactive charts, heatmaps, and spending insights to help you understand where your money goes.</p>
               </div>
 
               <div className="feature-card glass">

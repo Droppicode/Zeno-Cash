@@ -11,6 +11,7 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --bg-gradient-start: rgba(16, 185, 129, 0.08);
   --bg-gradient-end: rgba(16, 185, 129, 0.05);
+  --bg-element: rgba(255,255,255,0.02);
 }
 
 [data-theme='light'] {
@@ -23,6 +24,7 @@
   --glass-border: rgba(0, 0, 0, 0.1);
   --bg-gradient-start: rgba(16, 185, 129, 0.15);
   --bg-gradient-end: rgba(16, 185, 129, 0.1);
+  --bg-element: rgba(0,0,0,0.03);
 }
 
 * {
@@ -78,6 +80,7 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+  position: relative;
 }
 
 /* Typography Enhancements */
@@ -173,6 +176,18 @@ h1, h2, h3, h4, h5, h6 {
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
+@keyframes floating-slow {
+  0% { transform: translateY(0px) rotate(0deg) scale(1); }
+  50% { transform: translateY(-30px) rotate(5deg) scale(1.05); }
+  100% { transform: translateY(0px) rotate(0deg) scale(1); }
+}
+
+@keyframes floating-slower {
+  0% { transform: translateY(0px) rotate(0deg) scale(1); }
+  50% { transform: translateY(40px) rotate(-5deg) scale(1.1); }
+  100% { transform: translateY(0px) rotate(0deg) scale(1); }
+}
+
 .animate-slide-left {
   animation: slideInLeft 0.8s ease-out forwards;
 }
@@ -243,6 +258,38 @@ header.nav-hidden {
   color: var(--accent-color);
 }
 
+/* Background Abstract Elements */
+.bg-element {
+  position: absolute;
+  color: var(--bg-element);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-element-1 {
+  top: 10%;
+  left: 5%;
+  animation: floating-slow 12s ease-in-out infinite;
+}
+
+.bg-element-2 {
+  top: 60%;
+  left: -5%;
+  animation: floating-slower 15s ease-in-out infinite;
+}
+
+.bg-element-3 {
+  top: 20%;
+  right: 5%;
+  animation: floating-slow 14s ease-in-out infinite reverse;
+}
+
+.bg-element-4 {
+  top: 75%;
+  right: -2%;
+  animation: floating-slower 18s ease-in-out infinite;
+}
+
 /* Hero Section */
 .hero {
   min-height: 100vh;
@@ -250,6 +297,7 @@ header.nav-hidden {
   align-items: center;
   padding-top: 80px;
   position: relative;
+  overflow: hidden; /* To keep background elements contained if they drift */
 }
 
 .hero-grid {
@@ -257,6 +305,7 @@ header.nav-hidden {
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 60px;
+  z-index: 10;
 }
 
 .hero-content {
@@ -264,13 +313,13 @@ header.nav-hidden {
 }
 
 .hero h1 {
-  font-size: 4rem;
+  font-size: 3.5rem;
   line-height: 1.1;
   margin-bottom: 24px;
 }
 
 .hero p {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   color: var(--text-secondary);
   margin-bottom: 40px;
   max-width: 600px;
@@ -304,6 +353,8 @@ header.nav-hidden {
 /* Features Section */
 section {
   padding: 100px 0;
+  position: relative;
+  z-index: 10;
 }
 
 .features-grid {
@@ -455,6 +506,9 @@ footer {
   
   .floating-phone {
     max-height: 400px;
+  }
+  .bg-element {
+    display: none; /* Hide background subtle icons on mobile to prevent clutter */
   }
 }
 
