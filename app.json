@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zeno Cash",
     "slug": "zeno-cash",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "entryPoint": "./index.js",
     "scheme": "zenocash",
     "orientation": "portrait",
@@ -13,7 +13,8 @@
     },
     "android": {
       "package": "com.mmn.zenocash",
-      "allowBackup": false
+      "allowBackup": false,
+      "versionCode": 2
     },
     "androidStatusBar": {
       "hidden": true
@@ -44,6 +45,12 @@
       "expo-background-task",
       "@react-native-community/datetimepicker",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5ca90b54-3550-47be-b408-42a560db2223"
+      }
+    },
+    "owner": "droppicodes-team"
   }
 }
