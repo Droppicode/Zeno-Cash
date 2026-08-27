@@ -1,15 +1,15 @@
 module.exports = ({ config }) => {
-  // Lê uma variável de ambiente para saber se é dev ou prod
+  // Read an environment variable to determine if it's dev or prod
   const isProd = process.env.APP_ENV === 'production';
   
-  // Define o pacote dependendo do ambiente
+  // Set the package name depending on the environment
   const packageName = isProd ? 'com.mmn.zenocash' : 'com.mmn.zenocash.dev';
   
-  // Define o nome do app para diferenciar na tela do celular
+  // Set the app name to differentiate it on the device screen
   const appName = isProd ? 'Zeno Cash' : 'Zeno Cash (Dev)';
   
-  // Define qual ícone usar
-  // NOTA: O Expo recomenda fortemente o uso de arquivos .png para ícones.
+  // Define which icon to use
+  // NOTE: Expo strongly recommends using .png files for icons.
   const appIcon = isProd ? './assets/icon.png' : './assets/icon-dev.png';
 
   return {
