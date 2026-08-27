@@ -41,7 +41,11 @@ console.log("✅ app.json salvo com sucesso!\n");
 // 4. Roda o expo prebuild para gerar a pasta android/ com os novos dados
 console.log("⚙️ Rodando 'expo prebuild' (Isso pode levar alguns segundos)...");
 try {
-  execSync('npx expo prebuild --platform android --clean', { stdio: 'inherit' });
+  execSync('npx expo prebuild --platform android --clean', { 
+    stdio: 'inherit', 
+    env: { ...process.env, NODE_ENV: 'production', APP_ENV: 'production' } 
+  });
+  // Override removido definitivamente
   console.log("\n✅ Pasta android/ gerada e atualizada com sucesso!\n");
 } catch (err) {
   console.error("\n❌ Erro ao rodar o prebuild.");
@@ -49,11 +53,20 @@ try {
 }
 
 // 5. Tenta abrir o Android Studio
-console.log("🤖 Abrindo o projeto no Android Studio...");
+console.log("🤖 Tentando abrir o Android Studio...");
 try {
-  execSync('npx open android', { stdio: 'inherit' });
-  console.log("✅ Android Studio aberto!");
+  // Usando o caminho absoluto exato que encontramos na sua máquina
+  const studioProcess = spawn('/usr/local/android-studio/bin/studio.sh', ['./android'], { detached: true, stdio: 'ignore' });
+  
+
+  // Impede que o Node feche com erro caso o arquivo ainda falhe
+  studioProcess.on('error', (err) => {
+    console.log("⚠️ Não consegui abrir o Android Studio automaticamente.");
+    console.log("👉 Por favor, abra o Android Studio manualmente e selecione a pasta 'android' gerada aqui.");
+  });
+
+  studioProcess.unref();
+  console.log("✅ Android Studio abrindo em segundo plano!");
 } catch (err) {
-  console.log("⚠️ Erro ao tentar abrir o Android Studio com 'npx open android'.");
-  console.log("👉 Por favor, abra o Android Studio manualmente e selecione a pasta 'android' gerada aqui.");
+  console.log("⚠️ Não consegui abrir o Android Studio automaticamente.");
 }

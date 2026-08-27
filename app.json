@@ -14,7 +14,7 @@
     "android": {
       "package": "com.mmn.zenocash",
       "allowBackup": false,
-      "versionCode": 2
+      "versionCode": 18
     },
     "androidStatusBar": {
       "hidden": true
