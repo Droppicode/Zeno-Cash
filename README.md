@@ -20,7 +20,7 @@ It aims to make expense tracking frictionless by leveraging local databases and 
 - **Cloud Backup:** Optional Google Sign-In integration for seamless data syncing.
 
 ## 📸 Screenshots
-*(Add 2-3 screenshots or a GIF of your app running here to impress recruiters!)*
+*(Add 2-3 screenshots or a GIF of the app later...)*
 
 ## 🚀 How to Run
 
@@ -37,6 +37,6 @@ cd zeno-cash/app
 npm install
 
 # Start the Expo development server
-npm start
+npm expo start
 ```
 Use the **Expo Go** app on your phone (scan the QR code) or an Android/iOS emulator to run the project.
