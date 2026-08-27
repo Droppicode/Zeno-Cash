@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, Shield, Zap, Bell, CheckCircle2, TrendingUp, Search } from 'lucide-react';
+import mockupImage from './assets/mockup.jpg';
 import './index.css';
 
 function App() {
@@ -23,8 +24,8 @@ function App() {
       <main>
         {/* Hero Section */}
         <section className="hero">
-          <div className="container">
-            <div className="hero-content animate-fade-in">
+          <div className="container hero-grid">
+            <div className="hero-content animate-slide-left">
               <h1>
                 Smart Finance.<br />
                 <span className="text-gradient">Fully Automated.</span>
@@ -43,15 +44,15 @@ function App() {
                 </a>
               </div>
             </div>
+            
+            <div className="hero-image-wrapper animate-fade-in delay-2">
+              <img src={mockupImage} alt="Zeno Cash Interface" className="floating-phone" />
+            </div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section id="features" className="container animate-fade-in delay-1">
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h2 style={{ fontSize: '2.5rem' }}>Why choose <span className="text-gradient">Zeno Cash?</span></h2>
-          </div>
-          
+        <section id="features" className="container animate-fade-in delay-3">
           <div className="features-grid">
             <div className="feature-card glass">
               <div className="feature-icon">
@@ -80,7 +81,7 @@ function App() {
         </section>
 
         {/* Security Section */}
-        <section className="security animate-fade-in delay-2">
+        <section className="security animate-fade-in delay-3">
           <div className="container">
             <div className="security-box glass">
               <Shield size={64} color="var(--accent-color)" />
