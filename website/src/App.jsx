@@ -103,15 +103,17 @@ function App() {
         </div>
       </header>
 
+      {/* Subtle Background Elements across the whole page */}
+      <BarChart3 className="bg-element bg-element-1" size={150} />
+      <Bell className="bg-element bg-element-2" size={120} />
+      <AppWindow className="bg-element bg-element-3" size={180} />
+      <Zap className="bg-element bg-element-4" size={140} />
+      <Database className="bg-element bg-element-5" size={160} />
+      <LayoutDashboard className="bg-element bg-element-6" size={130} />
+
       <main>
         {/* Hero Section */}
         <section className="hero">
-          {/* Subtle Background Elements */}
-          <BarChart3 className="bg-element bg-element-1" size={150} />
-          <Bell className="bg-element bg-element-2" size={120} />
-          <AppWindow className="bg-element bg-element-3" size={180} />
-          <Zap className="bg-element bg-element-4" size={140} />
-
           <div className="container hero-grid">
             <div className="hero-content animate-slide-left">
               <h1>
@@ -147,8 +149,8 @@ function App() {
                 <div className="feature-icon">
                   <Brain size={24} />
                 </div>
-                <h3>AI Insights</h3>
-                <p>Receive smart tips, natural language categorization, and deep insights into your spending habits powered by Artificial Intelligence.</p>
+                <h3>AI Statement Automation</h3>
+                <p>Use Artificial Intelligence to automatically scan and parse your bank statements, instantly converting them into categorized transactions.</p>
               </div>
 
               <div className="feature-card glass">

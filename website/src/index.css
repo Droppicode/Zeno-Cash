@@ -258,36 +258,48 @@ header.nav-hidden {
   color: var(--accent-color);
 }
 
-/* Background Abstract Elements */
+/* Background Abstract Elements (Fixed to screen) */
 .bg-element {
-  position: absolute;
+  position: fixed;
   color: var(--bg-element);
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
 }
 
 .bg-element-1 {
-  top: 10%;
+  top: 15%;
   left: 5%;
   animation: floating-slow 12s ease-in-out infinite;
 }
 
 .bg-element-2 {
   top: 60%;
-  left: -5%;
+  left: -2%;
   animation: floating-slower 15s ease-in-out infinite;
 }
 
 .bg-element-3 {
-  top: 20%;
+  top: 25%;
   right: 5%;
   animation: floating-slow 14s ease-in-out infinite reverse;
 }
 
 .bg-element-4 {
   top: 75%;
-  right: -2%;
+  right: 2%;
   animation: floating-slower 18s ease-in-out infinite;
+}
+
+.bg-element-5 {
+  top: 45%;
+  left: 40%;
+  animation: floating-slow 20s ease-in-out infinite;
+}
+
+.bg-element-6 {
+  top: 85%;
+  left: 30%;
+  animation: floating-slower 16s ease-in-out infinite reverse;
 }
 
 /* Hero Section */
@@ -297,7 +309,6 @@ header.nav-hidden {
   align-items: center;
   padding-top: 80px;
   position: relative;
-  overflow: hidden; /* To keep background elements contained if they drift */
 }
 
 .hero-grid {
@@ -343,11 +354,16 @@ header.nav-hidden {
   max-height: 600px;
   object-fit: contain;
   border-radius: 36px;
-  box-shadow: 0 20px 50px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 20px 50px rgba(16, 185, 129, 0.15);
   animation: floating 6s ease-in-out infinite;
-  border: 12px solid var(--text-primary);
+  border: 12px solid #1c1c1e; /* Sleek dark bezel instead of bright white */
   background: #111;
   transition: border-color 0.3s ease;
+}
+
+[data-theme='light'] .floating-phone {
+  border-color: #222; /* Keep it dark like a real phone */
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1), 0 20px 50px rgba(16, 185, 129, 0.2);
 }
 
 /* Features Section */
