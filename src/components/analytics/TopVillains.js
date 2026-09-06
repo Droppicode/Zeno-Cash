@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CollapsibleSection from './CollapsibleSection';
@@ -35,7 +36,7 @@ export default function TopVillains({ theme, expenses, categoryList }) {
                  {catInfo.categoryName} • {new Date(item.date).toLocaleDateString('pt-BR')}
               </Text>
             </View>
-            <Text style={[styles.vilaoAmount, { color: theme.expense, fontFamily: f }]}>- R$ {item.amount.toFixed(2)}</Text>
+            <Text style={[styles.vilaoAmount, { color: theme.expense, fontFamily: f }]}>- R$ {CurrencyUtils.formatDisplay(item.amount)}</Text>
           </View>
         );
       })}

@@ -1,6 +1,7 @@
 import { AppRegistry } from 'react-native';
 import RNAndroidNotificationListener from 'react-native-android-notification-listener';
 import * as Notifications from 'expo-notifications';
+import { CurrencyUtils } from '../utils/currencyUtils';
 
 import { db } from '../database/db';
 import { transactions, accounts } from '../database/schema';
@@ -133,7 +134,7 @@ export const headlessNotificationListener = async ({ notification }) => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${txDesc}`,
-        body: `Pendência de R$ ${amount.toFixed(2)} salva. Toque para aprovar!`,
+        body: `Pendência de R$ ${CurrencyUtils.formatDisplay(amount)} salva. Toque para aprovar!`,
         sound: true,
       },
       trigger: null,

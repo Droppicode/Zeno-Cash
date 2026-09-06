@@ -1,4 +1,5 @@
 import React from 'react';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CollapsibleSection from './CollapsibleSection';
@@ -25,12 +26,12 @@ export default function CategoryRanking({ theme, ranking }) {
             <View style={{ flex: 1 }}>
               <View style={styles.header}>
                 <Text style={[styles.name, { color: theme.text, fontFamily: f }]}>{item.name}</Text>
-                <Text style={[styles.amount, { color: theme.text, fontFamily: f }]}>R$ {item.total.toFixed(2)}</Text>
+                <Text style={[styles.amount, { color: theme.text, fontFamily: f }]}>R$ {CurrencyUtils.formatDisplay(item.total)}</Text>
               </View>
               
               <View style={styles.subHeader}>
                 <Text style={[styles.txCount, { color: theme.textSecondary, fontFamily: f }]}>{item.txCount} transações</Text>
-                <Text style={[styles.txCount, { color: theme.textSecondary, fontFamily: f }]}>Média: R$ {item.avg.toFixed(2)}</Text>
+                <Text style={[styles.txCount, { color: theme.textSecondary, fontFamily: f }]}>Média: R$ {CurrencyUtils.formatDisplay(item.avg)}</Text>
               </View>
               
               <View style={[styles.progressBarBg, { backgroundColor: theme.cardSecondary }]}>

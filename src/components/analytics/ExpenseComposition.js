@@ -1,4 +1,5 @@
 import React from 'react';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import CollapsibleSection from './CollapsibleSection';
@@ -83,7 +84,7 @@ export default function ExpenseComposition({ theme, data, totalExpense, isMacro,
                 <Text style={[styles.catName, { color: theme.text, fontFamily: f }]}>{item.name}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.catAmount, { color: theme.text, fontFamily: f }]}>R$ {item.total.toFixed(2)}</Text>
+                <Text style={[styles.catAmount, { color: theme.text, fontFamily: f }]}>R$ {CurrencyUtils.formatDisplay(item.total)}</Text>
                 <Text style={[styles.catPercent, { color: theme.textSecondary, fontFamily: f }]}>
                   {isMacro && item.name !== 'Outros' ? `${actualPercent.toFixed(1)}% (Meta: ${targetPercent}%)` : `${actualPercent.toFixed(1)}%`}
                 </Text>

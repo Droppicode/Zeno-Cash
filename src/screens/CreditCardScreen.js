@@ -1,4 +1,5 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,14 +36,14 @@ export default function CreditCardScreen({ route, navigation }) {
   }, [txList, account.id]);
 
   const invoices = useMemo(() => {
-    return InvoiceUtils.groupTransactionsByInvoice(cardTransactions, account.closingDay);
+    return InvoiceUtils.groupTransactionsByInvoice(cardTransactions, account.closingDay, account.dueDay);
   }, [cardTransactions, account.closingDay]);
 
   const [currentInvoiceIndex, setCurrentInvoiceIndex] = useState(0);
 
   useEffect(() => {
     if (invoices.length > 0 && currentInvoiceIndex === 0 && !invoices._init) {
-      const { currentInvoiceKey } = InvoiceUtils.getCurrentInvoiceCycle(account.closingDay);
+      const { currentInvoiceKey } = InvoiceUtils.getCurrentInvoiceCycle(account.closingDay, account.dueDay);
       const idx = invoices.findIndex(i => i.monthKey === currentInvoiceKey);
       if (idx !== -1) {
         setCurrentInvoiceIndex(idx);
@@ -63,11 +64,22 @@ export default function CreditCardScreen({ route, navigation }) {
   const currentInvoice = invoices[currentInvoiceIndex] || { monthKey: 'N/A', closingBalance: 0, cycleExpenses: 0, cyclePayments: 0, previousBalance: 0, transactions: [] };
 
   const handleAddInterest = () => {
+    const cycleDates = InvoiceUtils.getInvoiceCycleDates(currentInvoice.monthKey, account.closingDay, account.dueDay);
+    const now = Date.now();
+    let txDate = now;
+    
+    if (cycleDates.cycleEnd < now) {
+      txDate = cycleDates.cycleEnd; // Fatura passada: coloca no último dia do ciclo
+    } else if (cycleDates.cycleStart > now) {
+      txDate = cycleDates.cycleStart; // Fatura futura: coloca no primeiro dia do ciclo
+    }
+    
     setEditingTx({
       type: 'expense',
       accountId: account.id,
-      description: 'Juros/Multa Fatura Anterior',
-      date: Date.now()
+      description: 'Juros/Multa/Encargo',
+      date: txDate,
+      note: `[invoice:${currentInvoice.monthKey}]`
     });
     setModalVisible(true);
   };
@@ -97,7 +109,8 @@ export default function CreditCardScreen({ route, navigation }) {
       description: `Pagamento de Fatura`,
       type: 'income',
       accountId: account.id,
-      date: Date.now()
+      date: Date.now(),
+      note: `[invoice:${currentInvoice.monthKey}]`
     });
     
     Alert.alert('Sucesso', 'Pagamento registrado com sucesso!');
@@ -118,7 +131,7 @@ export default function CreditCardScreen({ route, navigation }) {
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={[styles.title, { color: activeTheme.text }]}>{account.name}</Text>
-          <Text style={{ color: activeTheme.textSecondary, fontSize: 12 }}>Limite: R$ {account.creditLimit?.toFixed(2)}</Text>
+          <Text style={{ color: activeTheme.textSecondary, fontSize: 12 }}>Limite: R$ {CurrencyUtils.formatDisplay(account.creditLimit)}</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -150,40 +163,26 @@ export default function CreditCardScreen({ route, navigation }) {
               <Text style={{ color: activeTheme.textSecondary, fontSize: 14 }}>Total da Fatura</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                 <Text style={[styles.invoiceTotal, { color: currentInvoice.closingBalance > 0 ? activeTheme.expense : activeTheme.income }]}>
-                  R$ {Math.max(0, currentInvoice.cycleExpenses - currentInvoice.cyclePayments).toFixed(2)}
+                  R$ {CurrencyUtils.formatDisplay(Math.max(0, currentInvoice.closingBalance))}
                 </Text>
-                {currentInvoice.previousBalance > 0 && (
-                  <Text style={[styles.invoiceTotal, { color: activeTheme.textSecondary, fontSize: 18, marginLeft: 8 }]}>
-                    + R$ {currentInvoice.previousBalance.toFixed(2)}
-                  </Text>
-                )}
               </View>
             </View>
 
-            {currentInvoice.closingBalance > 0 && currentInvoice.monthKey >= InvoiceUtils.getCurrentInvoiceCycle(account.closingDay).currentInvoiceKey && (
+            {currentInvoice.closingBalance > 0 && (
               <TouchableOpacity style={[styles.payBtn, { backgroundColor: activeTheme.accent }]} onPress={handlePayInvoice}>
                 <Text style={{ color: '#121212', fontWeight: 'bold', fontSize: 16 }}>Pagar Fatura</Text>
               </TouchableOpacity>
             )}
           </View>
 
-          {currentInvoice.previousBalance > 0 && (
-            <View style={[styles.warningBox, { backgroundColor: activeTheme.expense + '20', borderColor: activeTheme.expense }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <Ionicons name="alert-circle" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
-                <Text style={{ color: activeTheme.text, fontWeight: 'bold', flex: 1 }}>Fatura Anterior em Aberto</Text>
-              </View>
-              <Text style={{ color: activeTheme.textSecondary, fontSize: 13, marginBottom: 12 }}>
-                O saldo pendente da fatura anterior (R$ {currentInvoice.previousBalance.toFixed(2)}) foi acumulado nesta fatura. Lembre-se de adicionar eventuais juros.
-              </Text>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: activeTheme.expense }]} onPress={handleAddInterest}>
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>Adicionar Juros/Multa</Text>
+          <View style={styles.txList}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={[styles.sectionTitle, { color: activeTheme.text, marginBottom: 0 }]}>Transações da Fatura</Text>
+              <TouchableOpacity onPress={handleAddInterest} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="add-circle-outline" size={16} color={activeTheme.accent} style={{ marginRight: 4 }} />
+                <Text style={{ color: activeTheme.accent, fontSize: 13, fontWeight: 'bold' }}>Adicionar Encargo</Text>
               </TouchableOpacity>
             </View>
-          )}
-
-          <View style={styles.txList}>
-            <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Transações da Fatura</Text>
             
             {/* Fake Transaction for Rollover */}
             {currentInvoice.previousBalance > 0 && (
@@ -200,7 +199,7 @@ export default function CreditCardScreen({ route, navigation }) {
                   </View>
                 </View>
                 <Text style={[styles.groupedAmount, { color: activeTheme.expense }]}>
-                  - R$ {currentInvoice.previousBalance.toFixed(2)}
+                  - R$ {CurrencyUtils.formatDisplay(currentInvoice.previousBalance)}
                 </Text>
               </View>
             )}
@@ -223,7 +222,7 @@ export default function CreditCardScreen({ route, navigation }) {
                         </View>
                       </View>
                       <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                        {item.type === 'income' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                        {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(item.amount)}
                       </Text>
                     </View>
                   </TouchableOpacity>

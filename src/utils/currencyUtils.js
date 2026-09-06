@@ -16,6 +16,18 @@ export const CurrencyUtils = {
   },
 
   /**
+   * Formats a float into a Brazilian currency string (e.g., 1234.56 -> 1.234,56).
+   * Ideal for rendering data in views, not for TextInputs.
+   */
+  formatDisplay: (value) => {
+    if (value === undefined || value === null || isNaN(value)) return '0,00';
+    const formatted = parseFloat(value).toFixed(2);
+    const parts = formatted.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return parts.join(',');
+  },
+
+  /**
    * Parses a formatted currency string (e.g., 1.234,56) back into a float (e.g., 1234.56).
    */
   parseCurrency: (value) => {

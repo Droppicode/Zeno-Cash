@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -342,7 +343,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
           
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 * z }}>
             <Text style={{ color: activeTheme.textSecondary }}>Valor Base</Text>
-            <Text style={{ color: activeTheme.text, fontWeight: 'bold' }}>R$ {recurrence.amount.toFixed(2)}</Text>
+            <Text style={{ color: activeTheme.text, fontWeight: 'bold' }}>R$ {CurrencyUtils.formatDisplay(recurrence.amount)}</Text>
           </View>
           
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 * z }}>
@@ -439,7 +440,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
                 <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 12 * z }}>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold', textDecorationLine: isIgnored ? 'line-through' : 'none' }}>
-                      R$ {item.amount.toFixed(2)}
+                      R$ {CurrencyUtils.formatDisplay(item.amount)}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 * z }}>
                       <Ionicons name={iconName} size={14 * z} color={statusColor} />

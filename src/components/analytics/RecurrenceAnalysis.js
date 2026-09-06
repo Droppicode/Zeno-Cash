@@ -1,4 +1,5 @@
 import React from 'react';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CollapsibleSection from './CollapsibleSection';
@@ -14,8 +15,8 @@ export default function RecurrenceAnalysis({ theme, stats }) {
     <CollapsibleSection title="Recorrências" subtitle="Custos fixos e assinaturas mensais" theme={theme} initiallyExpanded={false}>
       <View style={{ alignItems: 'center', marginBottom: 20 * z }}>
          <Text style={[styles.totalLabel, { color: theme.textSecondary, fontFamily: f }]}>Total Comprometido / Mês</Text>
-         <Text style={[styles.totalValue, { color: theme.expense, fontFamily: f }]}>R$ {stats.totalMonthly.toFixed(2)}</Text>
-         <Text style={[styles.proj, { color: theme.textSecondary, fontFamily: f }]}>Projeção anual: R$ {(stats.totalMonthly * 12).toFixed(2)}</Text>
+         <Text style={[styles.totalValue, { color: theme.expense, fontFamily: f }]}>R$ {CurrencyUtils.formatDisplay(stats.totalMonthly)}</Text>
+         <Text style={[styles.proj, { color: theme.textSecondary, fontFamily: f }]}>Projeção anual: R$ {CurrencyUtils.formatDisplay((stats.totalMonthly * 12))}</Text>
       </View>
       
       {stats.list.filter(r => r.type === 'expense').sort((a,b) => b.amount - a.amount).slice(0, 5).map((rec, idx) => (
@@ -30,7 +31,7 @@ export default function RecurrenceAnalysis({ theme, stats }) {
               </Text>
             </View>
           </View>
-          <Text style={[styles.amount, { color: theme.expense, fontFamily: f }]}>- R$ {rec.amount.toFixed(2)}</Text>
+          <Text style={[styles.amount, { color: theme.expense, fontFamily: f }]}>- R$ {CurrencyUtils.formatDisplay(rec.amount)}</Text>
         </View>
       ))}
       

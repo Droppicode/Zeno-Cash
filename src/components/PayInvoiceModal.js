@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -64,16 +65,16 @@ export default function PayInvoiceModal({ visible, onClose, invoice, onPay }) {
       <View style={styles.invoiceSummary}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Fatura Anterior:</Text>
-                <Text style={styles.summaryValue}>R$ {invoice.previousBalance?.toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>R$ {CurrencyUtils.formatDisplay(invoice.previousBalance)}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Gastos do Mês:</Text>
-                <Text style={styles.summaryValue}>R$ {invoice.cycleExpenses?.toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>R$ {CurrencyUtils.formatDisplay(invoice.cycleExpenses)}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Total da Fatura:</Text>
                 <Text style={[styles.summaryValue, { color: activeTheme.expense, fontWeight: 'bold' }]}>
-                  R$ {invoice.closingBalance?.toFixed(2)}
+                  R$ {CurrencyUtils.formatDisplay(invoice.closingBalance)}
                 </Text>
               </View>
             </View>
@@ -91,7 +92,7 @@ export default function PayInvoiceModal({ visible, onClose, invoice, onPay }) {
                 <Text style={styles.optionTitle}>Pagamento Integral</Text>
                 <Text style={styles.optionDesc}>Pagar o valor total e ficar em dia.</Text>
               </View>
-              <Text style={styles.optionAmount}>R$ {invoice.closingBalance?.toFixed(2)}</Text>
+              <Text style={styles.optionAmount}>R$ {CurrencyUtils.formatDisplay(invoice.closingBalance)}</Text>
             </TouchableOpacity>
 
             {invoice.previousBalance > 0 && (
@@ -106,7 +107,7 @@ export default function PayInvoiceModal({ visible, onClose, invoice, onPay }) {
                   <Text style={styles.optionTitle}>Apenas Mês Atual</Text>
                   <Text style={styles.optionDesc}>Ignorar a fatura anterior que não foi paga.</Text>
                 </View>
-                <Text style={styles.optionAmount}>R$ {currentMonthRemaining.toFixed(2)}</Text>
+                <Text style={styles.optionAmount}>R$ {CurrencyUtils.formatDisplay(currentMonthRemaining)}</Text>
               </TouchableOpacity>
             )}
 

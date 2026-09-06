@@ -1,4 +1,5 @@
 import React from 'react';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CollapsibleSection from './CollapsibleSection';
@@ -21,24 +22,24 @@ export default function AccountAnalysis({ theme, breakdown }) {
                </View>
                <Text style={[styles.name, { color: theme.text, fontFamily: f }]}>{acc.name}</Text>
             </View>
-            <Text style={[styles.balance, { color: theme.text, fontFamily: f }]}>Atual: R$ {(acc.currentBalance || acc.balance || 0).toFixed(2)}</Text>
+            <Text style={[styles.balance, { color: theme.text, fontFamily: f }]}>Atual: R$ {CurrencyUtils.formatDisplay((acc.currentBalance || acc.balance || 0))}</Text>
           </View>
           
           <View style={styles.statsRow}>
              <View style={styles.statBox}>
                 <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: f }]}>Entradas no período</Text>
-                <Text style={[styles.statValue, { color: theme.income, fontFamily: f }]}>+ R$ {acc.periodIncome.toFixed(2)}</Text>
+                <Text style={[styles.statValue, { color: theme.income, fontFamily: f }]}>+ R$ {CurrencyUtils.formatDisplay(acc.periodIncome)}</Text>
              </View>
              <View style={styles.statBox}>
                 <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: f }]}>Saídas no período</Text>
-                <Text style={[styles.statValue, { color: theme.expense, fontFamily: f }]}>- R$ {acc.periodExpense.toFixed(2)}</Text>
+                <Text style={[styles.statValue, { color: theme.expense, fontFamily: f }]}>- R$ {CurrencyUtils.formatDisplay(acc.periodExpense)}</Text>
              </View>
           </View>
           
           <View style={[styles.netBox, { backgroundColor: theme.card }]}>
              <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: f }]}>Variação no Período</Text>
              <Text style={[styles.netValue, { color: acc.periodBalance >= 0 ? theme.income : theme.expense, fontFamily: f }]}>
-               {acc.periodBalance >= 0 ? '+' : '-'} R$ {Math.abs(acc.periodBalance).toFixed(2)}
+               {acc.periodBalance >= 0 ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(acc.periodBalance))}
              </Text>
           </View>
         </View>

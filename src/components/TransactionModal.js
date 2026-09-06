@@ -510,9 +510,9 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
               <View style={{ marginTop: 8 * z }}>
                 {txType === 'expense' && (
                   <View style={{ marginBottom: 12 * z, padding: 12 * z, backgroundColor: activeTheme.cardSecondary, borderRadius: 12 * z, flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: activeTheme.textSecondary, fontFamily: f }}>Total: R$ {numAmt.toFixed(2)}</Text>
+                    <Text style={{ color: activeTheme.textSecondary, fontFamily: f }}>Total: R$ {CurrencyUtils.formatDisplay(numAmt)}</Text>
                     <Text style={{ color: remaining < -0.01 ? activeTheme.expense : activeTheme.text, fontFamily: f, fontWeight: 'bold' }}>
-                      Restam: R$ {remaining.toFixed(2)}
+                      Restam: R$ {CurrencyUtils.formatDisplay(remaining)}
                     </Text>
                   </View>
                 )}

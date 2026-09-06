@@ -15,6 +15,7 @@ import { useTransactions } from '../hooks/useTransactions';
 import { db } from '../database/db';
 import { transactions } from '../database/schema';
 import { eq } from 'drizzle-orm';
+import { CurrencyUtils } from '../utils/currencyUtils';
 
 const DebtItem = React.memo(({ item, activeTheme, styles, onEdit, onDelete }) => {
   const isOwe = item.type === 'owe';
@@ -48,7 +49,7 @@ const DebtItem = React.memo(({ item, activeTheme, styles, onEdit, onDelete }) =>
           </View>
         </View>
         <Text style={[styles.amount, { color: item.isPaid === 1 ? activeTheme.textSecondary : (isOwe ? activeTheme.expense : activeTheme.income) }]}>
-          {isOwe ? '-' : '+'} R$ {item.amount.toFixed(2)}
+          {isOwe ? '-' : '+'} R$ {CurrencyUtils.formatDisplay(item.amount)}
         </Text>
       </TouchableOpacity>
     </SwipeableCard>
@@ -132,7 +133,7 @@ export default function DebtsScreen({ navigation }) {
             <Text style={[styles.personName, { color: activeTheme.text, marginBottom: 0 }]}>{group.personName}</Text>
           </View>
           <Text style={[styles.amount, { color: netColor }]}>
-            {netAmount > 0 ? '+' : (netAmount < 0 ? '-' : '')} R$ {Math.abs(netAmount).toFixed(2)}
+            {netAmount > 0 ? '+' : (netAmount < 0 ? '-' : '')} R$ {CurrencyUtils.formatDisplay(Math.abs(netAmount))}
           </Text>
         </TouchableOpacity>
         
@@ -167,11 +168,11 @@ export default function DebtsScreen({ navigation }) {
       <View style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Eu Devo</Text>
-          <Text style={[styles.summaryValue, { color: activeTheme.expense }]}>R$ {totalOwe.toFixed(2)}</Text>
+          <Text style={[styles.summaryValue, { color: activeTheme.expense }]}>R$ {CurrencyUtils.formatDisplay(totalOwe)}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Me Devem</Text>
-          <Text style={[styles.summaryValue, { color: activeTheme.income }]}>R$ {totalOwed.toFixed(2)}</Text>
+          <Text style={[styles.summaryValue, { color: activeTheme.income }]}>R$ {CurrencyUtils.formatDisplay(totalOwed)}</Text>
         </View>
       </View>
 

@@ -444,7 +444,7 @@ export const seedDatabase = async (force = false) => {
       const cardClosingDay = cardName === 'Cartão Itaú Black' ? 15 : 25;
       const assocAcc = cardName === 'Cartão Itaú Black' ? 'Itaú' : 'Nubank';
       
-      const invoices = InvoiceUtils.groupTransactionsByInvoice(cardTxs, cardClosingDay);
+      const invoices = InvoiceUtils.groupTransactionsByInvoice(cardTxs, cardClosingDay, cardDueDay);
       
       let runningDebt = 0;
       for (const inv of invoices) {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import CollapsibleSection from './CollapsibleSection';
 import BaseModalBottom from '../ui/BaseModalBottom';
@@ -113,7 +114,7 @@ export default function WeeklyHeatmap({ theme, data }) {
                         <Text style={{ color: theme.text, fontSize: 14 * z, fontWeight: 'bold', fontFamily: f }} numberOfLines={1}>{tx.description}</Text>
                         <Text style={{ color: theme.textSecondary, fontSize: 11 * z, fontFamily: f }}>{new Date(tx.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</Text>
                     </View>
-                    <Text style={{ color: theme.expense, fontSize: 14 * z, fontWeight: 'bold', fontFamily: f }}>- R$ {tx.amount.toFixed(2)}</Text>
+                    <Text style={{ color: theme.expense, fontSize: 14 * z, fontWeight: 'bold', fontFamily: f }}>- R$ {CurrencyUtils.formatDisplay(tx.amount)}</Text>
                  </View>
                ))
             )}

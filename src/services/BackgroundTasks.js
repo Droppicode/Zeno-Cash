@@ -2,6 +2,7 @@ import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import * as Notifications from 'expo-notifications';
 import { db } from '../database/db';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { recurrences, transactions } from '../database/schema';
 import { eq, sql } from 'drizzle-orm';
 import { RecurrenceGenerator } from './RecurrenceGenerator';
@@ -79,7 +80,7 @@ export const materializeRecurrencesUpToToday = async () => {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: `Cobrança Pendente: ${txData.description}`,
-            body: `Sua recorrência no valor de R$ ${txData.amount.toFixed(2)} vence hoje. Toque para aprovar!`,
+            body: `Sua recorrência no valor de R$ ${CurrencyUtils.formatDisplay(txData.amount)} vence hoje. Toque para aprovar!`,
             sound: true,
           },
           trigger: null,

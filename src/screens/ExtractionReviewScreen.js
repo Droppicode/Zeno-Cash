@@ -1,4 +1,5 @@
 import React, { useState, useContext, useMemo } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -230,7 +231,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
                     </View>
                   </View>
                   <Text style={[styles.amount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                    {item.type === 'income' ? '+' : '-'} R$ {Math.abs(Number(item.amount) || 0).toFixed(2)}
+                    {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(Number(item.amount) || 0))}
                   </Text>
                 </View>
               </TouchableOpacity>

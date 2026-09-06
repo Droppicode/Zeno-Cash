@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +21,7 @@ export default function InvestmentsScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, { color: activeTheme.text }]}>Meus Investimentos</Text>
         <Text style={[styles.subtitle, { color: activeTheme.textSecondary }]}>Patrimônio Acumulado</Text>
-        <Text style={[styles.totalValue, { color: activeTheme.accent }]}>R$ {totalValue.toFixed(2)}</Text>
+        <Text style={[styles.totalValue, { color: activeTheme.accent }]}>R$ {CurrencyUtils.formatDisplay(totalValue)}</Text>
 
         <View style={styles.headerRow}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Carteira Atual</Text>
@@ -45,7 +46,7 @@ export default function InvestmentsScreen() {
               </View>
             </View>
             <View style={styles.cardRight}>
-              <Text style={[styles.assetValue, { color: activeTheme.text }]}>R$ {item.value.toFixed(2)}</Text>
+              <Text style={[styles.assetValue, { color: activeTheme.text }]}>R$ {CurrencyUtils.formatDisplay(item.value)}</Text>
               <Text style={[
                 styles.assetYield, 
                 { color: item.yield.startsWith('-') ? activeTheme.expense : activeTheme.income }

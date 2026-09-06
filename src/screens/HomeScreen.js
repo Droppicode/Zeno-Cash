@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import MonthSelector from '../components/ui/MonthSelector';
@@ -122,16 +123,16 @@ export default function HomeScreen({ route, navigation }) {
               onSelectionChange={setSelectedMonths}
             />
           </View>
-          <Text style={[styles.summaryAmount, { color: activeTheme.text }]}>R$ {balance.total.toFixed(2)}</Text>
+          <Text style={[styles.summaryAmount, { color: activeTheme.text }]}>R$ {CurrencyUtils.formatDisplay(balance.total)}</Text>
           
           <View style={styles.row}>
             <View style={styles.incomeBox}>
               <Text style={[styles.incomeText, { color: activeTheme.textSecondary }]}>Receitas</Text>
-              <Text style={[styles.incomeValue, { color: activeTheme.income }]}>+ R$ {balance.income.toFixed(2)}</Text>
+              <Text style={[styles.incomeValue, { color: activeTheme.income }]}>+ R$ {CurrencyUtils.formatDisplay(balance.income)}</Text>
             </View>
             <View style={styles.expenseBox}>
               <Text style={[styles.expenseText, { color: activeTheme.textSecondary }]}>Despesas</Text>
-              <Text style={[styles.expenseValue, { color: activeTheme.expense }]}>- R$ {balance.expense.toFixed(2)}</Text>
+              <Text style={[styles.expenseValue, { color: activeTheme.expense }]}>- R$ {CurrencyUtils.formatDisplay(balance.expense)}</Text>
             </View>
           </View>
         </View>
@@ -167,7 +168,7 @@ export default function HomeScreen({ route, navigation }) {
                           <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
                         </View>
                         <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
-                          {acc.currentBalance <= -0.01 ? `- R$ ${Math.abs(acc.currentBalance).toFixed(2)}` : `R$ ${Math.abs(acc.currentBalance).toFixed(2)}`}
+                          {acc.currentBalance <= -0.01 ? `- R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}` : `R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}`}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -175,7 +176,7 @@ export default function HomeScreen({ route, navigation }) {
                   <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
                     <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Contas</Text>
                     <Text style={[styles.groupedAmount, { color: activeTheme.text, fontWeight: 'bold' }]}>
-                      R$ {bankAccounts.reduce((acc, curr) => acc + curr.currentBalance, 0).toFixed(2)}
+                      R$ {CurrencyUtils.formatDisplay(bankAccounts.reduce((acc, curr) => acc + curr.currentBalance, 0))}
                     </Text>
                   </View>
                 </View>
@@ -212,7 +213,7 @@ export default function HomeScreen({ route, navigation }) {
                           <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
                         </View>
                         <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
-                          {acc.currentBalance <= -0.01 ? `- R$ ${Math.abs(acc.currentBalance).toFixed(2)}` : `R$ ${Math.abs(acc.currentBalance).toFixed(2)}`}
+                          {acc.currentBalance <= -0.01 ? `- R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}` : `R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}`}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -220,7 +221,7 @@ export default function HomeScreen({ route, navigation }) {
                   <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
                     <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Faturas</Text>
                     <Text style={[styles.groupedAmount, { color: activeTheme.expense, fontWeight: 'bold' }]}>
-                      R$ {Math.abs(creditCards.reduce((acc, curr) => acc + curr.currentBalance, 0)).toFixed(2)}
+                      R$ {CurrencyUtils.formatDisplay(Math.abs(creditCards.reduce((acc, curr) => acc + curr.currentBalance, 0)))}
                     </Text>
                   </View>
                 </View>
@@ -275,7 +276,7 @@ export default function HomeScreen({ route, navigation }) {
                               </View>
                             </View>
                             <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                              {item.type === 'income' ? '+' : '-'} R$ {Math.abs(item.amount).toFixed(2)}
+                              {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -332,7 +333,7 @@ export default function HomeScreen({ route, navigation }) {
                                 </View>
                               </View>
                               <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                                {item.type === 'income' ? '+' : '-'} R$ {Math.abs(item.amount).toFixed(2)}
+                                {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
                               </Text>
                             </View>
                           </TouchableOpacity>
@@ -369,7 +370,7 @@ export default function HomeScreen({ route, navigation }) {
                         </View>
                         <Text style={[styles.groupedText, { color: activeTheme.text }]}>Eu Devo</Text>
                       </View>
-                      <Text style={[styles.groupedAmount, { color: activeTheme.expense }]}>R$ {totalOwe.toFixed(2)}</Text>
+                      <Text style={[styles.groupedAmount, { color: activeTheme.expense }]}>R$ {CurrencyUtils.formatDisplay(totalOwe)}</Text>
                     </View>
                   </TouchableOpacity>
                   
@@ -381,7 +382,7 @@ export default function HomeScreen({ route, navigation }) {
                         </View>
                         <Text style={[styles.groupedText, { color: activeTheme.text }]}>Me Devem</Text>
                       </View>
-                      <Text style={[styles.groupedAmount, { color: activeTheme.income }]}>R$ {totalOwed.toFixed(2)}</Text>
+                      <Text style={[styles.groupedAmount, { color: activeTheme.income }]}>R$ {CurrencyUtils.formatDisplay(totalOwed)}</Text>
                     </View>
                   </TouchableOpacity>
                 </View>

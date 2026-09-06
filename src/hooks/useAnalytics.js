@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { resolveCategory } from '../services/categorizer';
 import { DateUtils } from '../utils/dateUtils';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
+import { CurrencyUtils } from '../utils/currencyUtils';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -315,7 +316,7 @@ export const useAnalytics = ({
     if (savingsRate > 20) {
         insights.push({ type: 'positive', text: `Excelente taxa de poupança! Você não gastou ${savingsRate.toFixed(1)}% das suas receitas.`, icon: 'trending-up' });
     } else if (savingsRate < 0) {
-        insights.push({ type: 'negative', text: `Atenção: Você gastou R$ ${Math.abs(netBalance).toFixed(2)} a mais do que ganhou neste período.`, icon: 'warning' });
+        insights.push({ type: 'negative', text: `Atenção: Você gastou R$ ${CurrencyUtils.formatDisplay(Math.abs(netBalance))} a mais do que ganhou neste período.`, icon: 'warning' });
     }
     
     if (biggestExpense) {

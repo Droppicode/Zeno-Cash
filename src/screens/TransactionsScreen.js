@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -88,7 +89,7 @@ const TransactionItem = React.memo(({ item, index, sectionLength, activeTheme, c
             styles.amount, 
             { color: item.type === 'income' ? activeTheme.income : activeTheme.expense, opacity: item.isVirtual ? 0.6 : 1 }
           ]}>
-            {item.type === 'income' ? '+' : '-'} R$ {Math.abs(item.amount).toFixed(2)}
+            {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
           </Text>
         </View>
       </TouchableOpacity>
