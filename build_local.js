@@ -52,21 +52,22 @@ try {
   process.exit(1);
 }
 
-// 5. Try opening Android Studio
-console.log("🤖 Trying to open Android Studio...");
+// 5. Compile the Release APK using Gradle
+console.log("🔨 Compiling the Release APK with Gradle...");
 try {
-  // Using the exact absolute path found on your machine
-  const studioProcess = spawn('/usr/local/android-studio/bin/studio.sh', ['./android'], { detached: true, stdio: 'ignore' });
-  
+  // Configurar o Android SDK (porque o prebuild --clean apaga o local.properties)
+  const localPropertiesPath = path.join(__dirname, 'android', 'local.properties');
+  fs.writeFileSync(localPropertiesPath, 'sdk.dir=/home/marcos/Android/Sdk\n');
 
-  // Prevent Node from exiting with an error if the file fails
-  studioProcess.on('error', (err) => {
-    console.log("⚠️ Could not open Android Studio automatically.");
-    console.log("👉 Please open Android Studio manually and select the 'android' folder generated here.");
+  execSync('./gradlew assembleRelease', { 
+    cwd: path.join(__dirname, 'android'),
+    stdio: 'inherit'
   });
-
-  studioProcess.unref();
-  console.log("✅ Android Studio opening in the background!");
+  console.log("\n✅ APK compiled successfully!");
+  console.log("👉 You can find your independent APK here:");
+  console.log(path.join(__dirname, 'android/app/build/outputs/apk/release/app-release.apk') + "\n");
 } catch (err) {
-  console.log("⚠️ Could not open Android Studio automatically.");
+  console.error("\n❌ Error compiling the APK with Gradle.");
+  console.error("Please check the logs above for details.");
+  process.exit(1);
 }
