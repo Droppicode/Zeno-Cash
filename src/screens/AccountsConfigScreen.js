@@ -8,6 +8,7 @@ import { getSharedStyles } from '../utils/StyleHub';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import BaseModalBottom from '../components/ui/BaseModalBottom';
 import ListCard from '../components/ui/ListCard';
+import CustomTextInput from '../components/ui/CustomTextInput';
 
 const ACCOUNT_ICONS = ['wallet-outline', 'card-outline', 'business-outline', 'cash-outline', 'logo-bitcoin', 'bar-chart-outline'];
 const ACCOUNT_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#607D8B'];
@@ -229,61 +230,56 @@ export default function AccountsConfigScreen({ onBack }) {
         )}
 
         <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: 0 }]}>Nome da Conta/Cartão</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+        <CustomTextInput
+          theme={activeTheme}
           value={name}
           onChangeText={setName}
           placeholder={type === 'credit' ? "Ex: Cartão Nubank" : "Ex: Conta Nubank, Dinheiro"}
-          placeholderTextColor={activeTheme.textSecondary}
         />
 
         {type !== 'credit' ? (
           <>
             <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Saldo Inicial (R$)</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+            <CustomTextInput
+              theme={activeTheme}
               value={balance}
               onChangeText={(val) => setBalance(CurrencyUtils.formatCurrency(val))}
               keyboardType="numeric"
               placeholder="0,00"
-              placeholderTextColor={activeTheme.textSecondary}
             />
           </>
         ) : (
           <>
             <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Limite de Crédito Total (R$)</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+            <CustomTextInput
+              theme={activeTheme}
               value={creditLimit}
               onChangeText={(val) => setCreditLimit(CurrencyUtils.formatCurrency(val))}
               keyboardType="numeric"
               placeholder="0,00"
-              placeholderTextColor={activeTheme.textSecondary}
             />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Dia Fechamento</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+                <CustomTextInput
+                  theme={activeTheme}
                   value={closingDay}
                   onChangeText={setClosingDay}
                   keyboardType="numeric"
                   placeholder="Ex: 25"
                   maxLength={2}
-                  placeholderTextColor={activeTheme.textSecondary}
                 />
               </View>
               <View style={{ flex: 1, marginLeft: 8 }}>
                 <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Dia Vencimento</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+                <CustomTextInput
+                  theme={activeTheme}
                   value={dueDay}
                   onChangeText={setDueDay}
                   keyboardType="numeric"
                   placeholder="Ex: 05"
                   maxLength={2}
-                  placeholderTextColor={activeTheme.textSecondary}
                 />
               </View>
             </View>

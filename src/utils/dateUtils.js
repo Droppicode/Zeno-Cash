@@ -32,5 +32,35 @@ export const DateUtils = {
     if (v.length >= 5) return `${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;
     if (v.length >= 3) return `${v.slice(0,2)}/${v.slice(2)}`;
     return v;
+  },
+
+  formatShortDate: (dateObjOrTimestamp) => {
+    if (!dateObjOrTimestamp) return '';
+    const d = new Date(dateObjOrTimestamp);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  },
+
+  formatShortDateNoYear: (dateObjOrTimestamp) => {
+    if (!dateObjOrTimestamp) return '';
+    const d = new Date(dateObjOrTimestamp);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  },
+
+  formatMonthYear: (dateObjOrTimestamp) => {
+    if (!dateObjOrTimestamp) return '';
+    const d = new Date(dateObjOrTimestamp);
+    return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+  },
+
+  formatMonthShort: (dateObjOrTimestamp) => {
+    if (!dateObjOrTimestamp) return '';
+    const d = new Date(dateObjOrTimestamp);
+    return d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+  },
+
+  formatDayMonthShort: (dateObjOrTimestamp) => {
+    if (!dateObjOrTimestamp) return '';
+    const d = new Date(dateObjOrTimestamp);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
   }
 };

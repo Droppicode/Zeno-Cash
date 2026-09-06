@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CustomDatePicker from '../components/ui/CustomDatePicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
@@ -185,8 +185,6 @@ export default function TransactionsScreen({ route, navigation }) {
   const [selectedCats, setSelectedCats] = useState([]);
   const [startDateObj, setStartDateObj] = useState(null);
   const [endDateObj, setEndDateObj] = useState(null);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   
   const [recurrences, setRecurrences] = useState([]);
   const [forecastPeriod, setForecastPeriod] = useState('none');
@@ -455,65 +453,23 @@ export default function TransactionsScreen({ route, navigation }) {
                 <View style={styles.dateInputsRow}>
                   <View style={styles.dateInputContainer}>
                     <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Inicial</Text>
-                    <TouchableOpacity
-                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-                      onPress={() => setShowStartDatePicker(true)}
-                    >
-                      <Text style={{ color: startDateObj ? activeTheme.text : activeTheme.textSecondary, fontSize: 13, fontFamily: activeTheme.fontFamily || 'monospace' }}>
-                        {startDateObj ? startDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Selecionar...'}
-                      </Text>
-                      {startDateObj ? (
-                        <TouchableOpacity onPress={() => setStartDateObj(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                          <Ionicons name="close-circle" size={16} color={activeTheme.textSecondary} />
-                        </TouchableOpacity>
-                      ) : (
-                        <Ionicons name="calendar-outline" size={16} color={activeTheme.accent} />
-                      )}
-                    </TouchableOpacity>
-                    {showStartDatePicker && (
-                      <DateTimePicker
-                        value={startDateObj || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={(event, selectedDate) => {
-                          setShowStartDatePicker(false);
-                          if (event.type === 'set' && selectedDate) {
-                            setStartDateObj(selectedDate);
-                          }
-                        }}
-                      />
-                    )}
+                    <CustomDatePicker
+                      value={startDateObj}
+                      onChange={setStartDateObj}
+                      onClear={() => setStartDateObj(null)}
+                      theme={activeTheme}
+                      style={{ padding: 10 * getZoomFactor(activeTheme), paddingVertical: 10 * getZoomFactor(activeTheme) }}
+                    />
                   </View>
                   <View style={styles.dateInputContainer}>
                     <Text style={[styles.dateLabel, { color: activeTheme.textSecondary }]}>Data Final</Text>
-                    <TouchableOpacity
-                      style={[styles.dateInput, { backgroundColor: activeTheme.cardSecondary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-                      onPress={() => setShowEndDatePicker(true)}
-                    >
-                      <Text style={{ color: endDateObj ? activeTheme.text : activeTheme.textSecondary, fontSize: 13, fontFamily: activeTheme.fontFamily || 'monospace' }}>
-                        {endDateObj ? endDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Selecionar...'}
-                      </Text>
-                      {endDateObj ? (
-                        <TouchableOpacity onPress={() => setEndDateObj(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                          <Ionicons name="close-circle" size={16} color={activeTheme.textSecondary} />
-                        </TouchableOpacity>
-                      ) : (
-                        <Ionicons name="calendar-outline" size={16} color={activeTheme.accent} />
-                      )}
-                    </TouchableOpacity>
-                    {showEndDatePicker && (
-                      <DateTimePicker
-                        value={endDateObj || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={(event, selectedDate) => {
-                          setShowEndDatePicker(false);
-                          if (event.type === 'set' && selectedDate) {
-                            setEndDateObj(selectedDate);
-                          }
-                        }}
-                      />
-                    )}
+                    <CustomDatePicker
+                      value={endDateObj}
+                      onChange={setEndDateObj}
+                      onClear={() => setEndDateObj(null)}
+                      theme={activeTheme}
+                      style={{ padding: 10 * getZoomFactor(activeTheme), paddingVertical: 10 * getZoomFactor(activeTheme) }}
+                    />
                   </View>
                 </View>
 

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch, FlatList, Keyboard } from 'react-native';
 import BaseModalBottom from './ui/BaseModalBottom';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { SettingsContext } from '../context/SettingsContext';
 import { useDebts } from '../hooks/useDebts';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
 import { HapticFeedback } from '../utils/haptics';
 import { CurrencyUtils } from '../utils/currencyUtils';
+import CustomDatePicker from './ui/CustomDatePicker';
+import AutocompleteInput from './ui/AutocompleteInput';
 
 export default function DebtModal({ visible, onClose, onDelete, onViewTransaction, initialData = null }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -20,11 +21,8 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('owe'); // 'owe' or 'owed'
   const [debtDateObj, setDebtDateObj] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
 
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [settlementAccountId, setSettlementAccountId] = useState(null);
 
   const z = getZoomFactor(activeTheme);
@@ -65,23 +63,6 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
       hideSub.remove();
     };
   }, []);
-
-  const handleNameChange = async (text) => {
-    setPersonName(text);
-    if (text.length > 0) {
-      const names = await getUniqueNames();
-      const filtered = names.filter(n => n.toLowerCase().includes(text.toLowerCase()));
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSelectName = (name) => {
-    setPersonName(name);
-    setShowSuggestions(false);
-  };
 
   const handleSave = async () => {
     if (!personName || !amount) return;
@@ -188,25 +169,14 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
             </View>
 
             {/* Name Input with Autocomplete */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nome</Text>
-              <TextInput
-                style={styles.input}
-                value={personName}
-                onChangeText={handleNameChange}
-                placeholder="Ex: João"
-                placeholderTextColor={activeTheme.textSecondary}
-              />
-              {showSuggestions && (
-                <View style={styles.suggestionsContainer}>
-                  {suggestions.map((item, index) => (
-                    <TouchableOpacity key={index} style={styles.suggestionItem} onPress={() => handleSelectName(item)}>
-                      <Text style={styles.suggestionText}>{item}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
+            <AutocompleteInput
+              label="Nome"
+              placeholder="Ex: João"
+              value={personName}
+              onChangeText={setPersonName}
+              fetchSuggestions={getUniqueNames}
+              theme={activeTheme}
+            />
 
             {/* Description */}
             <View style={styles.inputGroup}>
@@ -223,43 +193,11 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
             {/* Date */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Data</Text>
-              {Platform.OS === 'ios' ? (
-                <DateTimePicker
-                  value={debtDateObj}
-                  mode="date"
-                  display="default"
-                  onChange={(event, selectedDate) => {
-                    if (selectedDate) setDebtDateObj(selectedDate);
-                  }}
-                  themeVariant={activeTheme.card === '#121212' ? 'dark' : 'light'}
-                  style={{ alignSelf: 'flex-start', marginTop: 4 * z }}
-                />
-              ) : (
-                <>
-                  <TouchableOpacity 
-                    style={[styles.input, { justifyContent: 'center', paddingVertical: 14 * z }]}
-                    onPress={() => setShowDatePicker(true)}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontFamily: f }}>
-                        {debtDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                      </Text>
-                      <Ionicons name="calendar-outline" size={20 * z} color={activeTheme.accent} />
-                    </View>
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={debtDateObj}
-                      mode="date"
-                      display="default"
-                      onChange={(event, selectedDate) => {
-                        setShowDatePicker(false);
-                        if (selectedDate) setDebtDateObj(selectedDate);
-                      }}
-                    />
-                  )}
-                </>
-              )}
+              <CustomDatePicker 
+                value={debtDateObj} 
+                onChange={setDebtDateObj} 
+                theme={activeTheme} 
+              />
             </View>
 
             {/* Is Paid Toggle */}
@@ -311,9 +249,6 @@ const getStyles = (theme) => {
     inputGroup: { marginBottom: 20 * z, zIndex: 1 },
     label: { fontSize: 14 * z, color: theme.textSecondary, marginBottom: 8 * z, fontWeight: '600', fontFamily: f },
     input: { backgroundColor: theme.background, borderRadius: 12 * z, padding: 16 * z, fontSize: 16 * z, color: theme.text, fontFamily: f },
-    suggestionsContainer: { backgroundColor: theme.cardSecondary, borderRadius: 8 * z, marginTop: 4 * z, maxHeight: 120 * z, zIndex: 2 },
-    suggestionItem: { padding: 12 * z, borderBottomWidth: 1, borderBottomColor: theme.background },
-    suggestionText: { color: theme.text, fontSize: 14 * z, fontFamily: f },
     accountScroll: { flexDirection: 'row' },
     accountBtn: { backgroundColor: theme.background, paddingHorizontal: 16 * z, paddingVertical: 10 * z, borderRadius: 12 * z, marginRight: 8 * z },
     accountBtnActive: { backgroundColor: theme.accent },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import CustomDatePicker from './ui/CustomDatePicker';
 import { useNavigation } from '@react-navigation/native';
 import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
@@ -29,7 +29,6 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const isManuallyCategoryModified = useRef(false);
   const [txDateObj, setTxDateObj] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Estados para Recorrência
   const [recurrenceType, setRecurrenceType] = useState('single'); // single, subscription, installment
@@ -333,40 +332,12 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
 
               <View style={[styles.selectorBlock, { marginLeft: 8 * z, justifyContent: 'flex-end', paddingBottom: 8 * z }]}>
                 <Text style={[styles.label, { color: activeTheme.textSecondary, marginBottom: 4*z }]}>Data</Text>
-                {Platform.OS === 'ios' ? (
-                  <DateTimePicker
-                    value={txDateObj}
-                    mode="date"
-                    display="default"
-                    onChange={(event, selectedDate) => {
-                      if (selectedDate) setTxDateObj(selectedDate);
-                    }}
-                    themeVariant={activeTheme.card === '#121212' ? 'dark' : 'light'}
-                    style={{ minWidth: 110 * z }}
-                  />
-                ) : (
-                  <>
-                    <TouchableOpacity 
-                      style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, minWidth: 110 * z, paddingVertical: 12 * z, marginBottom: 0, alignItems: 'center', justifyContent: 'center' }]}
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Text style={{ color: activeTheme.text }}>
-                        {txDateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                      </Text>
-                    </TouchableOpacity>
-                    {showDatePicker && (
-                      <DateTimePicker
-                        value={txDateObj}
-                        mode="date"
-                        display="default"
-                        onChange={(event, selectedDate) => {
-                          setShowDatePicker(false);
-                          if (selectedDate) setTxDateObj(selectedDate);
-                        }}
-                      />
-                    )}
-                  </>
-                )}
+                <CustomDatePicker 
+                  value={txDateObj} 
+                  onChange={setTxDateObj} 
+                  theme={activeTheme} 
+                  style={{ minWidth: 110 * z, paddingVertical: 12 * z, marginBottom: 0 }}
+                />
               </View>
             </View>
 
