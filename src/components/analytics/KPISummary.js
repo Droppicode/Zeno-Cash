@@ -2,12 +2,13 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getZoomFactor } from '../../utils/scaler';
+import { CurrencyUtils } from '../../utils/currencyUtils';
 
 export default function KPISummary({ theme, data }) {
   const z = getZoomFactor(theme);
   const f = theme.fontFamily || 'monospace';
 
-  const formatCurrency = (val) => `R$ ${Math.abs(val).toFixed(2)}`;
+  const formatCurrency = (val) => `R$ ${CurrencyUtils.formatCurrency((Math.abs(val) * 100).toFixed(0))}`;
 
   const cards = [
     { title: 'Saldo Líquido', value: formatCurrency(data.netBalance), color: data.netBalance >= 0 ? theme.income : theme.expense, icon: 'wallet-outline' },

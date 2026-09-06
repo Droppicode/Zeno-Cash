@@ -5,6 +5,7 @@ import { SettingsContext } from '../context/SettingsContext';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import BaseModalBottom from '../components/ui/BaseModalBottom';
 import ListCard from '../components/ui/ListCard';
 
@@ -69,12 +70,12 @@ export default function AccountsConfigScreen({ onBack }) {
     setEditingId(acc.id);
     setName(acc.name);
     setType(acc.type || 'checking');
-    setBalance(acc.balance.toString());
+    setBalance(CurrencyUtils.formatCurrency((acc.balance * 100).toFixed(0)));
     setIcon(acc.icon || ACCOUNT_ICONS[0]);
     setColor(acc.color || ACCOUNT_COLORS[0]);
     setClosingDay(acc.closingDay ? acc.closingDay.toString() : '');
     setDueDay(acc.dueDay ? acc.dueDay.toString() : '');
-    setCreditLimit(acc.creditLimit ? acc.creditLimit.toString() : '');
+    setCreditLimit(acc.creditLimit ? CurrencyUtils.formatCurrency((acc.creditLimit * 100).toFixed(0)) : '');
     setAssociatedAccountId(acc.associatedAccountId || null);
     setErrorMsg('');
     setShowEditor(true);
@@ -87,7 +88,7 @@ export default function AccountsConfigScreen({ onBack }) {
       return;
     }
     
-    let numBalance = parseFloat(balance.replace(',', '.'));
+    let numBalance = CurrencyUtils.parseCurrency(balance);
     if (isNaN(numBalance)) numBalance = 0;
 
     let payload = {
@@ -100,7 +101,7 @@ export default function AccountsConfigScreen({ onBack }) {
     if (type === 'credit') {
       let cDay = parseInt(closingDay);
       let dDay = parseInt(dueDay);
-      let limit = parseFloat(creditLimit.replace(',', '.'));
+      let limit = CurrencyUtils.parseCurrency(creditLimit);
       if (isNaN(cDay) || cDay < 1 || cDay > 31) return setErrorMsg('Dia de fechamento inválido.');
       if (isNaN(dDay) || dDay < 1 || dDay > 31) return setErrorMsg('Dia de vencimento inválido.');
       if (isNaN(limit)) return setErrorMsg('Limite de crédito inválido.');
@@ -242,7 +243,7 @@ export default function AccountsConfigScreen({ onBack }) {
             <TextInput
               style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
               value={balance}
-              onChangeText={setBalance}
+              onChangeText={(val) => setBalance(CurrencyUtils.formatCurrency(val))}
               keyboardType="numeric"
               placeholder="0,00"
               placeholderTextColor={activeTheme.textSecondary}
@@ -254,9 +255,9 @@ export default function AccountsConfigScreen({ onBack }) {
             <TextInput
               style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
               value={creditLimit}
-              onChangeText={setCreditLimit}
+              onChangeText={(val) => setCreditLimit(CurrencyUtils.formatCurrency(val))}
               keyboardType="numeric"
-              placeholder="Ex: 5000,00"
+              placeholder="0,00"
               placeholderTextColor={activeTheme.textSecondary}
             />
 

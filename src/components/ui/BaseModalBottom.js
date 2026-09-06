@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Modal, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard, ScrollView } from 'react-native';
 import { SettingsContext } from '../../context/SettingsContext';
 import { getZoomFactor } from '../../utils/scaler';
@@ -21,6 +21,17 @@ export default function BaseModalBottom({
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const styles = useMemo(() => StyleSheet.create({
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
     modalContent: { borderTopLeftRadius: 24 * z, borderTopRightRadius: 24 * z, padding: 24 * z, maxHeight: '90%' },
@@ -36,10 +47,12 @@ export default function BaseModalBottom({
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
       <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.modalOverlay} 
+        behavior="position"
+        contentContainerStyle={{ flex: 1, justifyContent: 'flex-end' }}
+        enabled={Platform.OS === 'ios' ? true : isKeyboardVisible}
       >
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => { Keyboard.dismiss(); if (onClose) onClose(); }}>
+        <TouchableOpacity style={{ flex: 1, justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => { Keyboard.dismiss(); if (onClose) onClose(); }}>
           <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { backgroundColor: activeTheme.card }]}>
             {(title || headerRight) && (
               <View style={styles.header}>

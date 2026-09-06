@@ -9,6 +9,7 @@ import { categorizeTransaction } from '../services/categorizer';
 import { DateUtils } from '../utils/dateUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { getZoomFactor } from '../utils/scaler';
+import { CurrencyUtils } from '../utils/currencyUtils';
 import { DebtsRepository } from '../services/DebtsRepository';
 import { HapticFeedback } from '../utils/haptics';
 
@@ -53,22 +54,11 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
     }
   }, [visible, loadAccounts, loadCategories]);
 
-  const formatCurrency = (value) => {
-    if (!value) return '';
-    const cleaned = value.toString().replace(/\D/g, '');
-    if (!cleaned) return '';
-    const numberValue = parseInt(cleaned, 10);
-    const formatted = (numberValue / 100).toFixed(2);
-    const parts = formatted.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return parts.join(',');
-  };
-
   useEffect(() => {
     if (visible && initialData) {
       // Format initial number (e.g. 5.5 -> 550 -> "5,50")
       const numStr = (initialData.amount * 100).toFixed(0);
-      setAmount(formatCurrency(numStr));
+      setAmount(CurrencyUtils.formatCurrency(numStr));
       setDescription(initialData.description);
       setNote(initialData.note || '');
       setTxType(initialData.type);
@@ -101,7 +91,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
             setSplitDebts(debts.map(d => ({
               id: d.id,
               personName: d.personName,
-              amount: d.isPercentage ? String((d.amount / initialData.amount * 100).toFixed(2)).replace('.00', '').replace('.', ',') : formatCurrency((d.amount * 100).toFixed(0)),
+              amount: d.isPercentage ? String((d.amount / initialData.amount * 100).toFixed(2)).replace('.00', '').replace('.', ',') : CurrencyUtils.formatCurrency((d.amount * 100).toFixed(0)),
               isPaid: d.isPaid === 1,
               isPercentage: d.isPercentage === 1,
               ignoresInterest: d.ignoresInterest === 1,
@@ -113,7 +103,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
             setSplitDebts(debts.map(d => ({
               id: d.id,
               personName: d.personName,
-              amount: d.isPercentage ? String((d.amount / initialData.amount * 100).toFixed(2)).replace('.00', '').replace('.', ',') : formatCurrency((d.amount * 100).toFixed(0)),
+              amount: d.isPercentage ? String((d.amount / initialData.amount * 100).toFixed(2)).replace('.00', '').replace('.', ',') : CurrencyUtils.formatCurrency((d.amount * 100).toFixed(0)),
               isPaid: d.isPaid === 1,
               isPercentage: d.isPercentage === 1,
               ignoresInterest: d.ignoresInterest === 1,
@@ -166,7 +156,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
   }, [description, visible, initialData, selectedCategoryId, categoryList, amount]);
 
   const handleAmountChange = (text) => {
-    setAmount(formatCurrency(text));
+    setAmount(CurrencyUtils.formatCurrency(text));
   };
 
   const handleSave = () => {
@@ -176,8 +166,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       return;
     }
     
-    let rawAmount = amount.replace(/\./g, '').replace(',', '.');
-    let numAmount = parseFloat(rawAmount);
+    let numAmount = CurrencyUtils.parseCurrency(amount);
     
     if (isNaN(numAmount) || numAmount <= 0) {
       setErrorMsg('Insira um valor numérico válido.');
@@ -186,8 +175,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
     
     let totalSplit = 0;
     const processedSplits = splitDebts.map(d => {
-      const splitRaw = String(d.amount).replace(/\./g, '').replace(',', '.');
-      const splitNum = parseFloat(splitRaw) || 0;
+      const splitNum = CurrencyUtils.parseCurrency(d.amount);
       const finalVal = d.isPercentage ? numAmount * (splitNum / 100) : splitNum;
       totalSplit += finalVal;
       return {
@@ -539,12 +527,10 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
             )}
 
             {isSplitMode && (() => {
-              const rawAmt = amount.replace(/\./g, '').replace(',', '.');
-              const numAmt = parseFloat(rawAmt) || 0;
+              const numAmt = CurrencyUtils.parseCurrency(amount);
               let totalSplitAmt = 0;
               splitDebts.forEach(d => {
-                const sRaw = String(d.amount).replace(/\./g, '').replace(',', '.');
-                const sNum = parseFloat(sRaw) || 0;
+                const sNum = CurrencyUtils.parseCurrency(d.amount);
                 totalSplitAmt += d.isPercentage ? numAmt * (sNum / 100) : sNum;
               });
               const remaining = numAmt - totalSplitAmt;
@@ -583,7 +569,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                         onChangeText={(text) => {
                           const newSplits = [...splitDebts];
                           if (!newSplits[idx].isPercentage) {
-                            newSplits[idx].amount = formatCurrency(text);
+                            newSplits[idx].amount = CurrencyUtils.formatCurrency(text);
                           } else {
                             newSplits[idx].amount = text.replace('.', ',');
                           }
@@ -597,13 +583,12 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                           const d = newSplits[idx];
                           
                           if (numAmt > 0 && d.amount) {
-                            const sRaw = String(d.amount).replace(/\./g, '').replace(',', '.');
-                            const sNum = parseFloat(sRaw) || 0;
+                            const sNum = CurrencyUtils.parseCurrency(d.amount);
                             
                             if (d.isPercentage) {
                               // Convert % to $
                               const monetaryValue = numAmt * (sNum / 100);
-                              d.amount = formatCurrency((monetaryValue * 100).toFixed(0));
+                              d.amount = CurrencyUtils.formatCurrency((monetaryValue * 100).toFixed(0));
                             } else {
                               // Convert $ to %
                               d.amount = String((sNum / numAmt * 100).toFixed(2)).replace('.00', '').replace('.', ',');

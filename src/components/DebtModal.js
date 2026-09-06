@@ -8,6 +8,7 @@ import { useDebts } from '../hooks/useDebts';
 import { useAccounts } from '../hooks/useAccounts';
 import { getZoomFactor } from '../utils/scaler';
 import { HapticFeedback } from '../utils/haptics';
+import { CurrencyUtils } from '../utils/currencyUtils';
 
 export default function DebtModal({ visible, onClose, onDelete, onViewTransaction, initialData = null }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -30,24 +31,13 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
   const f = activeTheme.fontFamily || 'monospace';
   const styles = useMemo(() => getStyles(activeTheme), [activeTheme]);
 
-  const formatCurrency = (value) => {
-    if (!value) return '';
-    const cleaned = value.toString().replace(/\D/g, '');
-    if (!cleaned) return '';
-    const numberValue = parseInt(cleaned, 10);
-    const formatted = (numberValue / 100).toFixed(2);
-    const parts = formatted.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return parts.join(',');
-  };
-
   useEffect(() => {
     if (visible) {
       if (initialData) {
         setPersonName(initialData.personName);
         setDescription(initialData.description || '');
         const numStr = (initialData.amount * 100).toFixed(0);
-        setAmount(formatCurrency(numStr));
+        setAmount(CurrencyUtils.formatCurrency(numStr));
         setType(initialData.type);
         setDebtDateObj(initialData.date ? new Date(initialData.date) : new Date());
         setIsPaid(initialData.isPaid === 1);
@@ -98,8 +88,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
     
     const parsedDate = debtDateObj ? debtDateObj.getTime() : Date.now();
 
-    const rawAmount = amount.replace(/\./g, '').replace(',', '.');
-    const numAmount = parseFloat(rawAmount);
+    const numAmount = CurrencyUtils.parseCurrency(amount);
 
     if (isNaN(numAmount) || numAmount <= 0) return;
 
@@ -174,7 +163,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
                 <TextInput
                   style={{ fontSize: 40 * z, fontWeight: 'bold', color: type === 'owe' ? activeTheme.expense : activeTheme.income, minWidth: 120 * z, textAlign: 'center', fontFamily: f }}
                   value={amount}
-                  onChangeText={(val) => setAmount(formatCurrency(val))}
+                  onChangeText={(val) => setAmount(CurrencyUtils.formatCurrency(val))}
                   placeholder="0,00"
                   keyboardType="numeric"
                   placeholderTextColor={activeTheme.textSecondary}
