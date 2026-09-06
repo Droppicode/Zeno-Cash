@@ -167,6 +167,8 @@ export const SettingsProvider = ({ children }) => {
 
   const [backupLimit, setBackupLimit] = useState('5');
   const [backupFrequency, setBackupFrequency] = useState('daily');
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
+  const [autoBackupDestination, setAutoBackupDestination] = useState('drive');
 
   const [macroTargets, setMacroTargets] = useState({
     'Essenciais': 50,
@@ -205,14 +207,21 @@ export const SettingsProvider = ({ children }) => {
           if (item.key === 'defaultPeriod') setDefaultPeriod(item.value);
           if (item.key === 'llmProvider') setLlmProvider(item.value);
           if (item.key === 'llmModel') setLlmModel(item.value);
-          // Omit loading llmKey from db
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
           if (item.key === 'macroMapping') setMacroMapping(JSON.parse(item.value));
-          if (item.key === 'macroOptions') setMacroOptions(JSON.parse(item.value));
           if (item.key === 'backupLimit') setBackupLimit(item.value);
           if (item.key === 'backupFrequency') setBackupFrequency(item.value);
         });
+
+        const mapOptions = data.find(s => s.key === 'macroOptions');
+        if (mapOptions && mapOptions.value) setMacroOptions(JSON.parse(mapOptions.value));
+        
+        const abEnabled = data.find(s => s.key === 'autoBackupEnabled');
+        if (abEnabled) setAutoBackupEnabled(abEnabled.value === 'true');
+        
+        const abDest = data.find(s => s.key === 'autoBackupDestination');
+        if (abDest && abDest.value) setAutoBackupDestination(abDest.value);
         
         if (!hasInitializedThemes) {
           loadedThemes = [...loadedThemes, ...EXTRA_PRESETS];
@@ -222,14 +231,12 @@ export const SettingsProvider = ({ children }) => {
         
         setCustomThemes(loadedThemes);
 
-        // Load active provider from db, then fetch its secure key
         const providerFromDb = data.find(i => i.key === 'llmProvider')?.value || 'openai';
         try {
           const secureKey = await SecureStore.getItemAsync(`llmKey_${providerFromDb}`);
           if (secureKey) setLlmKey(secureKey);
         } catch(e) { Logger.error('SecureStore init', e); }
 
-        // Clean up legacy unencrypted key
         const hasLegacyKey = data.some(i => i.key === 'llmKey');
         if (hasLegacyKey) {
           await db.delete(settings).where(eq(settings.key, 'llmKey'));
@@ -259,7 +266,6 @@ export const SettingsProvider = ({ children }) => {
   };
 
   const saveSetting = async (key, value) => {
-    // Update local state instantly for fast UI
     if (key === 'activeTheme') setActiveTheme(value);
     if (key === 'customThemes') setCustomThemes(value);
     if (key === 'defaultPeriod') setDefaultPeriod(value);
@@ -268,13 +274,14 @@ export const SettingsProvider = ({ children }) => {
       getSecureKey(value).then(k => setLlmKey(k));
     }
     if (key === 'llmModel') setLlmModel(value);
-    // Do not set llmKey in local db here
     if (key === 'uiConfig') setUiConfig(value);
     if (key === 'macroTargets') setMacroTargets(value);
     if (key === 'macroMapping') setMacroMapping(value);
     if (key === 'macroOptions') setMacroOptions(value);
     if (key === 'backupLimit') setBackupLimit(value);
     if (key === 'backupFrequency') setBackupFrequency(value);
+    if (key === 'autoBackupEnabled') setAutoBackupEnabled(value);
+    if (key === 'autoBackupDestination') setAutoBackupDestination(value);
 
     if (key !== 'llmKey') {
       await saveSettingInternal(key, value);
@@ -306,15 +313,16 @@ export const SettingsProvider = ({ children }) => {
   };
 
   const contextValue = useMemo(() => ({
-    activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
-    macroOptions, macroMapping, backupLimit, backupFrequency,
+    activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig,
+    macroTargets, macroOptions, macroMapping, backupLimit, backupFrequency,
+    autoBackupEnabled, autoBackupDestination,
     isLoaded,
     saveSetting,
     getSecureKey,
     saveSecureKey
   }), [
     activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
-    macroOptions, macroMapping, backupLimit, backupFrequency, isLoaded,
+    macroOptions, macroMapping, backupLimit, backupFrequency, autoBackupEnabled, autoBackupDestination, isLoaded,
     saveSetting, getSecureKey, saveSecureKey
   ]);
 

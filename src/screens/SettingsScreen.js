@@ -13,10 +13,8 @@ import AutomationsConfigScreen from './AutomationsConfigScreen';
 import ExtractionConfigScreen from './ExtractionConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import { configureGoogleAuth, uploadDatabaseToDrive, downloadLatestBackup } from '../services/GoogleDriveBackup';
-import { DataExportService } from '../services/DataExportService';
-import { resetDatabase, seedDatabase } from '../database/seed';
+import { useDataManagement } from '../hooks/useDataManagement';
+import { CloudBackupButtons, DangerZoneButtons } from '../components/settings/SettingsActionButtons';
 
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
@@ -38,125 +36,8 @@ export default function SettingsScreen({ navigation }) {
     }, [currentScreen])
   );
 
-  const [isBackingUp, setIsBackingUp] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const handleReset = () => {
-    Alert.alert(
-      'Resetar Aplicativo',
-      'ATENÇÃO: Isso apagará todas as suas transações, dívidas, recorrências e contas salvas. Deseja continuar?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir Tudo',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsResetting(true);
-              await resetDatabase();
-              Alert.alert('Sucesso', 'Aplicativo resetado com sucesso! Reinicie o app para recarregar.');
-            } catch (err) {
-              Alert.alert('Erro', 'Não foi possível resetar os dados.');
-            } finally {
-              setIsResetting(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleSeed = () => {
-    Alert.alert(
-      'Gerar Dados Mock (Seed)',
-      'Isso irá resetar o banco e criar uma base completa de testes com bancos, assinaturas, parcelas e divisões.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Gerar Seed',
-          onPress: async () => {
-            try {
-              setIsSeeding(true);
-              await seedDatabase(true);
-              Alert.alert('Sucesso', 'Base de dados gerada com sucesso! Reinicie o app para visualizar todas as novidades.');
-            } catch (err) {
-              Alert.alert('Erro', 'Não foi possível gerar a base de dados.');
-            } finally {
-              setIsSeeding(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  useEffect(() => {
-    configureGoogleAuth();
-  }, []);
-
-  const getFriendlyErrorMessage = (error) => {
-    const msg = error.message || String(error);
-    if (msg.includes('Network request failed')) return 'Verifique sua conexão com a internet e tente novamente.';
-    if (msg.includes('DEVELOPER_ERROR')) return 'Erro de configuração do Google (Falta de SHA-1 ou credenciais inválidas).';
-    if (msg.includes('PLAY_SERVICES_NOT_AVAILABLE')) return 'Os serviços do Google Play não estão disponíveis no seu celular.';
-    if (msg.includes('Insufficient Permission')) return 'Permissão negada pelo Google. Tente fazer o login novamente.';
-    if (msg.includes('invalid_grant')) return 'Sua sessão expirou. Por favor, faça login novamente.';
-    return msg;
-  };
-
-  const handleBackup = async () => {
-    try {
-      setIsBackingUp(true);
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      const tokens = await GoogleSignin.getTokens();
-      
-      await uploadDatabaseToDrive(tokens.accessToken);
-      Alert.alert('Sucesso', 'Backup realizado com sucesso no Google Drive!');
-    } catch (error) {
-      if (error.code !== statusCodes.SIGN_IN_CANCELLED && error.code !== statusCodes.IN_PROGRESS) {
-        console.error(error);
-        Alert.alert('Erro', 'Não foi possível realizar o backup:\n\n' + getFriendlyErrorMessage(error));
-      }
-    } finally {
-      setIsBackingUp(false);
-    }
-  };
-
-  const handleRestore = async () => {
-    Alert.alert(
-      'Restaurar Backup',
-      'Isso irá substituir todos os dados atuais do aplicativo pelo backup mais recente do Google Drive. Deseja continuar?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Restaurar', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsRestoring(true);
-              await GoogleSignin.hasPlayServices();
-              await GoogleSignin.signIn();
-              const tokens = await GoogleSignin.getTokens();
-              
-              await downloadLatestBackup(tokens.accessToken);
-              Alert.alert('Sucesso', 'Backup restaurado com sucesso! Reinicie o aplicativo para aplicar as mudanças.');
-            } catch (error) {
-              if (error.code !== statusCodes.SIGN_IN_CANCELLED && error.code !== statusCodes.IN_PROGRESS) {
-                console.error(error);
-                Alert.alert('Erro', 'Não foi possível restaurar o backup:\n\n' + getFriendlyErrorMessage(error));
-              }
-            } finally {
-              setIsRestoring(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
+  const dataManagementHook = useDataManagement();
+  
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
   if (currentScreen === 'theme') {
@@ -322,125 +203,18 @@ export default function SettingsScreen({ navigation }) {
             ))}
           </View>
 
-          <TouchableOpacity 
-            style={[styles.backupBtn, { borderColor: activeTheme.accent, opacity: (isBackingUp || isRestoring) ? 0.5 : 1 }]} 
-            onPress={handleBackup}
-            disabled={isBackingUp || isRestoring}
-          >
-            {isBackingUp ? (
-                <ActivityIndicator color={activeTheme.accent} size="small" style={{ marginRight: 8 }} />
-            ) : (
-                <Ionicons name="cloud-upload-outline" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
-            )}
-            <Text style={[styles.backupText, { color: activeTheme.accent }]}>
-              {isBackingUp ? 'Enviando Backup...' : 'Fazer Backup Agora'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.backupBtn, { borderColor: activeTheme.expense, marginTop: 12, opacity: (isBackingUp || isRestoring) ? 0.5 : 1 }]} 
-            onPress={handleRestore}
-            disabled={isBackingUp || isRestoring}
-          >
-            {isRestoring ? (
-                <ActivityIndicator color={activeTheme.expense} size="small" style={{ marginRight: 8 }} />
-            ) : (
-                <Ionicons name="cloud-download-outline" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
-            )}
-            <Text style={[styles.backupText, { color: activeTheme.expense }]}>
-              {isRestoring ? 'Restaurando...' : 'Restaurar Backup'}
-            </Text>
-          </TouchableOpacity>
+          <CloudBackupButtons
+            activeTheme={activeTheme}
+            styles={styles}
+            dataManagementHook={dataManagementHook}
+          />
         </View>
 
-        {/* Import/Export Local */}
-        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
-          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Exportação & Importação Local</Text>
-          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Gerencie seus dados em arquivos JSON (backup) ou CSV (planilhas).</Text>
-          
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-            <TouchableOpacity 
-              style={[styles.backupBtn, { borderColor: activeTheme.accent, flex: 1, marginTop: 0 }]} 
-              onPress={() => DataExportService.exportToJSON()}
-            >
-              <Ionicons name="document-text" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
-              <Text style={[styles.backupText, { color: activeTheme.accent, fontSize: 14 }]}>Exportar JSON</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.backupBtn, { borderColor: activeTheme.accent, flex: 1, marginTop: 0 }]} 
-              onPress={() => DataExportService.exportToCSV()}
-            >
-              <Ionicons name="stats-chart" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
-              <Text style={[styles.backupText, { color: activeTheme.accent, fontSize: 14 }]}>Exportar CSV</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity 
-              style={[styles.backupBtn, { borderColor: activeTheme.expense, flex: 1, marginTop: 0 }]} 
-              onPress={() => {
-                Alert.alert(
-                  'Importar JSON',
-                  'Isso irá adicionar os dados do arquivo ao seu banco atual, não substituindo o que você já tem.',
-                  [
-                    { text: 'Cancelar', style: 'cancel' },
-                    { text: 'Importar', style: 'destructive', onPress: () => DataExportService.importFromJSON() }
-                  ]
-                );
-              }}
-            >
-              <Ionicons name="download" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
-              <Text style={[styles.backupText, { color: activeTheme.expense, fontSize: 14 }]}>Importar JSON</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.backupBtn, { borderColor: activeTheme.expense, flex: 1, marginTop: 0 }]} 
-              onPress={() => DataExportService.importFromCSV()}
-            >
-              <Ionicons name="list" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
-              <Text style={[styles.backupText, { color: activeTheme.expense, fontSize: 14 }]}>Importar CSV</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Zona de Perigo / Gestão de Dados */}
-        <View style={[styles.section, { backgroundColor: activeTheme.card, borderColor: activeTheme.expense + '40', borderWidth: 1 }]}>
-          <Text style={[styles.sectionTitle, { color: activeTheme.expense }]}>Zona de Perigo</Text>
-          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Apague todos os dados ou recrie uma base de testes completa.</Text>
-          
-          <TouchableOpacity 
-            style={[styles.backupBtn, { borderColor: activeTheme.expense, backgroundColor: activeTheme.expense + '15', marginTop: 0 }]} 
-            onPress={handleReset}
-            disabled={isResetting || isSeeding}
-          >
-            {isResetting ? (
-              <ActivityIndicator color={activeTheme.expense} size="small" style={{ marginRight: 8 }} />
-            ) : (
-              <Ionicons name="trash" size={20} color={activeTheme.expense} style={{ marginRight: 8 }} />
-            )}
-            <Text style={[styles.backupText, { color: activeTheme.expense }]}>
-              {isResetting ? 'Excluindo dados...' : 'Excluir Tudo / Resetar App'}
-            </Text>
-          </TouchableOpacity>
-
-          {__DEV__ && (
-            <TouchableOpacity 
-              style={[styles.backupBtn, { borderColor: activeTheme.accent, backgroundColor: activeTheme.accent + '15', marginTop: 12 }]} 
-              onPress={handleSeed}
-              disabled={isResetting || isSeeding}
-            >
-              {isSeeding ? (
-                <ActivityIndicator color={activeTheme.accent} size="small" style={{ marginRight: 8 }} />
-              ) : (
-                <Ionicons name="flask" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
-              )}
-              <Text style={[styles.backupText, { color: activeTheme.accent }]}>
-                {isSeeding ? 'Gerando dados mock...' : 'Popular Dados Mock (Seed Dev)'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <DangerZoneButtons
+          activeTheme={activeTheme}
+          styles={styles}
+          dataManagementHook={dataManagementHook}
+        />
 
         <View style={{ height: 40 }} />
       </ScrollView>

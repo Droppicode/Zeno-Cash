@@ -15,6 +15,12 @@ import { useDebts } from '../hooks/useDebts';
 import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
 
+import HomeAccountsList from '../components/home/HomeAccountsList';
+import HomeCreditCardsList from '../components/home/HomeCreditCardsList';
+import HomePendingTx from '../components/home/HomePendingTx';
+import HomeRecentTx from '../components/home/HomeRecentTx';
+import HomeDebts from '../components/home/HomeDebts';
+
 export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
   const [modalVisible, setModalVisible] = useState(false);
@@ -139,255 +145,54 @@ export default function HomeScreen({ route, navigation }) {
 
         {/* Renderização Dinâmica dos Módulos baseada na Ordem */}
         {homeOrder.map((modKey) => {
-          if (modKey === 'accounts' && uiConfig.homeShowAccounts !== false && accountBalances.some(a => a.type !== 'credit')) {
-            const bankAccounts = accountBalances.filter(a => a.type !== 'credit');
-            return (
-              <View key="accounts" style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Suas Contas</Text>
-                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                  {bankAccounts.map((acc, idx) => (
-                    <TouchableOpacity 
-                      key={acc.id} 
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        navigation.navigate('Transações', { filterAccountId: acc.id });
-                      }}
-                    >
-                      <View style={[
-                        styles.groupedItem, 
-                        idx !== bankAccounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
-                      ]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
-                            {acc.icon && acc.icon.startsWith('http') ? (
-                              <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
-                            ) : (
-                              <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
-                            )}
-                          </View>
-                          <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
-                        </View>
-                        <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
-                          {acc.currentBalance <= -0.01 ? `- R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}` : `R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}`}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                  <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
-                    <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Contas</Text>
-                    <Text style={[styles.groupedAmount, { color: activeTheme.text, fontWeight: 'bold' }]}>
-                      R$ {CurrencyUtils.formatDisplay(bankAccounts.reduce((acc, curr) => acc + curr.currentBalance, 0))}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            );
+          if (modKey === 'accounts' && uiConfig.homeShowAccounts !== false) {
+            return <HomeAccountsList key="accounts" accountBalances={accountBalances} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
 
-          if (modKey === 'creditCards' && uiConfig.homeShowCreditCards !== false && accountBalances.some(a => a.type === 'credit')) {
-            const creditCards = accountBalances.filter(a => a.type === 'credit');
-            return (
-              <View key="creditCards" style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Cartões de Crédito</Text>
-                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                  {creditCards.map((acc, idx) => (
-                    <TouchableOpacity 
-                      key={acc.id} 
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        navigation.navigate('CreditCard', { account: acc });
-                      }}
-                    >
-                      <View style={[
-                        styles.groupedItem, 
-                        idx !== creditCards.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
-                      ]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
-                            {acc.icon && acc.icon.startsWith('http') ? (
-                              <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
-                            ) : (
-                              <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
-                            )}
-                          </View>
-                          <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
-                        </View>
-                        <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
-                          {acc.currentBalance <= -0.01 ? `- R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}` : `R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}`}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                  <View style={[styles.groupedItem, { borderTopWidth: 1, borderTopColor: activeTheme.background, backgroundColor: activeTheme.card }]}>
-                    <Text style={[styles.groupedText, { color: activeTheme.text, fontWeight: 'bold' }]}>Total Faturas</Text>
-                    <Text style={[styles.groupedAmount, { color: activeTheme.expense, fontWeight: 'bold' }]}>
-                      R$ {CurrencyUtils.formatDisplay(Math.abs(creditCards.reduce((acc, curr) => acc + curr.currentBalance, 0)))}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            );
+          if (modKey === 'creditCards' && uiConfig.homeShowCreditCards !== false) {
+            return <HomeCreditCardsList key="creditCards" accountBalances={accountBalances} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
           
-          if (modKey === 'pending' && uiConfig.homeShowPending !== false && displayPendingList.length > 0) {
+          if (modKey === 'pending' && uiConfig.homeShowPending !== false) {
             return (
-              <View key="pending" style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: activeTheme.expense }]}>Transações Pendentes</Text>
-                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                  {displayPendingList.map((item, idx) => {
-                    const catInfo = resolveCategory(item, categoryList);
-                    const isLast = idx === displayPendingList.length - 1;
-                    
-                    return (
-                      <SwipeableCard key={item.id} 
-                        onDelete={async () => {
-                          if (item.recurrenceId) {
-                            await updateTransaction(item.id, { isIgnored: 1 });
-                          } else {
-                            await removeTransaction(item.id);
-                          }
-                          await loadAccounts();
-                          await loadDebts();
-                        }}
-                        onAccept={async () => {
-                          await updateTransaction(item.id, { isPending: 0 });
-                          await loadAccounts();
-                        }}
-                      >
-                        <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
-                          <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                              <View style={[styles.groupedIcon, { backgroundColor: activeTheme.expense + '20' }]}>
-                                <Ionicons name="time" size={18} color={activeTheme.expense} />
-                              </View>
-                              <View style={{ flex: 1, paddingRight: 8 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                  <Text style={[styles.groupedText, { color: activeTheme.text, flexShrink: 1 }]} numberOfLines={1}>{item.description}</Text>
-                                  {debtsList.some(d => d.transactionId === item.id) && (
-                                    <Ionicons name="people" size={14} color={activeTheme.accent} style={{ marginLeft: 4 }} />
-                                  )}
-                                  {item.recurrenceId && (
-                                    <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
-                                  )}
-                                </View>
-                                <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>
-                                  {new Date(item.date).toLocaleDateString('pt-BR')} {item.note ? `- ${item.note}` : ''}
-                                </Text>
-                              </View>
-                            </View>
-                            <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                              {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      </SwipeableCard>
-                    );
-                  })}
-                </View>
-              </View>
+              <HomePendingTx
+                key="pending"
+                displayPendingList={displayPendingList}
+                activeTheme={activeTheme}
+                styles={styles}
+                categoryList={categoryList}
+                debtsList={debtsList}
+                updateTransaction={updateTransaction}
+                removeTransaction={removeTransaction}
+                loadAccounts={loadAccounts}
+                loadDebts={loadDebts}
+                setEditingTx={setEditingTx}
+                setModalVisible={setModalVisible}
+              />
             );
           }
 
           if (modKey === 'recent' && uiConfig.homeShowRecent !== false) {
             return (
-              <View key="recent" style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Últimas Transações</Text>
-                
-                {recentTxList.length === 0 && (
-                  <Text style={{ color: activeTheme.textSecondary }}>Nenhuma transação confirmada ainda.</Text>
-                )}
-
-                {recentTxList.length > 0 && (
-                  <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                    {recentTxList.slice(0, 5).map((item, idx) => {
-                      const catInfo = resolveCategory(item, categoryList);
-                      const isLast = idx === Math.min(recentTxList.length, 5) - 1;
-                      
-                      return (
-                        <SwipeableCard key={item.id} onDelete={async () => {
-                          if (item.recurrenceId) {
-                            await updateTransaction(item.id, { isIgnored: 1 });
-                          } else {
-                            await removeTransaction(item.id);
-                          }
-                          await loadAccounts();
-                          await loadDebts();
-                        }}>
-                          <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
-                            <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                <View style={[styles.groupedIcon, { backgroundColor: catInfo.color + '20' }]}>
-                                  <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
-                                </View>
-                                <View style={{ flex: 1, paddingRight: 8 }}>
-                                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Text style={[styles.groupedText, { color: activeTheme.text, flexShrink: 1 }]} numberOfLines={1}>{item.description}</Text>
-                                    {debtsList.some(d => d.transactionId === item.id) && (
-                                      <Ionicons name="people" size={14} color={activeTheme.accent} style={{ marginLeft: 4 }} />
-                                    )}
-                                    {item.recurrenceId && (
-                                      <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
-                                    )}
-                                  </View>
-                                  {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
-                                </View>
-                              </View>
-                              <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>
-                                {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        </SwipeableCard>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
+              <HomeRecentTx
+                key="recent"
+                recentTxList={recentTxList}
+                activeTheme={activeTheme}
+                styles={styles}
+                categoryList={categoryList}
+                debtsList={debtsList}
+                updateTransaction={updateTransaction}
+                removeTransaction={removeTransaction}
+                loadAccounts={loadAccounts}
+                loadDebts={loadDebts}
+                setEditingTx={setEditingTx}
+                setModalVisible={setModalVisible}
+              />
             );
           }
 
           if (modKey === 'debts' && uiConfig.homeShowDebts !== false) {
-            const totalOwe = debtsList.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
-            const totalOwed = debtsList.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
-
-            if (totalOwe === 0 && totalOwed === 0) return null;
-
-            return (
-              <View key="debts" style={styles.section}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={[styles.sectionTitle, { color: activeTheme.text, marginBottom: 0 }]}>Dívidas</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('Debts')}>
-                    <Text style={{ color: activeTheme.accent, fontWeight: 'bold' }}>Ver Tudo</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={[styles.groupedContainer, { backgroundColor: activeTheme.card }]}>
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Debts')}>
-                    <View style={[styles.groupedItem, { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={[styles.groupedIcon, { backgroundColor: activeTheme.expense + '20' }]}>
-                          <Ionicons name="arrow-up" size={18} color={activeTheme.expense} />
-                        </View>
-                        <Text style={[styles.groupedText, { color: activeTheme.text }]}>Eu Devo</Text>
-                      </View>
-                      <Text style={[styles.groupedAmount, { color: activeTheme.expense }]}>R$ {CurrencyUtils.formatDisplay(totalOwe)}</Text>
-                    </View>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Debts')}>
-                    <View style={styles.groupedItem}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={[styles.groupedIcon, { backgroundColor: activeTheme.income + '20' }]}>
-                          <Ionicons name="arrow-down" size={18} color={activeTheme.income} />
-                        </View>
-                        <Text style={[styles.groupedText, { color: activeTheme.text }]}>Me Devem</Text>
-                      </View>
-                      <Text style={[styles.groupedAmount, { color: activeTheme.income }]}>R$ {CurrencyUtils.formatDisplay(totalOwed)}</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
+            return <HomeDebts key="debts" debtsList={debtsList} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
           
           return null;

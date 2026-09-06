@@ -1,6 +1,9 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { File, Paths } from 'expo-file-system';
+import * as LegacyFileSystem from 'expo-file-system/legacy';
+import { NativeModules } from 'react-native';
 import { expoDb } from '../database/db';
+import { DataExportService } from './DataExportService';
 
 export const configureGoogleAuth = () => {
   try {
@@ -61,7 +64,7 @@ export const enforceBackupLimit = async (token, folderId) => {
     const limit = limitQuery && !isNaN(parseInt(limitQuery.value, 10)) ? parseInt(limitQuery.value, 10) : 5;
 
     const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
-    const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=createdTime desc`, {
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=createdTime desc&fields=files(id,name,createdTime)`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const data = await response.json();
@@ -82,6 +85,8 @@ export const enforceBackupLimit = async (token, folderId) => {
 
 export const uploadDatabaseToDrive = async (token) => {
   try {
+    await expoDb.execAsync('PRAGMA wal_checkpoint(TRUNCATE);');
+    
     const folderId = await createOrGetBackupFolder(token);
     const dbFile = new File(Paths.document, 'SQLite', 'zenocash.db');
     
@@ -96,34 +101,41 @@ export const uploadDatabaseToDrive = async (token) => {
       String(date.getSeconds()).padStart(2, '0');
 
     const fileName = `zenocash_backup_${formattedDate}.db`;
-    const fileContentBase64 = await dbFile.base64();
     
-    const boundary = 'foo_bar_baz';
-    const metadata = {
-      name: fileName,
-      parents: [folderId]
-    };
-
-    let body = `--${boundary}\r\n`;
-    body += `Content-Type: application/json; charset=UTF-8\r\n\r\n`;
-    body += `${JSON.stringify(metadata)}\r\n`;
-    body += `--${boundary}\r\n`;
-    body += `Content-Type: application/octet-stream\r\n`;
-    body += `Content-Transfer-Encoding: base64\r\n\r\n`;
-    body += `${fileContentBase64}\r\n`;
-    body += `--${boundary}--`;
-
-    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-      method: 'POST',
+    // 1. Upload media content directly using uploadAsync to avoid base64 memory limit
+    const uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
+    const uploadResult = await LegacyFileSystem.uploadAsync(uploadUrl, dbFile.uri, {
+      httpMethod: 'POST',
+      uploadType: LegacyFileSystem.FileSystemUploadType.BINARY_CONTENT,
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': `multipart/related; boundary=${boundary}`
+        'Content-Type': 'application/octet-stream',
       },
-      body: body
     });
 
-    const result = await response.json();
-    if (result.error) throw new Error(result.error.message);
+    if (uploadResult.status !== 200) {
+      throw new Error("Falha no upload binário para o Drive.");
+    }
+    
+    const result = JSON.parse(uploadResult.body);
+    const fileId = result.id;
+
+    // 2. Patch metadata (name and parent folder)
+    const patchResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: fileName,
+        parents: [folderId]
+      })
+    });
+
+    if (!patchResponse.ok) {
+      throw new Error("Falha ao atualizar metadados do backup.");
+    }
     
     await enforceBackupLimit(token, folderId);
     
@@ -132,6 +144,45 @@ export const uploadDatabaseToDrive = async (token) => {
     console.error("Backup upload error:", error);
     throw error;
   }
+};
+
+export const getBackupFilesList = async (token) => {
+    const folderId = await getFolderId(token, 'Zeno Cash Backup');
+    if (!folderId) return [];
+
+    const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=createdTime desc&fields=files(id,name,createdTime)`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json();
+    return data.files || [];
+};
+
+export const downloadBackupById = async (token, fileId) => {
+    const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+    
+    try { await expoDb.closeAsync(); } catch (e) {}
+
+    const destinationFile = new File(Paths.document, 'SQLite', 'zenocash.db');
+    if (destinationFile.exists) {
+        await destinationFile.delete();
+    }
+    
+    await File.downloadFileAsync(downloadUrl, destinationFile, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    try {
+      const walFile = new File(Paths.document, 'SQLite', 'zenocash.db-wal');
+      if (walFile.exists) await walFile.delete();
+      const shmFile = new File(Paths.document, 'SQLite', 'zenocash.db-shm');
+      if (shmFile.exists) await shmFile.delete();
+    } catch(e) {}
+    
+    if (__DEV__ && NativeModules.DevSettings) {
+      NativeModules.DevSettings.reload();
+    }
+    return true;
 };
 
 export const downloadLatestBackup = async (token) => {
@@ -151,24 +202,38 @@ export const downloadLatestBackup = async (token) => {
     const latestFile = data.files[0];
     const downloadUrl = `https://www.googleapis.com/drive/v3/files/${latestFile.id}?alt=media`;
     
-    // Close existing connection if any before replacing the file
-    try {
-        const destinationFile = new File(Paths.document, 'SQLite', 'zenocash.db');
-        if (destinationFile.exists) {
-            destinationFile.delete();
-        }
-        await File.downloadFileAsync(downloadUrl, destinationFile, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        return true;
-    } catch (e) {
-        console.error("Download failed:", e);
-        throw e;
+    try { await expoDb.closeAsync(); } catch (e) {}
+
+    const destinationFile = new File(Paths.document, 'SQLite', 'zenocash.db');
+    if (destinationFile.exists) {
+        await destinationFile.delete();
     }
+    
+    await File.downloadFileAsync(downloadUrl, destinationFile, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    try {
+      const walFile = new File(Paths.document, 'SQLite', 'zenocash.db-wal');
+      if (walFile.exists) await walFile.delete();
+      const shmFile = new File(Paths.document, 'SQLite', 'zenocash.db-shm');
+      if (shmFile.exists) await shmFile.delete();
+    } catch(e) {}
+    
+    if (__DEV__ && NativeModules.DevSettings) {
+      NativeModules.DevSettings.reload();
+    }
+    return true;
 };
 
 export const performSilentDailyBackup = async () => {
     try {
+        const enabledQuery = expoDb.getFirstSync("SELECT value FROM settings WHERE key = 'autoBackupEnabled'");
+        if (!enabledQuery || enabledQuery.value !== 'true') return;
+
+        const destQuery = expoDb.getFirstSync("SELECT value FROM settings WHERE key = 'autoBackupDestination'");
+        const destination = destQuery ? destQuery.value : 'drive';
+
         const freqQuery = expoDb.getFirstSync("SELECT value FROM settings WHERE key = 'backupFrequency'");
         const freq = freqQuery ? freqQuery.value : 'daily';
 
@@ -189,17 +254,21 @@ export const performSilentDailyBackup = async () => {
             if (freq === 'monthly' && diffDays < 30) return;
         }
 
-        const hasPlayServices = await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: false });
-        if (!hasPlayServices) return;
+        if (destination === 'local') {
+            await DataExportService.createSilentLocalBackup();
+        } else {
+            const hasPlayServices = await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: false });
+            if (!hasPlayServices) return;
 
-        const isSignedIn = GoogleSignin.hasPreviousSignIn();
-        if (!isSignedIn) return;
+            const isSignedIn = GoogleSignin.hasPreviousSignIn();
+            if (!isSignedIn) return;
 
-        configureGoogleAuth();
-        await GoogleSignin.signInSilently();
-        const tokens = await GoogleSignin.getTokens();
-        
-        await uploadDatabaseToDrive(tokens.accessToken);
+            configureGoogleAuth();
+            await GoogleSignin.signInSilently();
+            const tokens = await GoogleSignin.getTokens();
+            
+            await uploadDatabaseToDrive(tokens.accessToken);
+        }
         
         expoDb.execSync(`INSERT INTO settings (key, value) VALUES ('last_daily_backup', '${today}') ON CONFLICT(key) DO UPDATE SET value = '${today}'`);
         
