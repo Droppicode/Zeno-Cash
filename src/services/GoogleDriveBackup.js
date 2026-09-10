@@ -17,8 +17,12 @@ export const configureGoogleAuth = () => {
   }
 };
 
-const getFolderId = async (token, folderName) => {
-  const query = encodeURIComponent(`mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`);
+const getFolderId = async (token, folderName, parentFolderId = null) => {
+  let queryStr = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`;
+  if (parentFolderId) {
+    queryStr += ` and '${parentFolderId}' in parents`;
+  }
+  const query = encodeURIComponent(queryStr);
   const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&spaces=drive`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -31,11 +35,14 @@ const getFolderId = async (token, folderName) => {
   return null;
 };
 
-const createFolder = async (token, folderName) => {
+const createFolder = async (token, folderName, parentFolderId = null) => {
   const metadata = {
     name: folderName,
     mimeType: 'application/vnd.google-apps.folder'
   };
+  if (parentFolderId) {
+    metadata.parents = [parentFolderId];
+  }
   const response = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: {
@@ -49,13 +56,24 @@ const createFolder = async (token, folderName) => {
   return data.id;
 };
 
-export const createOrGetBackupFolder = async (token) => {
-  const folderName = 'Zeno Cash Backup';
-  let folderId = await getFolderId(token, folderName);
-  if (!folderId) {
-    folderId = await createFolder(token, folderName);
+export const createOrGetBackupFolder = async (token, createIfMissing = true) => {
+  const rootFolderName = 'Zeno Cash Backup';
+  let rootFolderId = await getFolderId(token, rootFolderName);
+  if (!rootFolderId) {
+    if (!createIfMissing) return null;
+    rootFolderId = await createFolder(token, rootFolderName);
   }
-  return folderId;
+  
+  if (__DEV__) {
+    let devFolderId = await getFolderId(token, 'dev', rootFolderId);
+    if (!devFolderId) {
+      if (!createIfMissing) return null;
+      devFolderId = await createFolder(token, 'dev', rootFolderId);
+    }
+    return devFolderId;
+  }
+  
+  return rootFolderId;
 };
 
 export const enforceBackupLimit = async (token, folderId) => {
@@ -121,20 +139,21 @@ export const uploadDatabaseToDrive = async (token) => {
     const fileId = result.id;
 
     // 2. Patch metadata (name and parent folder)
-    const patchResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    const patchResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${folderId}`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        name: fileName,
-        parents: [folderId]
+        name: fileName
       })
     });
 
     if (!patchResponse.ok) {
-      throw new Error("Falha ao atualizar metadados do backup.");
+      const errorData = await patchResponse.text();
+      console.error("Falha ao atualizar metadados do backup:", errorData);
+      throw new Error(`Falha ao atualizar metadados do backup. Detalhes: ${errorData}`);
     }
     
     await enforceBackupLimit(token, folderId);
@@ -147,7 +166,7 @@ export const uploadDatabaseToDrive = async (token) => {
 };
 
 export const getBackupFilesList = async (token) => {
-    const folderId = await getFolderId(token, 'Zeno Cash Backup');
+    const folderId = await createOrGetBackupFolder(token, false);
     if (!folderId) return [];
 
     const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
@@ -186,7 +205,7 @@ export const downloadBackupById = async (token, fileId) => {
 };
 
 export const downloadLatestBackup = async (token) => {
-    const folderId = await getFolderId(token, 'Zeno Cash Backup');
+    const folderId = await createOrGetBackupFolder(token, false);
     if (!folderId) throw new Error("Pasta de backup não encontrada.");
 
     const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);

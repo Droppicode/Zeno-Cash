@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zeno Cash",
     "slug": "zeno-cash",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "entryPoint": "./index.js",
     "scheme": "zenocash",
     "orientation": "portrait",
@@ -14,7 +14,7 @@
     "android": {
       "package": "com.mmn.zenocash",
       "allowBackup": false,
-      "versionCode": 20
+      "versionCode": 22
     },
     "androidStatusBar": {
       "hidden": true
