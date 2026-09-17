@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DataExportService } from '../../services/DataExportService';
 import { SettingsContext } from '../../context/SettingsContext';
@@ -49,7 +49,7 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
               </ScrollView>
 
               <TouchableOpacity 
-                style={{ padding: 15, alignItems: 'center', borderRadius: 10, backgroundColor: activeTheme.card }}
+                style={{ padding: 15, alignItems: 'center', borderRadius: 6, backgroundColor: activeTheme.card }}
                 onPress={() => setAvailableBackups([])}
               >
                 <Text style={{ color: activeTheme.text, fontWeight: 'bold' }}>Cancelar</Text>
@@ -60,9 +60,9 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
       )}
 
       {/* Segmented Control for Backup Mode */}
-      <View style={{ flexDirection: 'row', backgroundColor: activeTheme.cardSecondary || activeTheme.card, borderRadius: 12, padding: 4, marginBottom: 15 }}>
+      <View style={{ flexDirection: 'row', backgroundColor: activeTheme.cardSecondary || activeTheme.card, borderRadius: 6, padding: 4, marginBottom: 15 }}>
         <TouchableOpacity 
-          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: backupMode === 'drive' ? activeTheme.accent + '20' : 'transparent' }}
+          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 4, backgroundColor: backupMode === 'drive' ? activeTheme.accent + '20' : 'transparent' }}
           onPress={() => handleModeChange('drive')}
         >
           <Text style={{ color: backupMode === 'drive' ? activeTheme.accent : activeTheme.textSecondary, fontWeight: backupMode === 'drive' ? 'bold' : 'normal' }}>
@@ -70,7 +70,7 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: backupMode === 'local' ? activeTheme.accent + '20' : 'transparent' }}
+          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 4, backgroundColor: backupMode === 'local' ? activeTheme.accent + '20' : 'transparent' }}
           onPress={() => handleModeChange('local')}
         >
           <Text style={{ color: backupMode === 'local' ? activeTheme.accent : activeTheme.textSecondary, fontWeight: backupMode === 'local' ? 'bold' : 'normal' }}>
@@ -81,7 +81,7 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
 
       {/* Auto Backup Toggle */}
       {!(backupMode === 'drive' && !isGoogleSignedIn) && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: activeTheme.card, padding: 15, borderRadius: 12, marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: activeTheme.card, padding: 15, borderRadius: 6, marginBottom: 20 }}>
           <View style={{ flex: 1, marginRight: 15 }}>
             <Text style={{ color: activeTheme.text, fontSize: 16, fontWeight: 'bold' }}>Backup Automático Diário</Text>
             <Text style={{ color: activeTheme.textSecondary, fontSize: 13, marginTop: 4 }}>
@@ -97,8 +97,15 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
         </View>
       )}
 
-      {backupMode === 'drive' && !isGoogleSignedIn ? (
-        <View style={{ backgroundColor: activeTheme.card, padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: activeTheme.accent + '30' }}>
+      {Platform.OS === 'web' ? (
+        <View style={{ backgroundColor: activeTheme.card, padding: 20, borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: activeTheme.accent + '30' }}>
+          <Ionicons name="laptop-outline" size={48} color={activeTheme.textSecondary} style={{ marginBottom: 12 }} />
+          <Text style={{ color: activeTheme.text, fontSize: 16, textAlign: 'center' }}>
+            Backups na Nuvem e Locais são funcionalidades exclusivas do aplicativo móvel (Android/iOS).
+          </Text>
+        </View>
+      ) : backupMode === 'drive' && !isGoogleSignedIn ? (
+        <View style={{ backgroundColor: activeTheme.card, padding: 20, borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: activeTheme.accent + '30' }}>
           <Ionicons name="cloud-offline" size={48} color={activeTheme.textSecondary} style={{ marginBottom: 12 }} />
           <Text style={{ color: activeTheme.text, fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
             Conecte sua conta do Google para fazer backup automático na nuvem de forma segura.

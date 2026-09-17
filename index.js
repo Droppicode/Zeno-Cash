@@ -1,10 +1,7 @@
 import { registerRootComponent } from 'expo';
 import { AppRegistry } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { registerWidgetTaskHandler } from 'react-native-android-widget';
-import { headlessNotificationListener } from './src/services/NotificationListener';
-import { widgetTaskHandler } from './src/widget/WidgetTaskHandler';
-import './src/services/BackgroundTasks';
+import './src/setup';
 
 // Configuração Global de Notificações
 Notifications.setNotificationHandler({
@@ -16,11 +13,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Registra o serviço em background o mais rápido possível
-AppRegistry.registerHeadlessTask('RNAndroidNotificationListenerHeadlessJs', () => headlessNotificationListener);
-
-// Registra o Widget Android
-registerWidgetTaskHandler(widgetTaskHandler);
+// Inicializações Nativas movidas para src/setup.js
 
 // Registra o componente raiz do aplicativo
 registerRootComponent(function AppRoot() {

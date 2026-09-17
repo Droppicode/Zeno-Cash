@@ -111,11 +111,11 @@ export default function ExpenseComposition({ theme, data, totalExpense, isMacro,
 }
 
 const styles = StyleSheet.create({
-  toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  toggleBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   toggleText: { fontSize: 12, fontWeight: 'bold' },
   categoryRow: { marginBottom: 16 },
   catHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 8 },
+  colorDot: { width: 12, height: 12, borderRadius: 4, marginRight: 8 },
   catName: { fontSize: 14, fontWeight: 'bold' },
   catAmount: { fontSize: 14, fontWeight: 'bold' },
   catPercent: { fontSize: 12 },

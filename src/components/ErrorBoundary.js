@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   errorBox: {
     backgroundColor: '#2A0000',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 4,
     marginBottom: 32,
     width: '100%'
   },
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#BB86FC',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8
+    borderRadius: 4
   },
   buttonText: {
     color: '#121212',

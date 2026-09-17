@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
 import { expoDb } from './db';
 import { TransactionRepository } from '../services/TransactionRepository';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export const resetDatabase = async () => {
+  if (Platform.OS === 'web') return true;
   try {
     expoDb.execSync(`
       DELETE FROM transactions;
@@ -53,11 +55,8 @@ export const seedDatabase = async (force = false) => {
       DELETE FROM categories;
     `);
 
-    // 2. Contas bancárias
     const checkingData = [
       { name: 'Nubank', type: 'checking', balance: 2450.80, icon: 'card-outline', color: '#8A05BE' },
-      { name: 'Itaú', type: 'checking', balance: 5320.15, icon: 'business-outline', color: '#EC7000' },
-      { name: 'Inter', type: 'checking', balance: 940.00, icon: 'phone-portrait-outline', color: '#FF7A00' },
       { name: 'Carteira / Dinheiro', type: 'cash', balance: 220.00, icon: 'wallet-outline', color: '#4CAF50' }
     ];
 
@@ -71,8 +70,7 @@ export const seedDatabase = async (force = false) => {
     }
 
     const creditData = [
-      { name: 'Cartão Nubank Ultravioleta', type: 'credit', balance: 0, icon: 'card-outline', color: '#8A05BE', associatedAccountId: accountIds['Nubank'], closingDay: 25, dueDay: 5, creditLimit: 12000 },
-      { name: 'Cartão Itaú Black', type: 'credit', balance: 0, icon: 'card-outline', color: '#121212', associatedAccountId: accountIds['Itaú'], closingDay: 15, dueDay: 25, creditLimit: 25000 }
+      { name: 'Cartão Nubank Ultravioleta', type: 'credit', balance: 0, icon: 'card-outline', color: '#8A05BE', associatedAccountId: accountIds['Nubank'], closingDay: 25, dueDay: 5, creditLimit: 12000 }
     ];
 
     for (const acc of creditData) {
@@ -125,68 +123,6 @@ export const seedDatabase = async (force = false) => {
         splitDebts: [
           { personName: 'Lucas Ferreira', amount: 27.95, isPercentage: 1, ignoresInterest: 0 }
         ]
-      },
-      {
-        description: 'Spotify Família',
-        amount: 34.90,
-        type: 'expense',
-        categoryId: categoryIds['Lazer & Assinaturas'],
-        accountId: accountIds['Inter'],
-        monthsAgo: 7,
-        dayOfMonth: 15,
-        frequencyType: 'monthly',
-        frequencyInterval: 1,
-        installments: null,
-        interestRate: 0,
-        interestType: 'simple',
-        splitDebts: [
-          { personName: 'Camila Lima', amount: 17.45, isPercentage: 1, ignoresInterest: 0 }
-        ]
-      },
-      {
-        description: 'Academia SmartFit',
-        amount: 119.90,
-        type: 'expense',
-        categoryId: categoryIds['Saúde & Farmácia'],
-        accountId: accountIds['Nubank'],
-        monthsAgo: 4,
-        dayOfMonth: 1,
-        frequencyType: 'monthly',
-        frequencyInterval: 1,
-        installments: null,
-        interestRate: 0,
-        interestType: 'simple'
-      },
-      {
-        description: 'Aluguel & Condomínio',
-        amount: 2100.00,
-        type: 'expense',
-        categoryId: categoryIds['Moradia & Contas'],
-        accountId: accountIds['Itaú'],
-        monthsAgo: 6,
-        dayOfMonth: 5,
-        frequencyType: 'monthly',
-        frequencyInterval: 1,
-        installments: null,
-        interestRate: 0,
-        interestType: 'simple',
-        splitDebts: [
-          { personName: 'Mariana Duarte', amount: 1050.00, isPercentage: 1, ignoresInterest: 0 }
-        ]
-      },
-      {
-        description: 'iPhone 15 Pro Max',
-        amount: 689.90,
-        type: 'expense',
-        categoryId: categoryIds['Lazer & Assinaturas'],
-        accountId: accountIds['Cartão Itaú Black'],
-        monthsAgo: 3,
-        dayOfMonth: 20,
-        frequencyType: 'monthly',
-        frequencyInterval: 1,
-        installments: 10,
-        interestRate: 0,
-        interestType: 'simple'
       },
       {
         description: 'Geladeira Frost Free Inox',
@@ -325,11 +261,11 @@ export const seedDatabase = async (force = false) => {
       }
     }
 
-    // 5. Gerar Histórico de Salários e Proventos dos últimos 6 meses
+    // 5. Gerar Histórico de Salários e Proventos dos últimos 4 meses
     const txsToInsert = [];
 
     // 5.1 Salários regulares todo dia 05
-    for (let m = 6; m >= 0; m--) {
+    for (let m = 4; m >= 0; m--) {
       const salaryDate = new Date(now.getFullYear(), now.getMonth() - m, 5, 10, 0, 0);
       if (salaryDate <= now) {
         txsToInsert.push({
@@ -337,7 +273,7 @@ export const seedDatabase = async (force = false) => {
           description: 'Salário Mensal Tech Co.',
           type: 'income',
           categoryId: categoryIds['Salário & Renda'],
-          accountId: accountIds['Itaú'],
+          accountId: accountIds['Nubank'],
           date: salaryDate.getTime(),
           note: 'Pagamento CLT + Bônus',
           isPending: 0
@@ -358,48 +294,23 @@ export const seedDatabase = async (force = false) => {
           isPending: 0
         });
       }
-
-      // Freelance a cada 2 meses no Inter
-      if (m % 2 === 0) {
-        const freeDate = new Date(now.getFullYear(), now.getMonth() - m, 22, 16, 0, 0);
-        if (freeDate <= now) {
-          txsToInsert.push({
-            amount: 1450.00,
-            description: 'Projeto Freelance Design & Dev',
-            type: 'income',
-            categoryId: categoryIds['Salário & Renda'],
-            accountId: accountIds['Inter'],
-            date: freeDate.getTime(),
-            note: 'Consultoria UX/UI',
-            isPending: 0
-          });
-        }
-      }
     }
 
     // 5.2 Despesas cotidianas variadas
     const sampleExpenses = [
       { desc: 'iFood - Hambúrguer Artesanal', cat: 'Alimentação & iFood', acc: 'Cartão Nubank Ultravioleta', min: 45, max: 95 },
-      { desc: 'Supermercado Pão de Açúcar', cat: 'Supermercado', acc: 'Itaú', min: 180, max: 540 },
-      { desc: 'Atacadão Compras do Mês', cat: 'Supermercado', acc: 'Cartão Itaú Black', min: 420, max: 880 },
       { desc: 'Posto Shell Gasolina Comum', cat: 'Transporte & Combustível', acc: 'Nubank', min: 120, max: 260 },
       { desc: 'Uber Viagem Cidade', cat: 'Transporte & Combustível', acc: 'Cartão Nubank Ultravioleta', min: 18, max: 48 },
-      { desc: 'Drogasil Remédios e Vitaminas', cat: 'Saúde & Farmácia', acc: 'Inter', min: 35, max: 160 },
       { desc: 'Almoço Restaurante Por Quilo', cat: 'Alimentação & iFood', acc: 'Carteira / Dinheiro', min: 32, max: 58 },
       { desc: 'Cinema Kinoplex + Pipoca', cat: 'Lazer & Assinaturas', acc: 'Cartão Nubank Ultravioleta', min: 65, max: 110 },
-      { desc: 'Steam Jogos Online', cat: 'Lazer & Assinaturas', acc: 'Inter', min: 40, max: 199 },
       { desc: 'Padaria Café da Manhã', cat: 'Alimentação & iFood', acc: 'Carteira / Dinheiro', min: 12, max: 35 },
-      { desc: 'Curso Udemy Frontend Master', cat: 'Educação & Cursos', acc: 'Cartão Itaú Black', min: 39.90, max: 79.90 },
-      { desc: 'Aporte Tesouro Direto Selic', cat: 'Investimentos & Aportes', acc: 'Itaú', min: 500, max: 1500 },
-      { desc: 'Passagem Aérea', cat: 'Lazer & Assinaturas', acc: 'Cartão Itaú Black', min: 800, max: 2500 },
-      { desc: 'Reserva Hotel', cat: 'Lazer & Assinaturas', acc: 'Cartão Itaú Black', min: 400, max: 1200 },
       { desc: 'Compra Amazon', cat: 'Supermercado', acc: 'Cartão Nubank Ultravioleta', min: 80, max: 400 },
       { desc: 'Restaurante Fino', cat: 'Alimentação & iFood', acc: 'Cartão Nubank Ultravioleta', min: 200, max: 600 }
     ];
 
-    // Gerar 90 transações avulsas nos últimos 180 dias
-    for (let i = 0; i < 90; i++) {
-      const daysAgo = Math.floor(Math.random() * 180);
+    // Gerar 20 transações avulsas nos últimos 90 dias
+    for (let i = 0; i < 20; i++) {
+      const daysAgo = Math.floor(Math.random() * 90);
       const txDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000) - (Math.random() * 12 * 60 * 60 * 1000));
       const template = sampleExpenses[Math.floor(Math.random() * sampleExpenses.length)];
       const amount = parseFloat((Math.random() * (template.max - template.min) + template.min).toFixed(2));
@@ -428,21 +339,21 @@ export const seedDatabase = async (force = false) => {
     // 5.3 Simular pagamento de faturas de cartão no passado
     // Calcular o saldo real usando InvoiceUtils para ser matemático e perfeito
     const allTxsForCards = await expoDb.getAllAsync(
-      `SELECT * FROM transactions WHERE account_id IN (?, ?)`
-      , [accountIds['Cartão Nubank Ultravioleta'], accountIds['Cartão Itaú Black']]
+      `SELECT * FROM transactions WHERE account_id IN (?)`
+      , [accountIds['Cartão Nubank Ultravioleta']]
     );
     
     const formattedTxs = allTxsForCards.map(t => ({
       ...t, accountId: t.account_id, categoryId: t.category_id
     }));
 
-    for (const cardName of ['Cartão Nubank Ultravioleta', 'Cartão Itaú Black']) {
+    for (const cardName of ['Cartão Nubank Ultravioleta']) {
       const cardId = accountIds[cardName];
       const cardTxs = formattedTxs.filter(t => t.accountId === cardId);
       
-      const cardDueDay = cardName === 'Cartão Itaú Black' ? 25 : 5;
-      const cardClosingDay = cardName === 'Cartão Itaú Black' ? 15 : 25;
-      const assocAcc = cardName === 'Cartão Itaú Black' ? 'Itaú' : 'Nubank';
+      const cardDueDay = 5;
+      const cardClosingDay = 25;
+      const assocAcc = 'Nubank';
       
       const invoices = InvoiceUtils.groupTransactionsByInvoice(cardTxs, cardClosingDay, cardDueDay);
       

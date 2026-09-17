@@ -84,7 +84,7 @@ export default function ExtractionBanner() {
         backgroundColor: activeTheme.card,
         borderColor: borderColor,
         borderWidth: 1,
-        borderRadius: 16 * z
+        borderRadius: 6 * z
       }
     ]}>
       <TouchableOpacity 

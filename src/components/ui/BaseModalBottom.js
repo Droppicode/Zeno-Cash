@@ -33,13 +33,13 @@ export default function BaseModalBottom({
   }, []);
 
   const styles = useMemo(() => StyleSheet.create({
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    modalContent: { borderTopLeftRadius: 24 * z, borderTopRightRadius: 24 * z, padding: 24 * z, maxHeight: '90%' },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end', ...(Platform.OS === 'web' ? { alignItems: 'center' } : {}) },
+    modalContent: { borderTopLeftRadius: 8 * z, borderTopRightRadius: 8 * z, padding: 24 * z, maxHeight: '90%', ...(Platform.OS === 'web' ? { width: '100%', maxWidth: 390 } : {}) },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 * z },
     modalTitle: { fontSize: 22 * z, fontWeight: 'bold', fontFamily: f },
     modalActions: { flexDirection: 'row', gap: 12 * z, marginTop: 32 * z },
-    btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
-    btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
+    btnCancel: { flex: 1, padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
+    btnSave: { flex: 1, padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
     btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     errorText: { color: activeTheme.expense, marginBottom: 12 * z, fontWeight: 'bold', fontFamily: f }
   }), [z, f, activeTheme]);

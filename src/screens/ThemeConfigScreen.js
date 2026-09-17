@@ -275,28 +275,28 @@ const getLocalStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', padding: 16 * z, borderRadius: 12 * z, marginBottom: 24 * z },
+    createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', padding: 16 * z, borderRadius: 6 * z, marginBottom: 24 * z },
     createBtnText: { fontSize: 16 * z, fontWeight: 'bold', marginLeft: 8 * z, fontFamily: f },
     
     sectionTitle: { fontSize: 14 * z, fontWeight: 'bold', marginBottom: 12 * z, textTransform: 'uppercase', fontFamily: f },
-    themeCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z, borderRadius: 12 * z, marginBottom: 12 * z, borderWidth: 2 * z },
+    themeCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z, borderRadius: 6 * z, marginBottom: 12 * z, borderWidth: 2 * z },
     themeName: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
     themePreview: { flexDirection: 'row', gap: 8 * z },
-    previewDot: { width: 20 * z, height: 20 * z, borderRadius: 10 * z, borderWidth: 1, borderColor: '#555' },
+    previewDot: { width: 20 * z, height: 20 * z, borderRadius: 6 * z, borderWidth: 1, borderColor: '#555' },
     themeActions: { flexDirection: 'row', gap: 8 * z },
     
     colorsGrid: { gap: 12 * z, marginBottom: 24 * z },
     colorRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 * z },
     colorLabel: { fontSize: 16 * z, fontFamily: f },
-    colorCircle: { width: 32 * z, height: 32 * z, borderRadius: 16 * z },
+    colorCircle: { width: 32 * z, height: 32 * z, borderRadius: 6 * z },
 
-    saveBtn: { padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
+    saveBtn: { padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
     saveBtnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
     pickerContainer: { height: 300 * z, marginBottom: 20 * z },
     
-    fontPill: { paddingHorizontal: 16 * z, paddingVertical: 10 * z, borderRadius: 20 * z },
+    fontPill: { paddingHorizontal: 16 * z, paddingVertical: 10 * z, borderRadius: 8 * z },
     fontPillText: { fontSize: 14 * z, fontFamily: f },
-    zoomPill: { paddingHorizontal: 12 * z, paddingVertical: 12 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center' }
+    zoomPill: { paddingHorizontal: 12 * z, paddingVertical: 12 * z, borderRadius: 4 * z, justifyContent: 'center', alignItems: 'center' }
   });
 };

@@ -22,7 +22,7 @@ export default function HomeAccountsList({ accountBalances, activeTheme, styles,
           >
             <View style={[
               styles.groupedItem, 
-              idx !== bankAccounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
+              idx !== bankAccounts.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: activeTheme.background }
             ]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>

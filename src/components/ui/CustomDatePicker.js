@@ -40,7 +40,7 @@ export default function CustomDatePicker({
   return (
     <>
       <TouchableOpacity 
-        style={[{ backgroundColor: theme.background, borderRadius: 12 * z, padding: 16 * z, justifyContent: 'center' }, style]}
+        style={[{ backgroundColor: theme.background, borderRadius: 6 * z, padding: 16 * z, justifyContent: 'center' }, style]}
         onPress={() => setShowPicker(true)}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

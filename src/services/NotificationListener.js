@@ -1,5 +1,4 @@
-import { AppRegistry } from 'react-native';
-import RNAndroidNotificationListener from 'react-native-android-notification-listener';
+import { AppRegistry, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { CurrencyUtils } from '../utils/currencyUtils';
 
@@ -131,14 +130,16 @@ export const headlessNotificationListener = async ({ notification }) => {
     await db.insert(transactions).values(newTx);
     console.log(`Transação pendente salva: R$ ${amount} (${type})`);
     
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `${txDesc}`,
-        body: `Pendência de R$ ${CurrencyUtils.formatDisplay(amount)} salva. Toque para aprovar!`,
-        sound: true,
-      },
-      trigger: null,
-    });
+    if (Platform.OS !== 'web') {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${txDesc}`,
+          body: `Pendência de R$ ${CurrencyUtils.formatDisplay(amount)} salva. Toque para aprovar!`,
+          sound: true,
+        },
+        trigger: null,
+      });
+    }
     
   } catch (error) {
     console.error('Erro ao processar notificação headless:', error);

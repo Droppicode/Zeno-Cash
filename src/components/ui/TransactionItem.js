@@ -28,8 +28,8 @@ const TransactionItem = React.memo(({
       onDelete={onDelete}
       onAccept={onAccept}
       containerStyle={[
-        isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-        isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }
+        isFirst && { borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+        isLast && { borderBottomLeftRadius: 6, borderBottomRightRadius: 6 }
       ]}
     >
       {(isSwiping) => (
@@ -51,13 +51,13 @@ const TransactionItem = React.memo(({
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={[styles.desc, { color: activeTheme.text, flexShrink: 1 }]} numberOfLines={1}>{item.description}</Text>
                 {item.isVirtual && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: activeTheme.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: activeTheme.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                     <Ionicons name="calendar-outline" size={10} color={activeTheme.accent} />
                     <Text style={{ color: activeTheme.accent, fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Previsto</Text>
                   </View>
                 )}
                 {item.isPending === 1 && !item.isVirtual && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                     <Ionicons name="time-outline" size={10} color="#FF9800" />
                     <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
                   </View>

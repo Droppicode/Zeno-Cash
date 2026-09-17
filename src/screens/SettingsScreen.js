@@ -229,18 +229,18 @@ const getLocalStyles = (theme) => {
 
   return StyleSheet.create({
     menuGrid: { flexDirection: 'row', gap: 12 * z, marginBottom: 20 * z },
-    menuCard: { flex: 1, padding: 16 * z, borderRadius: 16 * z, alignItems: 'flex-start' },
+    menuCard: { flex: 1, padding: 16 * z, borderRadius: 6 * z, alignItems: 'flex-start' },
     menuTitle: { fontSize: 16 * z, fontWeight: 'bold', marginTop: 12 * z, marginBottom: 4 * z, fontFamily: f },
     menuDesc: { fontSize: 12 * z, fontFamily: f },
 
-    section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+    section: { borderRadius: 6 * z, padding: 20 * z, marginBottom: 20 * z },
     sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
     sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
     
-    chip: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z },
+    chip: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 8 * z },
     chipText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
     
-    backupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, padding: 16 * z, borderRadius: 12 * z, marginTop: 8 * z },
+    backupBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, padding: 16 * z, borderRadius: 6 * z, marginTop: 8 * z },
     backupText: { fontWeight: 'bold', fontSize: 16 * z, fontFamily: f }
   });
 };

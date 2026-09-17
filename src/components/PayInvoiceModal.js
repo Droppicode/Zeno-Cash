@@ -154,7 +154,7 @@ const getStyles = (theme) => {
     invoiceSummary: {
       backgroundColor: theme.card,
       padding: 16 * z,
-      borderRadius: 12 * z,
+      borderRadius: 6 * z,
       marginBottom: 20 * z,
     },
     summaryRow: {
@@ -184,7 +184,7 @@ const getStyles = (theme) => {
       alignItems: 'center',
       backgroundColor: theme.card,
       padding: 16 * z,
-      borderRadius: 12 * z,
+      borderRadius: 6 * z,
       marginBottom: 12 * z,
       borderWidth: 1,
       borderColor: 'transparent',
@@ -196,7 +196,7 @@ const getStyles = (theme) => {
     radio: {
       width: 20 * z,
       height: 20 * z,
-      borderRadius: 10 * z,
+      borderRadius: 6 * z,
       borderWidth: 2,
       borderColor: theme.accent,
       justifyContent: 'center',
@@ -206,7 +206,7 @@ const getStyles = (theme) => {
     radioInner: {
       width: 10 * z,
       height: 10 * z,
-      borderRadius: 5 * z,
+      borderRadius: 4 * z,
       backgroundColor: theme.accent,
     },
     optionTitle: {
@@ -231,7 +231,7 @@ const getStyles = (theme) => {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.card,
-      borderRadius: 12 * z,
+      borderRadius: 6 * z,
       paddingHorizontal: 16 * z,
       marginBottom: 20 * z,
     },
@@ -252,7 +252,7 @@ const getStyles = (theme) => {
     confirmBtn: {
       backgroundColor: theme.accent,
       padding: 16 * z,
-      borderRadius: 12 * z,
+      borderRadius: 6 * z,
       alignItems: 'center',
       marginTop: 12 * z,
     },

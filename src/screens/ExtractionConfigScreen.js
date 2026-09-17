@@ -157,20 +157,20 @@ const getLocalStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+    section: { borderRadius: 6 * z, padding: 20 * z, marginBottom: 20 * z },
     sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
     sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f, lineHeight: 20 * z },
     label: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f, marginBottom: 8 * z },
     providerRow: { flexDirection: 'row', gap: 8 * z },
-    providerBtn: { flex: 1, paddingVertical: 10 * z, borderRadius: 8 * z, alignItems: 'center', borderWidth: 1, borderColor: '#444' },
+    providerBtn: { flex: 1, paddingVertical: 10 * z, borderRadius: 4 * z, alignItems: 'center', borderWidth: 1, borderColor: '#444' },
     providerText: { fontSize: 13 * z, fontWeight: 'bold', fontFamily: f },
     
-    modelCard: { flexDirection: 'row', alignItems: 'center', padding: 12 * z, borderRadius: 12 * z, borderWidth: 2 },
-    radio: { width: 20 * z, height: 20 * z, borderRadius: 10 * z, borderWidth: 2, marginRight: 12 * z, justifyContent: 'center', alignItems: 'center' },
-    radioInner: { width: 10 * z, height: 10 * z, borderRadius: 5 * z },
+    modelCard: { flexDirection: 'row', alignItems: 'center', padding: 12 * z, borderRadius: 6 * z, borderWidth: 2 },
+    radio: { width: 20 * z, height: 20 * z, borderRadius: 6 * z, borderWidth: 2, marginRight: 12 * z, justifyContent: 'center', alignItems: 'center' },
+    radioInner: { width: 10 * z, height: 10 * z, borderRadius: 4 * z },
     modelTitle: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f, marginBottom: 2 * z },
     modelDesc: { fontSize: 12 * z, fontFamily: f },
 
-    input: { padding: 12 * z, borderRadius: 8 * z, fontFamily: f, fontSize: 16 * z }
+    input: { padding: 12 * z, borderRadius: 4 * z, fontFamily: f, fontSize: 16 * z }
   });
 };

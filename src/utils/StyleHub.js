@@ -14,14 +14,14 @@ export const getSharedStyles = (theme) => {
     
     // Shared Form Elements
     label: { fontSize: 14 * z, fontWeight: 'bold', marginBottom: 8 * z, marginTop: 12 * z, fontFamily: f },
-    input: { padding: 16 * z, borderRadius: 12 * z, fontSize: 16 * z, marginBottom: 4 * z, fontFamily: f },
+    input: { padding: 16 * z, borderRadius: 6 * z, fontSize: 16 * z, marginBottom: 4 * z, fontFamily: f },
     
     pickerRow: { flexDirection: 'row', gap: 12 * z, marginBottom: 4 * z, flexWrap: 'wrap' },
-    pickerItem: { width: 44 * z, height: 44 * z, borderRadius: 22 * z, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
-    colorItem: { width: 36 * z, height: 36 * z, borderRadius: 18 * z },
+    pickerItem: { width: 44 * z, height: 44 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+    colorItem: { width: 36 * z, height: 36 * z, borderRadius: 6 * z },
     
     // Buttons
-    addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16 * z, borderRadius: 12 * z, borderWidth: 1, borderStyle: 'dashed', marginTop: 12 * z },
+    addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16 * z, borderRadius: 6 * z, borderWidth: 1, borderStyle: 'dashed', marginTop: 12 * z },
     addBtnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
     actionBtn: { width: 36 * z, height: 36 * z, justifyContent: 'center', alignItems: 'center', marginLeft: 4 * z },
@@ -31,7 +31,7 @@ export const getSharedStyles = (theme) => {
     switchLabel: { fontSize: 16 * z, fontFamily: f },
 
     // Pill
-    pill: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z, marginRight: 8 * z },
+    pill: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 8 * z, marginRight: 8 * z },
     pillText: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
 
     // Shared List

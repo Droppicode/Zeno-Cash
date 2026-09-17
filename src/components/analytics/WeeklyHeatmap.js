@@ -92,9 +92,9 @@ export default function WeeklyHeatmap({ theme, data }) {
       ))}
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12 * z, gap: 8 * z }}>
          <Text style={{ fontSize: 10 * z, color: theme.textSecondary, fontFamily: f }}>Menos</Text>
-         <View style={{ width: 12 * z, height: 12 * z, borderRadius: 2 * z, backgroundColor: theme.cardSecondary }} />
-         <View style={{ width: 12 * z, height: 12 * z, borderRadius: 2 * z, backgroundColor: theme.expense, opacity: 0.5 }} />
-         <View style={{ width: 12 * z, height: 12 * z, borderRadius: 2 * z, backgroundColor: theme.expense }} />
+         <View style={{ width: 12 * z, height: 12 * z, borderRadius: 4 * z, backgroundColor: theme.cardSecondary }} />
+         <View style={{ width: 12 * z, height: 12 * z, borderRadius: 4 * z, backgroundColor: theme.expense, opacity: 0.5 }} />
+         <View style={{ width: 12 * z, height: 12 * z, borderRadius: 4 * z, backgroundColor: theme.expense }} />
          <Text style={{ fontSize: 10 * z, color: theme.textSecondary, fontFamily: f }}>Mais</Text>
       </View>
 

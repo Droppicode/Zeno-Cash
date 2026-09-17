@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image, DeviceEventEmitter, Platform } from 'react-native';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import MonthSelector from '../components/ui/MonthSelector';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,6 +64,18 @@ export default function HomeScreen({ route, navigation }) {
       loadDebts();
     }, [])
   );
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const subscription = DeviceEventEmitter.addListener('refreshTransactions', () => {
+        loadTransactions();
+        loadAccounts();
+        loadCategories();
+        loadDebts();
+      });
+      return () => subscription.remove();
+    }
+  }, [loadTransactions, loadAccounts, loadCategories, loadDebts]);
 
   const accountBalances = useMemo(() => {
     return accountList.map(acc => {
@@ -231,9 +243,9 @@ const getStyles = (theme) => {
     container: { flex: 1 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 * z },
     headerTitle: { fontSize: 24 * z, fontWeight: 'bold', fontFamily: f },
-    periodBox: { flexDirection: 'row', borderRadius: 20 * z, padding: 4 * z },
+    periodBox: { flexDirection: 'row', borderRadius: 4 * z, padding: 4 * z },
     periodText: { paddingHorizontal: 12 * z, paddingVertical: 6 * z, fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
-    summaryCard: { borderRadius: 16 * z, padding: 24 * z, marginBottom: 24 * z },
+    summaryCard: { borderRadius: 4 * z, padding: 24 * z, marginBottom: 24 * z },
     summaryTitle: { fontSize: 16 * z, fontFamily: f },
     summaryAmount: { fontSize: 36 * z, fontWeight: 'bold', marginVertical: 8 * z, fontFamily: f },
     row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 * z },
@@ -246,29 +258,29 @@ const getStyles = (theme) => {
     section: { marginBottom: 24 * z },
     sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 12 * z, fontFamily: f },
     
-    groupedContainer: { borderRadius: 16 * z, overflow: 'hidden' },
+    groupedContainer: { borderRadius: 4 * z, overflow: 'hidden' },
     groupedItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z },
-    groupedIcon: { width: 32 * z, height: 32 * z, borderRadius: 16 * z, justifyContent: 'center', alignItems: 'center', marginRight: 12 * z },
+    groupedIcon: { width: 32 * z, height: 32 * z, borderRadius: 4 * z, justifyContent: 'center', alignItems: 'center', marginRight: 12 * z },
     groupedText: { fontSize: 16 * z, fontWeight: '600', fontFamily: f },
     groupedAmount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
-    fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 30 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+    fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 6 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-    modalContent: { borderTopLeftRadius: 20 * z, borderTopRightRadius: 20 * z, padding: 24 * z, minHeight: 300 * z },
+    modalContent: { borderTopLeftRadius: 6 * z, borderTopRightRadius: 6 * z, padding: 24 * z, minHeight: 300 * z },
     modalTitle: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 16 * z, fontFamily: f },
-    toggleContainer: { flexDirection: 'row', borderRadius: 8 * z, padding: 4 * z, marginBottom: 24 * z },
-    toggleBtn: { flex: 1, paddingVertical: 8 * z, alignItems: 'center', borderRadius: 6 * z },
+    toggleContainer: { flexDirection: 'row', borderRadius: 4 * z, padding: 4 * z, marginBottom: 24 * z },
+    toggleBtn: { flex: 1, paddingVertical: 8 * z, alignItems: 'center', borderRadius: 4 * z },
     toggleText: { fontWeight: 'bold', fontFamily: f, fontSize: 14 * z },
     inputAmount: { fontSize: 40 * z, fontWeight: 'bold', marginBottom: 20 * z, textAlign: 'center', fontFamily: f },
-    inputDesc: { padding: 16 * z, borderRadius: 12 * z, fontSize: 16 * z, marginBottom: 24 * z, fontFamily: f },
+    inputDesc: { padding: 16 * z, borderRadius: 4 * z, fontSize: 16 * z, marginBottom: 24 * z, fontFamily: f },
     modalActions: { flexDirection: 'row', justifyContent: 'space-between' },
-    btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, marginRight: 8 * z, alignItems: 'center' },
-    btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, marginLeft: 8 * z, alignItems: 'center' },
+    btnCancel: { flex: 1, padding: 16 * z, borderRadius: 4 * z, marginRight: 8 * z, alignItems: 'center' },
+    btnSave: { flex: 1, padding: 16 * z, borderRadius: 4 * z, marginLeft: 8 * z, alignItems: 'center' },
     btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
     accountSelector: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 * z },
     accountLabel: { marginRight: 12 * z, fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
-    accountPill: { paddingHorizontal: 12 * z, paddingVertical: 8 * z, borderRadius: 16 * z, marginRight: 8 * z },
+    accountPill: { paddingHorizontal: 12 * z, paddingVertical: 8 * z, borderRadius: 4 * z, marginRight: 8 * z },
     accountPillText: { fontSize: 12 * z, fontFamily: f }
   });
 };

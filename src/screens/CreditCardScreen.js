@@ -266,23 +266,23 @@ const getStyles = (theme) => {
     backBtn: { width: 40 * z, height: 40 * z, justifyContent: 'center' },
     title: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
     
-    invoiceHeader: { padding: 24 * z, borderBottomLeftRadius: 24 * z, borderBottomRightRadius: 24 * z, marginBottom: 16 * z, elevation: 2 },
+    invoiceHeader: { padding: 24 * z, borderBottomLeftRadius: 8 * z, borderBottomRightRadius: 8 * z, marginBottom: 16 * z, elevation: 2 },
     invoiceSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     invoiceMonth: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f, textTransform: 'capitalize' },
     invoiceTotal: { fontSize: 40 * z, fontWeight: 'bold', fontFamily: f, marginTop: 4 * z },
-    payBtn: { padding: 16 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 12 * z },
+    payBtn: { padding: 16 * z, borderRadius: 6 * z, alignItems: 'center', marginTop: 12 * z },
 
-    warningBox: { marginHorizontal: 16 * z, padding: 16 * z, borderRadius: 12 * z, borderWidth: 1, marginBottom: 16 * z },
-    actionBtn: { padding: 10 * z, borderRadius: 8 * z, alignItems: 'center', alignSelf: 'flex-start' },
+    warningBox: { marginHorizontal: 16 * z, padding: 16 * z, borderRadius: 6 * z, borderWidth: 1, marginBottom: 16 * z },
+    actionBtn: { padding: 10 * z, borderRadius: 4 * z, alignItems: 'center', alignSelf: 'flex-start' },
 
     txList: { paddingHorizontal: 16 * z, paddingBottom: 100 * z },
     sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', marginBottom: 12 * z, fontFamily: f },
     
-    groupedItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z, borderRadius: 12 * z },
-    groupedIcon: { width: 32 * z, height: 32 * z, borderRadius: 16 * z, justifyContent: 'center', alignItems: 'center', marginRight: 12 * z },
+    groupedItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 * z, borderRadius: 6 * z },
+    groupedIcon: { width: 32 * z, height: 32 * z, borderRadius: 6 * z, justifyContent: 'center', alignItems: 'center', marginRight: 12 * z },
     groupedText: { fontSize: 16 * z, fontWeight: '600', fontFamily: f },
     groupedAmount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
 
-    fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 30 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+    fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
   });
 };

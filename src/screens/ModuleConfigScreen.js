@@ -423,28 +423,28 @@ const getLocalStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    section: { borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z },
+    section: { borderRadius: 6 * z, padding: 20 * z, marginBottom: 20 * z },
     sectionTitle: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
     sectionDesc: { fontSize: 14 * z, marginTop: 4 * z, marginBottom: 16 * z, fontFamily: f },
     
-    orderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 * z, borderRadius: 12 * z, marginBottom: 8 * z },
+    orderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 * z, borderRadius: 6 * z, marginBottom: 8 * z },
     orderLabel: { fontSize: 16 * z, fontFamily: f, fontWeight: 'bold' },
     orderBtn: { padding: 4 * z, marginLeft: 8 * z },
     
-    goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 12 * z },
-    addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 12 * z },
+    goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 6 * z },
+    addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 6 * z },
     goalLabel: { fontSize: 14 * z, fontWeight: 'bold', flexShrink: 1, fontFamily: f },
-    goalInput: { borderRadius: 8 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, width: 60 * z, textAlign: 'center', fontFamily: f },
-    iconBtnAdd: { padding: 8 * z, borderRadius: 8 * z },
+    goalInput: { borderRadius: 4 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, width: 60 * z, textAlign: 'center', fontFamily: f },
+    iconBtnAdd: { padding: 8 * z, borderRadius: 4 * z },
 
-    outlineBtn: { borderWidth: 1, padding: 12 * z, borderRadius: 12 * z, alignItems: 'center', marginTop: 8 * z },
+    outlineBtn: { borderWidth: 1, padding: 12 * z, borderRadius: 6 * z, alignItems: 'center', marginTop: 8 * z },
     outlineBtnText: { fontWeight: 'bold', fontSize: 14 * z, fontFamily: f },
 
     modalSub: { fontSize: 14 * z, marginBottom: 24 * z, fontFamily: f },
     
     mapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
     mapMicro: { fontSize: 14 * z, fontFamily: f },
-    mapToggleBtn: { borderWidth: 1, borderRadius: 12 * z, paddingHorizontal: 10 * z, paddingVertical: 4 * z },
+    mapToggleBtn: { borderWidth: 1, borderRadius: 6 * z, paddingHorizontal: 10 * z, paddingVertical: 4 * z },
     mapToggleText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f }
   });
 };

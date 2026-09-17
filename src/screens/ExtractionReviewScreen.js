@@ -210,18 +210,18 @@ export default function ExtractionReviewScreen({ route, navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={[styles.desc, { color: activeTheme.text }]} numberOfLines={1}>{item.description}</Text>
                         {needsReview && (
-                          <View style={{ backgroundColor: activeTheme.expense + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 8 }}>
+                          <View style={{ backgroundColor: activeTheme.expense + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 }}>
                             <Text style={{ color: activeTheme.expense, fontSize: 10, fontWeight: 'bold' }}>Revisar</Text>
                           </View>
                         )}
                         {catInfo.isAiSuggestion && (
-                          <View style={{ backgroundColor: catInfo.color + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 8, flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={{ backgroundColor: catInfo.color + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="sparkles" size={10} color={catInfo.color} style={{ marginRight: 2 }} />
                             <Text style={{ color: catInfo.color, fontSize: 10, fontWeight: 'bold' }}>IA</Text>
                           </View>
                         )}
                         {item.isAccountAiSuggestion && (
-                          <View style={{ backgroundColor: '#9E9E9E20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 8, flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={{ backgroundColor: '#9E9E9E20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, flexDirection: 'row', alignItems: 'center' }}>
                             <Ionicons name="sparkles" size={10} color={'#9E9E9E'} style={{ marginRight: 2 }} />
                             <Text style={{ color: '#9E9E9E', fontSize: 10, fontWeight: 'bold' }}>Conta Nova</Text>
                           </View>
@@ -274,18 +274,18 @@ const getStyles = (theme) => {
     backBtn: { width: 40 * z, height: 40 * z, justifyContent: 'center' },
     title: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
     scroll: { padding: 16 * z, paddingBottom: 40 * z },
-    infoBox: { flexDirection: 'row', backgroundColor: theme.accent + '20', padding: 16 * z, borderRadius: 12 * z, marginBottom: 16 * z, alignItems: 'center' },
+    infoBox: { flexDirection: 'row', backgroundColor: theme.accent + '20', padding: 16 * z, borderRadius: 6 * z, marginBottom: 16 * z, alignItems: 'center' },
     infoText: { flex: 1, marginLeft: 12 * z, fontSize: 13 * z, fontFamily: f, lineHeight: 18 * z },
     
-    card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderRadius: 16 * z, marginBottom: 12 * z },
+    card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderRadius: 6 * z, marginBottom: 12 * z },
     cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-    iconBox: { width: 44 * z, height: 44 * z, borderRadius: 22 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },
+    iconBox: { width: 44 * z, height: 44 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },
     desc: { fontSize: 16 * z, fontWeight: '600', marginBottom: 4 * z, fontFamily: f },
     date: { fontSize: 13 * z, fontFamily: f },
     amount: { fontSize: 16 * z, fontWeight: '700', marginLeft: 8 * z, fontFamily: f },
 
     footer: { flexDirection: 'row', padding: 16 * z, borderTopWidth: 1, borderTopColor: theme.cardSecondary },
-    btn: { flex: 1, paddingVertical: 14 * z, borderRadius: 12 * z, alignItems: 'center', justifyContent: 'center' },
+    btn: { flex: 1, paddingVertical: 14 * z, borderRadius: 6 * z, alignItems: 'center', justifyContent: 'center' },
     btnDiscard: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.expense, marginRight: 8 * z },
     btnDiscardText: { color: theme.expense, fontWeight: 'bold', fontSize: 16 * z, fontFamily: f },
     btnSave: { marginLeft: 8 * z },

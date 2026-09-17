@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, FlatList, Platform } from 'react-native';
 import { getZoomFactor } from '../../utils/scaler';
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -45,12 +45,6 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
   const VISIBLE_ITEMS = 5;
   const SELECTOR_WIDTH = ITEM_WIDTH * VISIBLE_ITEMS;
   
-  const scrollX = React.useRef(new Animated.Value(0)).current;
-  const flatListRef = React.useRef(null);
-  const currentIndexRef = React.useRef(-1);
-  const selectedMonthsRef = React.useRef(selectedMonths);
-  selectedMonthsRef.current = selectedMonths; // Sincroniza imediatamente durante o render
-
   const monthData = React.useMemo(() => {
     const today = new Date();
     const data = [];
@@ -65,8 +59,14 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
     return data;
   }, []);
 
+  const initialIndex = monthData.findIndex(m => m.key === toYYYYMM(centerDate));
+  const scrollX = React.useRef(new Animated.Value(initialIndex >= 0 ? initialIndex * ITEM_WIDTH : 0)).current;
+  const flatListRef = React.useRef(null);
+  const currentIndexRef = React.useRef(-1);
+  const selectedMonthsRef = React.useRef(selectedMonths);
+  selectedMonthsRef.current = selectedMonths; // Sincroniza imediatamente durante o render
+
   React.useEffect(() => {
-    const initialIndex = monthData.findIndex(m => m.key === toYYYYMM(centerDate));
     if (initialIndex >= 0 && flatListRef.current) {
       setTimeout(() => {
         flatListRef.current?.scrollToOffset({ offset: initialIndex * ITEM_WIDTH, animated: false });
@@ -100,7 +100,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
 
   const onScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    { useNativeDriver: true }
+    { useNativeDriver: Platform.OS !== 'web' }
   );
 
   const handleScrollEnd = React.useCallback((event) => {

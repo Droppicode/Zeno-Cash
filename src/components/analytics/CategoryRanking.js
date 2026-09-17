@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
   txCount: {
     fontSize: 11
   },
-  progressBarBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  progressBarFill: { height: '100%', borderRadius: 3 },
+  progressBarBg: { height: 6, borderRadius: 4, overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: 4 },
 });

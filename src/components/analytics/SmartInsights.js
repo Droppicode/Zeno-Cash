@@ -42,14 +42,14 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 12,
     alignItems: 'center'
   },
   iconBox: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16

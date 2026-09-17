@@ -193,7 +193,7 @@ export default function AccountsConfigScreen({ onBack }) {
           {['checking', 'credit', 'cash'].map(t => (
             <TouchableOpacity 
               key={t}
-              style={{ flex: 1, padding: 10, borderWidth: 1, borderColor: type === t ? activeTheme.accent : activeTheme.cardSecondary, backgroundColor: type === t ? activeTheme.accent + '20' : 'transparent', borderRadius: 8, marginRight: 8, alignItems: 'center' }}
+              style={{ flex: 1, padding: 10, borderWidth: 1, borderColor: type === t ? activeTheme.accent : activeTheme.cardSecondary, backgroundColor: type === t ? activeTheme.accent + '20' : 'transparent', borderRadius: 4, marginRight: 8, alignItems: 'center' }}
               onPress={() => setType(t)}
             >
               <Text style={{ color: type === t ? activeTheme.accent : activeTheme.textSecondary, fontFamily: f, fontSize: 12*z }}>
@@ -218,7 +218,7 @@ export default function AccountsConfigScreen({ onBack }) {
                   }}
                 >
                   {bank.icon.startsWith('http') ? (
-                    <Image source={{ uri: bank.icon }} style={{ width: 14, height: 14, borderRadius: 2, marginRight: 6 }} />
+                    <Image source={{ uri: bank.icon }} style={{ width: 14, height: 14, borderRadius: 4, marginRight: 6 }} />
                   ) : (
                     <Ionicons name={bank.icon} size={14} color={bank.color} style={{ marginRight: 6 }} />
                   )}
@@ -305,7 +305,7 @@ export default function AccountsConfigScreen({ onBack }) {
         <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Ícone</Text>
         {icon && icon.startsWith('http') && (
            <View style={{ marginBottom: 12, alignItems: 'center' }}>
-             <Image source={{ uri: icon }} style={{ width: 40, height: 40, borderRadius: 8 }} />
+             <Image source={{ uri: icon }} style={{ width: 40, height: 40, borderRadius: 4 }} />
              <Text style={{ fontSize: 12, color: activeTheme.textSecondary, marginTop: 4 }}>Logo via Web</Text>
            </View>
         )}
@@ -341,10 +341,10 @@ const getLocalStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    iconBox: { width: 40 * z, height: 40 * z, borderRadius: 20 * z, justifyContent: 'center', alignItems: 'center' },
+    iconBox: { width: 40 * z, height: 40 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center' },
     accName: { fontSize: 16 * z, fontWeight: 'bold', marginBottom: 2 * z, fontFamily: f },
     accBalance: { fontSize: 12 * z, fontFamily: f },
-    quickBankPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 * z, paddingVertical: 8 * z, borderRadius: 16 * z, borderWidth: 1, marginRight: 8 * z },
+    quickBankPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 * z, paddingVertical: 8 * z, borderRadius: 6 * z, borderWidth: 1, marginRight: 8 * z },
     quickBankText: { fontSize: 13 * z, fontWeight: 'bold', fontFamily: f }
   });
 };

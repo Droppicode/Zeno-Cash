@@ -13,7 +13,7 @@ export default function CustomTextInput({
   const styles = StyleSheet.create({
     input: {
       backgroundColor: theme.cardSecondary || theme.background,
-      borderRadius: 12 * z,
+      borderRadius: 6 * z,
       padding: 16 * z,
       fontSize: 16 * z,
       color: theme.text,

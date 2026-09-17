@@ -48,9 +48,9 @@ const styles = StyleSheet.create({
   toggleBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12
+    borderRadius: 6
   },
-  vilaoCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 8 },
+  vilaoCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 6, marginBottom: 8 },
   vilaoRank: { fontSize: 20, fontWeight: 'bold' },
   vilaoDesc: { fontSize: 14, fontWeight: 'bold', flexShrink: 1 },
   vilaoCat: { fontSize: 11, marginTop: 2 },

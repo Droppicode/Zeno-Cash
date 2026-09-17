@@ -98,12 +98,12 @@ const getLocalStyles = (theme) => {
   
   return StyleSheet.create({
     content: { padding: 16 * z },
-    card: { borderRadius: 16 * z, padding: 16 * z, marginBottom: 16 * z },
+    card: { borderRadius: 6 * z, padding: 16 * z, marginBottom: 16 * z },
     cardHeader: { flexDirection: 'row', alignItems: 'center' },
-    iconBox: { width: 48 * z, height: 48 * z, borderRadius: 24 * z, alignItems: 'center', justifyContent: 'center' },
+    iconBox: { width: 48 * z, height: 48 * z, borderRadius: 8 * z, alignItems: 'center', justifyContent: 'center' },
     cardTitle: { fontFamily: f, fontSize: 16 * z, fontWeight: 'bold', marginBottom: 4 * z },
     cardDesc: { fontFamily: f, fontSize: 12 * z, lineHeight: 18 * z },
-    statusBox: { flexDirection: 'row', alignItems: 'center', marginTop: 16 * z, padding: 12 * z, borderRadius: 8 * z, gap: 8 * z },
+    statusBox: { flexDirection: 'row', alignItems: 'center', marginTop: 16 * z, padding: 12 * z, borderRadius: 4 * z, gap: 8 * z },
     statusText: { fontFamily: f, fontSize: 12 * z, fontWeight: '500' }
   });
 };

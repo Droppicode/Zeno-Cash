@@ -1,4 +1,5 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,7 +74,7 @@ function MainTabs() {
     <Tab.Navigator
       tabBarPosition="bottom"
       tabBar={props => <CustomTabBar {...props} activeTheme={activeTheme} />}
-      screenOptions={{ swipeEnabled: true }}
+      screenOptions={{ swipeEnabled: Platform.OS !== 'web' }}
       sceneContainerStyle={{ backgroundColor: activeTheme.background }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />

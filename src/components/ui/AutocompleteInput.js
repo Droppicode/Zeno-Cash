@@ -38,8 +38,8 @@ export default function AutocompleteInput({
   const styles = StyleSheet.create({
     inputGroup: { marginBottom: 20 * z, zIndex: 1 },
     label: { fontSize: 14 * z, color: theme.textSecondary, marginBottom: 8 * z, fontWeight: '600', fontFamily: f },
-    input: { backgroundColor: theme.background, borderRadius: 12 * z, padding: 16 * z, fontSize: 16 * z, color: theme.text, fontFamily: f },
-    suggestionsContainer: { backgroundColor: theme.cardSecondary, borderRadius: 8 * z, marginTop: 4 * z, maxHeight: 120 * z, zIndex: 2 },
+    input: { backgroundColor: theme.background, borderRadius: 6 * z, padding: 16 * z, fontSize: 16 * z, color: theme.text, fontFamily: f },
+    suggestionsContainer: { backgroundColor: theme.cardSecondary, borderRadius: 4 * z, marginTop: 4 * z, maxHeight: 120 * z, zIndex: 2 },
     suggestionItem: { padding: 12 * z, borderBottomWidth: 1, borderBottomColor: theme.background },
     suggestionText: { color: theme.text, fontSize: 14 * z, fontFamily: f }
   });

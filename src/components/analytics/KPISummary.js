@@ -41,7 +41,7 @@ export default function KPISummary({ theme, data }) {
 const styles = StyleSheet.create({
   card: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 6,
     minWidth: 140,
     elevation: 2
   },

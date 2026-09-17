@@ -180,7 +180,7 @@ const getLocalStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    iconBox: { width: 40 * z, height: 40 * z, borderRadius: 20 * z, justifyContent: 'center', alignItems: 'center' },
+    iconBox: { width: 40 * z, height: 40 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center' },
     catName: { fontSize: 16 * z, fontWeight: 'bold', marginBottom: 2 * z, fontFamily: f },
     catMacro: { fontSize: 12 * z, fontFamily: f }
   });

@@ -125,7 +125,7 @@ export default function DebtsScreen({ navigation }) {
     return (
       <View style={{ marginBottom: 12 }}>
         <TouchableOpacity 
-          style={[styles.groupCard, { backgroundColor: activeTheme.card, borderBottomLeftRadius: isExpanded ? 0 : 16, borderBottomRightRadius: isExpanded ? 0 : 16 }]} 
+          style={[styles.groupCard, { backgroundColor: activeTheme.card, borderBottomLeftRadius: isExpanded ? 0 : 8, borderBottomRightRadius: isExpanded ? 0 : 8 }]} 
           onPress={() => toggleGroup(group.personName)}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -138,7 +138,7 @@ export default function DebtsScreen({ navigation }) {
         </TouchableOpacity>
         
         {isExpanded && (
-          <View style={{ backgroundColor: activeTheme.cardSecondary, padding: 12, borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}>
+          <View style={{ backgroundColor: activeTheme.cardSecondary, padding: 12, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 }}>
             {group.items.map(debt => (
               <DebtItem
                 key={debt.id}
@@ -263,16 +263,16 @@ const getLocalStyles = (theme) => {
 
   return StyleSheet.create({
     summaryContainer: { flexDirection: 'row', padding: 16 * z, gap: 16 * z, backgroundColor: theme.card, borderBottomWidth: 1, borderBottomColor: theme.background },
-    summaryCard: { flex: 1, backgroundColor: theme.background, padding: 16 * z, borderRadius: 16 * z, alignItems: 'center' },
+    summaryCard: { flex: 1, backgroundColor: theme.background, padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
     summaryLabel: { color: theme.textSecondary, fontSize: 14 * z, marginBottom: 8 * z, fontWeight: '600', fontFamily: f },
     summaryValue: { fontSize: 20 * z, fontWeight: 'bold', fontFamily: f },
-    card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.card, padding: 16 * z, borderRadius: 16 * z, marginBottom: 12 * z },
+    card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.card, padding: 16 * z, borderRadius: 6 * z, marginBottom: 12 * z },
     cardLeft: { flexDirection: 'row', alignItems: 'center' },
-    iconBox: { width: 44 * z, height: 44 * z, borderRadius: 22 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },
+    iconBox: { width: 44 * z, height: 44 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },
     personName: { fontSize: 16 * z, fontWeight: '600', color: theme.text, marginBottom: 4 * z, fontFamily: f },
     date: { fontSize: 13 * z, color: theme.textSecondary, fontFamily: f },
     amount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
-    groupCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderTopLeftRadius: 16 * z, borderTopRightRadius: 16 * z, borderRadius: 16 * z },
-    fab: { position: 'absolute', right: 24 * z, bottom: 24 * z, width: 64 * z, height: 64 * z, borderRadius: 32 * z, backgroundColor: theme.accent, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65 }
+    groupCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderTopLeftRadius: 6 * z, borderTopRightRadius: 6 * z, borderRadius: 6 * z },
+    fab: { position: 'absolute', right: 24 * z, bottom: 24 * z, width: 64 * z, height: 64 * z, borderRadius: 8 * z, backgroundColor: theme.accent, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65 }
   });
 };

@@ -51,7 +51,7 @@ export default function AccountAnalysis({ theme, breakdown }) {
 const styles = StyleSheet.create({
   card: {
     padding: 16,
-    borderRadius: 12
+    borderRadius: 6
   },
   header: {
     flexDirection: 'row',
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   netBox: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'

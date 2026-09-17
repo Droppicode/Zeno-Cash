@@ -20,8 +20,8 @@ export default function ListCard({ index, total, children, style }) {
         alignItems: 'center', 
         justifyContent: 'space-between'
       },
-      isFirst && { borderTopLeftRadius: 16 * z, borderTopRightRadius: 16 * z },
-      isLast && { borderBottomLeftRadius: 16 * z, borderBottomRightRadius: 16 * z },
+      isFirst && { borderTopLeftRadius: 6 * z, borderTopRightRadius: 6 * z },
+      isLast && { borderBottomLeftRadius: 6 * z, borderBottomRightRadius: 6 * z },
       !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 },
       style
     ]}>

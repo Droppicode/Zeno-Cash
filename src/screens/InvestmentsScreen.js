@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 12,
   },
   cardLeft: {
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

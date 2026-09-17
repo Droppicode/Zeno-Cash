@@ -18,7 +18,7 @@ export default function CollapsibleSection({ title, subtitle, children, theme, i
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card, borderRadius: 16 * z, padding: 20 * z, marginBottom: 20 * z }]}>
+    <View style={[styles.card, { backgroundColor: theme.card, borderRadius: 6 * z, padding: 20 * z, marginBottom: 20 * z }]}>
       <TouchableOpacity 
         style={styles.header} 
         onPress={toggleExpand}

@@ -24,7 +24,7 @@ export function ZenoWidget() {
         height: 'match_parent',
         width: 'match_parent',
         backgroundColor: '#121212', // Fundo mais escuro e elegante
-        borderRadius: 24, // Bordas mais arredondadas (squircle style)
+        borderRadius: 8, // Bordas mais arredondadas (squircle style)
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -36,7 +36,7 @@ export function ZenoWidget() {
         style={{
           width: 64,
           height: 64,
-          borderRadius: 32,
+          borderRadius: 8,
           backgroundGradient: {
             from: '#FF4B4B',
             to: '#CF6679',
@@ -56,7 +56,7 @@ export function ZenoWidget() {
         style={{
           width: 64,
           height: 64,
-          borderRadius: 32,
+          borderRadius: 8,
           backgroundGradient: {
             from: '#00E676',
             to: '#03DAC6',

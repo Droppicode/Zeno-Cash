@@ -463,7 +463,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
             )}
             {initialData?.recurrenceId && (
               <TouchableOpacity 
-                style={{ backgroundColor: activeTheme.accent + '20', padding: 16 * z, borderRadius: 12 * z, alignItems: 'center', marginBottom: 16 * z, flexDirection: 'row', justifyContent: 'center' }}
+                style={{ backgroundColor: activeTheme.accent + '20', padding: 16 * z, borderRadius: 6 * z, alignItems: 'center', marginBottom: 16 * z, flexDirection: 'row', justifyContent: 'center' }}
                 onPress={() => {
                   onClose();
                   navigation.navigate('RecurrenceDetails', { id: initialData.recurrenceId });
@@ -509,7 +509,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
               return (
               <View style={{ marginTop: 8 * z }}>
                 {txType === 'expense' && (
-                  <View style={{ marginBottom: 12 * z, padding: 12 * z, backgroundColor: activeTheme.cardSecondary, borderRadius: 12 * z, flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ marginBottom: 12 * z, padding: 12 * z, backgroundColor: activeTheme.cardSecondary, borderRadius: 6 * z, flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ color: activeTheme.textSecondary, fontFamily: f }}>Total: R$ {CurrencyUtils.formatDisplay(numAmt)}</Text>
                     <Text style={{ color: remaining < -0.01 ? activeTheme.expense : activeTheme.text, fontFamily: f, fontWeight: 'bold' }}>
                       Restam: R$ {CurrencyUtils.formatDisplay(remaining)}
@@ -548,7 +548,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                         }}
                       />
                       <TouchableOpacity 
-                        style={[styles.toggleBtn, { backgroundColor: activeTheme.card, paddingVertical: 10 * z, paddingHorizontal: 0, borderRadius: 12 * z, width: 32 * z }]}
+                        style={[styles.toggleBtn, { backgroundColor: activeTheme.card, paddingVertical: 10 * z, paddingHorizontal: 0, borderRadius: 6 * z, width: 32 * z }]}
                         onPress={() => {
                           const newSplits = [...splitDebts];
                           const d = newSplits[idx];
@@ -616,7 +616,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                 ))}
                 
                 <TouchableOpacity 
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12 * z, borderWidth: 1, borderColor: activeTheme.accent, borderRadius: 12 * z, marginTop: 8 * z }}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12 * z, borderWidth: 1, borderColor: activeTheme.accent, borderRadius: 6 * z, marginTop: 8 * z }}
                   onPress={() => {
                     setSplitDebts([...splitDebts, { personName: '', amount: '', isPaid: false, isPercentage: false, ignoresInterest: false }]);
                   }}
@@ -644,11 +644,11 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
 }
 
 const getStyles = (z, f, theme) => StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  modalContent: { borderTopLeftRadius: 24 * z, borderTopRightRadius: 24 * z, padding: 24 * z, maxHeight: '90%' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end', ...(Platform.OS === 'web' ? { alignItems: 'center' } : {}) },
+  modalContent: { borderTopLeftRadius: 8 * z, borderTopRightRadius: 8 * z, padding: 24 * z, maxHeight: '90%', ...(Platform.OS === 'web' ? { width: '100%', maxWidth: 390 } : {}) },
   modalTitle: { fontSize: 22 * z, fontWeight: 'bold', marginBottom: 20 * z, fontFamily: f },
   
-  toggleContainer: { flexDirection: 'row', borderRadius: 12 * z, overflow: 'hidden', marginBottom: 20 * z },
+  toggleContainer: { flexDirection: 'row', borderRadius: 6 * z, overflow: 'hidden', marginBottom: 20 * z },
   toggleBtn: { flex: 1, paddingVertical: 12 * z, alignItems: 'center' },
   toggleText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
   
@@ -657,21 +657,21 @@ const getStyles = (z, f, theme) => StyleSheet.create({
   selectorBlock: { marginBottom: 16 * z },
   label: { fontSize: 14 * z, fontWeight: 'bold', marginBottom: 8 * z, fontFamily: f },
   
-  pill: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 20 * z, marginRight: 8 * z },
+  pill: { paddingHorizontal: 16 * z, paddingVertical: 8 * z, borderRadius: 8 * z, marginRight: 8 * z },
   pillText: { fontSize: 14 * z, fontFamily: f },
   
-  catPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 * z, paddingVertical: 6 * z, borderRadius: 20 * z, borderWidth: 1, marginRight: 8 * z },
+  catPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 * z, paddingVertical: 6 * z, borderRadius: 8 * z, borderWidth: 1, marginRight: 8 * z },
   catPillText: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
   
-  inputField: { padding: 16 * z, borderRadius: 12 * z, fontSize: 16 * z, marginBottom: 12 * z, fontFamily: f },
+  inputField: { padding: 16 * z, borderRadius: 6 * z, fontSize: 16 * z, marginBottom: 12 * z, fontFamily: f },
   
   modalActions: { flexDirection: 'row', gap: 12 * z, marginTop: 16 * z },
-  btnCancel: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
-  btnSave: { flex: 1, padding: 16 * z, borderRadius: 12 * z, alignItems: 'center' },
+  btnCancel: { flex: 1, padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
+  btnSave: { flex: 1, padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
   btnText: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
-  deleteButton: { flex: 1, backgroundColor: theme?.expense ? theme.expense + '15' : '#FF4B4B15', padding: 16 * z, borderRadius: 12 * z, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginRight: 8 * z },
+  deleteButton: { flex: 1, backgroundColor: theme?.expense ? theme.expense + '15' : '#FF4B4B15', padding: 16 * z, borderRadius: 6 * z, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginRight: 8 * z },
   deleteButtonText: { color: theme?.expense || '#FF4B4B', fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
   clearBtn: { padding: 12 * z, marginLeft: 8 * z, justifyContent: 'center', alignItems: 'center' },
-  recurrenceBox: { padding: 16 * z, borderRadius: 12 * z, marginBottom: 16 * z },
-  splitRow: { padding: 12 * z, borderRadius: 12 * z, marginBottom: 12 * z }
+  recurrenceBox: { padding: 16 * z, borderRadius: 6 * z, marginBottom: 16 * z },
+  splitRow: { padding: 12 * z, borderRadius: 6 * z, marginBottom: 12 * z }
 });

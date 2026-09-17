@@ -458,7 +458,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
                     )}
                   </View>
                   {isIgnored && (
-                    <TouchableOpacity onPress={() => recoverTransaction(item.id)} style={{ padding: 8 * z, backgroundColor: activeTheme.background, borderRadius: 8 * z }}>
+                    <TouchableOpacity onPress={() => recoverTransaction(item.id)} style={{ padding: 8 * z, backgroundColor: activeTheme.background, borderRadius: 4 * z }}>
                       <Ionicons name="arrow-undo" size={20 * z} color={activeTheme.accent} />
                     </TouchableOpacity>
                   )}
@@ -509,21 +509,21 @@ const getStyles = (z, f) => StyleSheet.create({
   },
   title: { fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
   card: {
-    borderRadius: 16 * z,
+    borderRadius: 6 * z,
     padding: 20 * z,
     elevation: 1,
   },
   iconBox: {
     width: 48 * z,
     height: 48 * z,
-    borderRadius: 24 * z,
+    borderRadius: 8 * z,
     justifyContent: 'center',
     alignItems: 'center',
   },
   txCard: {
     flexDirection: 'row',
     padding: 16 * z,
-    borderRadius: 12 * z,
+    borderRadius: 6 * z,
     alignItems: 'center',
     justifyContent: 'space-between'
   }

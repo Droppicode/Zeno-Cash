@@ -4,6 +4,7 @@ import { settings } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 export const SettingsContext = createContext();
 
@@ -30,7 +31,7 @@ const defaultLightTheme = {
   cardSecondary: '#E0E0E0',
   text: '#121212',
   textSecondary: '#555555',
-  accent: '#6200EA',
+  accent: '#E066FF',
   income: '#2E7D32',
   expense: '#D32F2F',
   zoom: 1,
@@ -233,7 +234,9 @@ export const SettingsProvider = ({ children }) => {
 
         const providerFromDb = data.find(i => i.key === 'llmProvider')?.value || 'openai';
         try {
-          const secureKey = await SecureStore.getItemAsync(`llmKey_${providerFromDb}`);
+          const secureKey = Platform.OS === 'web' 
+            ? localStorage.getItem(`llmKey_${providerFromDb}`)
+            : await SecureStore.getItemAsync(`llmKey_${providerFromDb}`);
           if (secureKey) setLlmKey(secureKey);
         } catch(e) { Logger.error('SecureStore init', e); }
 
@@ -290,6 +293,7 @@ export const SettingsProvider = ({ children }) => {
 
   const getSecureKey = async (provider) => {
     try {
+      if (Platform.OS === 'web') return localStorage.getItem(`llmKey_${provider}`) || '';
       return await SecureStore.getItemAsync(`llmKey_${provider}`) || '';
     } catch (err) {
       Logger.error('SecureStore.getItemAsync', err);
@@ -300,9 +304,11 @@ export const SettingsProvider = ({ children }) => {
   const saveSecureKey = async (provider, keyStr) => {
     try {
       if (keyStr) {
-        await SecureStore.setItemAsync(`llmKey_${provider}`, keyStr);
+        if (Platform.OS === 'web') localStorage.setItem(`llmKey_${provider}`, keyStr);
+        else await SecureStore.setItemAsync(`llmKey_${provider}`, keyStr);
       } else {
-        await SecureStore.deleteItemAsync(`llmKey_${provider}`);
+        if (Platform.OS === 'web') localStorage.removeItem(`llmKey_${provider}`);
+        else await SecureStore.deleteItemAsync(`llmKey_${provider}`);
       }
       if (provider === llmProvider) {
         setLlmKey(keyStr);

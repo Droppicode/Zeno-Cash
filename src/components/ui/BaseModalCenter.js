@@ -21,11 +21,11 @@ export default function BaseModalCenter({
 
   const styles = useMemo(() => StyleSheet.create({
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 * z },
-    modalContent: { borderRadius: 20 * z, padding: 24 * z, maxHeight: '90%', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+    modalContent: { borderRadius: 8 * z, padding: 24 * z, maxHeight: '90%', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
     modalTitle: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 16 * z, fontFamily: f },
     modalActions: { flexDirection: 'row', gap: 12 * z, marginTop: 24 * z, justifyContent: 'flex-end' },
-    btnCancel: { paddingHorizontal: 16 * z, paddingVertical: 12 * z, borderRadius: 12 * z, justifyContent: 'center' },
-    btnSave: { paddingHorizontal: 20 * z, paddingVertical: 12 * z, borderRadius: 12 * z, justifyContent: 'center' },
+    btnCancel: { paddingHorizontal: 16 * z, paddingVertical: 12 * z, borderRadius: 6 * z, justifyContent: 'center' },
+    btnSave: { paddingHorizontal: 20 * z, paddingVertical: 12 * z, borderRadius: 6 * z, justifyContent: 'center' },
     btnTextCancel: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
     btnTextSave: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
     errorText: { color: activeTheme.expense, marginBottom: 12 * z, fontWeight: 'bold', fontFamily: f }

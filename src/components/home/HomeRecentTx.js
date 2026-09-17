@@ -43,7 +43,7 @@ export default function HomeRecentTx({
                 await loadDebts();
               }}>
                 <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
-                  <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
+                  <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: activeTheme.background }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                       <View style={[styles.groupedIcon, { backgroundColor: catInfo.color + '20' }]}>
                         <Ionicons name={catInfo.icon} size={18} color={catInfo.color} />
