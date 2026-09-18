@@ -13,7 +13,7 @@
 It aims to make expense tracking frictionless by leveraging local databases and Android-specific features to automate financial logging.
 
 ### 🌐 Live Web Demo
-Experience the app directly in your browser without installing anything! We implemented an in-memory database mock using `sql.js` (WebAssembly) to allow seamless web exploration.
+Experience the app directly in your browser without installing anything! An in-memory database mock using `sql.js` (WebAssembly) allows seamless web exploration.
 
 👉 **[Try Zeno Cash Web Demo](https://zeno-cash.vercel.app/)** *(PT-BR Only)*
 
