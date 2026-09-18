@@ -24,6 +24,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [note, setNote] = useState('');
+  const [hiddenInvoiceTag, setHiddenInvoiceTag] = useState('');
   const [txType, setTxType] = useState('expense');
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);

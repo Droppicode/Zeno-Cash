@@ -7,6 +7,10 @@
     "scheme": "zenocash",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "web": {
+      "favicon": "./assets/app.png",
+      "bundler": "metro"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mmn.zenocash"
