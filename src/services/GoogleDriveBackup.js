@@ -169,7 +169,7 @@ export const getBackupFilesList = async (token) => {
     const folderId = await createOrGetBackupFolder(token, false);
     if (!folderId) return [];
 
-    const query = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+    const query = encodeURIComponent(`'${folderId}' in parents and name contains 'zenocash_backup_' and trashed=false`);
     const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=createdTime desc&fields=files(id,name,createdTime)`, {
       headers: { Authorization: `Bearer ${token}` }
     });

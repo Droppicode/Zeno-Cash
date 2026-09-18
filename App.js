@@ -46,8 +46,8 @@ export default function App() {
           await registerBackgroundFetchAsync();
         }
 
-        // Tenta executar o backup diário silencioso do Google Drive
-        await performSilentDailyBackup();
+        // Tenta executar o backup diário silencioso do Google Drive (sem travar o carregamento do app)
+        performSilentDailyBackup().catch(e => console.log("Silent backup skipped:", e));
 
         if (Platform.OS === 'android') {
           try {
