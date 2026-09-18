@@ -37,7 +37,8 @@ export const resetDatabase = async () => {
 };
 
 export const seedDatabase = async (force = false) => {
-  if (!__DEV__ && !force) return;
+  // Permitir seed no ambiente Web mesmo em produção (útil para portfólio/mock no Vercel)
+  if (!__DEV__ && !force && Platform.OS !== 'web') return;
 
   try {
     const existing = await expoDb.getAllAsync('SELECT id FROM transactions LIMIT 1');

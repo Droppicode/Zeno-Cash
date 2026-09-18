@@ -58,7 +58,7 @@ export default function HomeRecentTx({
                             <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
                           )}
                         </View>
-                        {item.note ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note}</Text> : null}
+                        {item.note && item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim() ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()}</Text> : null}
                       </View>
                     </View>
                     <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>

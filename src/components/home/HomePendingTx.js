@@ -60,7 +60,7 @@ export default function HomePendingTx({
                         )}
                       </View>
                       <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>
-                        {new Date(item.date).toLocaleDateString('pt-BR')} {item.note ? `- ${item.note}` : ''}
+                        {new Date(item.date).toLocaleDateString('pt-BR')} {(item.note && item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()) ? `- ${item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()}` : ''}
                       </Text>
                     </View>
                   </View>

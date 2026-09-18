@@ -1,5 +1,13 @@
 export const InvoiceUtils = {
   /**
+   * Remove a tag de fatura [invoice:YYYY-MM] de uma string (note) para exibição na UI
+   */
+  formatDisplayNote: (note) => {
+    if (!note || typeof note !== 'string') return '';
+    return note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim();
+  },
+
+  /**
    * Identifica em qual fatura uma transação pertence, baseado na data da transação e no dia de fechamento do cartão.
    * Retorna um identificador da fatura no formato "YYYY-MM" (que representa o mês de vencimento da fatura).
    */

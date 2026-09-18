@@ -59,7 +59,17 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       const numStr = (initialData.amount * 100).toFixed(0);
       setAmount(CurrencyUtils.formatCurrency(numStr));
       setDescription(initialData.description);
-      setNote(initialData.note || '');
+      
+      let rawNote = initialData.note || '';
+      const match = rawNote.match(/\[invoice:\d{4}-\d{2}\]/);
+      if (match) {
+        setHiddenInvoiceTag(match[0]);
+        rawNote = rawNote.replace(match[0], '').trim();
+      } else {
+        setHiddenInvoiceTag('');
+      }
+      setNote(rawNote);
+
       setTxType(initialData.type);
       setSelectedAccountId(initialData.accountId);
       setSelectedCategoryId(initialData.categoryId || null);
