@@ -12,17 +12,25 @@
 
 It aims to make expense tracking frictionless by leveraging local databases and Android-specific features to automate financial logging.
 
+### 🌐 Live Web Demo
+Experience the app directly in your browser without installing anything! We implemented an in-memory database mock using `sql.js` (WebAssembly) to allow seamless web exploration.
+
+👉 **[Try Zeno Cash Web Demo](https://zeno-cash.vercel.app/)** *(PT-BR Only)*
+
 ### 🌟 Key Features
 - **Automated Expense Tracking:** Uses Android Notification Listening (`react-native-android-notification-listener`) to read incoming bank notifications and automatically log expenses.
+- **Credit Card Intelligence:** Automatically calculates invoice cycles, groups transactions by due dates, and manages roll-over balances mathematically.
 - **Home Screen Widgets:** Quick access and overview of your finances right from your home screen using `react-native-android-widget`.
 - **Local First & Fast:** Data is securely stored on your device using `expo-sqlite` and `drizzle-orm`, ensuring privacy and offline availability.
+- **Web Demo Architecture:** Runs entirely in the browser using `sql.js` for zero-setup portfolio demonstrations.
 - **Beautiful Analytics:** Interactive and smooth financial charts built with `react-native-gifted-charts`.
-- **Cloud Backup:** Optional Google Sign-In integration for seamless data syncing.
 
-## 📸 Screenshots
-*(Add 2-3 screenshots or a GIF of the app later...)*
+## 🚀 Repository Structure
+This repository contains two main projects:
+1. `/` (Root): The main React Native / Expo application.
+2. `/website`: The product landing page built with Vite + React.
 
-## 🚀 How to Run
+## 💻 How to Run the App Locally
 
 ### Prerequisites
 - Node.js installed
@@ -30,13 +38,16 @@ It aims to make expense tracking frictionless by leveraging local databases and 
 
 ### Running locally
 ```bash
-git clone https://github.com/your-username/zeno-cash.git
-cd zeno-cash/app
+git clone https://github.com/Droppicode/Zeno-Cash.git
+cd Zeno-Cash
 
 # Install dependencies
 npm install
 
-# Start the Expo development server
-npm expo start
+# Start the Expo development server (Android/iOS)
+npx expo start
+
+# Start the Web App locally
+npm run web
 ```
-Use the **Expo Go** app on your phone (scan the QR code) or an Android/iOS emulator to run the project.
+Use the **Expo Go** app on your phone (scan the QR code) or an Android/iOS emulator to run the native project.
