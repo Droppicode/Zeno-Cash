@@ -38,6 +38,13 @@ console.log(`📈 Incrementing versionCode to: ${currentCode}`);
 fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2) + '\n');
 console.log("✅ app.json saved successfully!\n");
 
+console.log("📦 Committing version bump to prevent prebuild warnings...");
+try {
+  execSync('git add app.json && git commit -m "chore: bump version code for new build"', { stdio: 'inherit' });
+} catch (e) {
+  console.log("⚠️ Could not commit (maybe there are no changes or git is not configured).\n");
+}
+
 // 4. Run expo prebuild to generate the android/ folder with the new data
 console.log("⚙️ Running 'expo prebuild' (This might take a few seconds)...");
 try {
