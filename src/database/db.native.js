@@ -134,3 +134,5 @@ expoDb.execSync(`
 
 // Envelopa a conexão com o Drizzle ORM
 export const db = drizzle(expoDb);
+
+export const initWebDb = null;

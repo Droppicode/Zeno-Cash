@@ -8,11 +8,7 @@ import * as Linking from 'expo-linking';
 import AppNavigator from './src/navigation/AppNavigator';
 import { seedDatabase } from './src/database/seed';
 import { Platform } from 'react-native';
-
-let initWebDb = null;
-if (Platform.OS === 'web') {
-  initWebDb = require('./src/database/db.web').initWebDb;
-}
+import { initWebDb } from './src/database/db';
 
 import { SettingsProvider } from './src/context/SettingsContext';
 import { ExtractionProvider } from './src/context/ExtractionContext';

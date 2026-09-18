@@ -286,6 +286,7 @@ export const DataExportService = {
               );
               await FileSystem.writeAsStringAsync(uri, base64Content, { encoding: FileSystem.EncodingType.Base64 });
               copied++;
+              await FileSystem.deleteAsync(`${backupDir}${file}`, { idempotent: true });
             } catch (e) {
               console.error('Error copying file', file, e);
             }
@@ -297,6 +298,7 @@ export const DataExportService = {
           setTimeout(async () => {
             try {
               await Sharing.shareAsync(`${backupDir}${dbFiles[0]}`, { mimeType: 'application/octet-stream', dialogTitle: 'Salvar Último Backup Local' });
+              await FileSystem.deleteAsync(`${backupDir}${dbFiles[0]}`, { idempotent: true });
             } catch (shareErr) {
               if (!shareErr.message.includes('current activity') && !shareErr.message.includes('Another share request')) {
                 console.error(shareErr);
@@ -328,7 +330,7 @@ export const DataExportService = {
       const backupUri = `${backupDir}zenocash_backup_${dateStr}.db`;
       
       await FileSystem.copyAsync({ from: dbFileUri, to: backupUri });
-      Alert.alert('Sucesso', 'Backup criado na pasta local do Zeno Cash! Use "Ver Backups Locais" para acessá-lo.');
+      Alert.alert('Sucesso', 'Backup criado na memória do Zeno Cash! Use "Salvar Backups no Celular" para exportá-lo.');
     } catch (err) {
       Logger.error('DataExportService.exportDBLocal', err);
       Alert.alert('Erro', 'Não foi possível exportar o banco de dados.');
