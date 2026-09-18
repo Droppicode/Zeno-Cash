@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Shield, Zap, Bell, CheckCircle2, TrendingUp, Search, Sun, Moon, LayoutDashboard, Cloud, Target, Palette, Smartphone, Database, Code, Brain, BarChart3, AppWindow } from 'lucide-react';
-import mockupImage from './assets/mockup.jpg';
+import mockupImage from './assets/app.png';
 import './index.css';
 
 const FadeInSection = ({ children }) => {
