@@ -114,6 +114,7 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  white-space: nowrap;
 }
 
 .btn-primary:hover {
@@ -135,6 +136,7 @@ h1, h2, h3, h4, h5, h6 {
   text-decoration: none;
   transition: all 0.3s ease;
   border: 1px solid var(--glass-border);
+  white-space: nowrap;
 }
 
 .btn-secondary:hover {
@@ -339,6 +341,7 @@ header.nav-hidden {
 .hero-buttons {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 /* Floating Image */

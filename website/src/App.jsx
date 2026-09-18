@@ -128,12 +128,9 @@ function App() {
                   <Download size={20} />
                   Download Latest
                 </a>
-                <a href="https://zeno-cash.vercel.app/" target="_blank" rel="noreferrer" className="btn-secondary" style={{ display: 'flex', flexDirection: 'column', padding: '0.5rem 1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <AppWindow size={20} />
-                    Try Web Demo
-                  </div>
-                  <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(PT-BR Only)</span>
+                <a href="https://zeno-cash.vercel.app/" target="_blank" rel="noreferrer" className="btn-secondary">
+                  <AppWindow size={20} />
+                  Web Demo
                 </a>
                 <a href="#features" className="btn-secondary">
                   <Search size={20} />
