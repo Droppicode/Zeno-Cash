@@ -8,7 +8,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "web": {
-      "favicon": "./assets/app.png",
+      "favicon": "./assets/icon.png",
       "bundler": "metro"
     },
     "ios": {
