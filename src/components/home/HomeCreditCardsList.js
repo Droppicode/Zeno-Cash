@@ -24,7 +24,7 @@ export default function HomeCreditCardsList({ accountBalances, activeTheme, styl
               styles.groupedItem, 
               idx !== creditCards.length - 1 && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }
             ]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0, paddingRight: 10 }}>
                 <View style={[styles.groupedIcon, { backgroundColor: (acc.color || activeTheme.text) + '20' }]}>
                   {acc.icon && acc.icon.startsWith('http') ? (
                     <Image source={{ uri: acc.icon }} style={{ width: 18, height: 18, borderRadius: 4 }} />
@@ -32,7 +32,7 @@ export default function HomeCreditCardsList({ accountBalances, activeTheme, styl
                     <Ionicons name={acc.icon || 'wallet-outline'} size={18} color={acc.color || activeTheme.text} />
                   )}
                 </View>
-                <Text style={[styles.groupedText, { color: activeTheme.text }]}>{acc.name}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.groupedText, { color: activeTheme.text, flexShrink: 1 }]}>{acc.name}</Text>
               </View>
               <Text style={[styles.groupedAmount, { color: acc.currentBalance <= -0.01 ? activeTheme.expense : activeTheme.text }]}>
                 {acc.currentBalance <= -0.01 ? `- R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}` : `R$ ${CurrencyUtils.formatDisplay(Math.abs(acc.currentBalance))}`}

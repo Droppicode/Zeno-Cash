@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, DeviceEventEmitter, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, DeviceEventEmitter, ScrollView, Linking } from 'react-native';
 import { headlessNotificationListener } from '../services/NotificationListener';
 import { seedDatabase } from '../database/seed';
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
@@ -122,6 +122,15 @@ export default function WebMockPanel() {
 
         <TouchableOpacity style={[styles.button, { backgroundColor: '#007AFF' }]} onPress={advanceTime}>
           <Text style={styles.buttonText}>Avançar 30 Dias (Time Travel)</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionHeader}>Repositório</Text>
+
+        <TouchableOpacity 
+          style={[styles.button, { backgroundColor: '#333333' }]} 
+          onPress={() => Linking.openURL('https://github.com/Droppicode/Zeno-Cash')}
+        >
+          <Text style={styles.buttonText}>Acessar GitHub</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

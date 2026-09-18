@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Shield, Zap, Bell, CheckCircle2, TrendingUp, Search, Sun, Moon, LayoutDashboard, Cloud, Target, Palette, Smartphone, Database, Code, Brain, BarChart3, AppWindow } from 'lucide-react';
+import { Download, Shield, Zap, Bell, CheckCircle2, TrendingUp, Search, Sun, Moon, LayoutDashboard, Cloud, Target, Palette, Smartphone, Database, Code, Brain, BarChart3, AppWindow, Github } from 'lucide-react';
 import mockupImage from './assets/app.png';
 import './index.css';
 
@@ -131,6 +131,10 @@ function App() {
                 <a href="https://zeno-cash.vercel.app/" target="_blank" rel="noreferrer" className="btn-secondary">
                   <AppWindow size={20} />
                   Web Demo
+                </a>
+                <a href="https://github.com/Droppicode/Zeno-Cash" target="_blank" rel="noreferrer" className="btn-secondary">
+                  <Github size={20} />
+                  GitHub
                 </a>
                 <a href="#features" className="btn-secondary">
                   <Search size={20} />
