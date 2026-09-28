@@ -1,14 +1,27 @@
 import { db } from '../database/db';
-import { debts, transactions } from '../database/schema';
-import { desc, eq, sql } from 'drizzle-orm';
+import { accounts, debts, transactions } from '../database/schema';
+import { desc, eq, like, sql } from 'drizzle-orm';
 import { TransactionRepository } from './TransactionRepository';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 const settlementNote = (debtId) => `[debt:${debtId}]`;
 
 const isRecurrenceTemplate = (debt) => debt.transactionId === null && debt.recurrenceId !== null;
 
 const getSettlements = (debtId) =>
-  db.select().from(transactions).where(eq(transactions.note, settlementNote(debtId)));
+  db.select().from(transactions).where(like(transactions.note, `${settlementNote(debtId)}%`));
+
+// On credit cards, a linked settlement stays in the same invoice as the originating purchase.
+const buildSettlementNote = async (debt) => {
+  const base = settlementNote(debt.id);
+  if (debt.transactionId == null) return base;
+  const [account] = await db.select().from(accounts).where(eq(accounts.id, debt.accountId));
+  if (account?.type !== 'credit' || !account.closingDay) return base;
+  const [parentTx] = await db.select().from(transactions).where(eq(transactions.id, debt.transactionId));
+  if (!parentTx) return base;
+  const invoiceKey = InvoiceUtils.getInvoiceMonthForTransaction(parentTx, account.closingDay, account.dueDay);
+  return `${base} [invoice:${invoiceKey}]`;
+};
 
 const removeSettlement = async (debtId) => {
   const existing = await getSettlements(debtId);
@@ -30,7 +43,7 @@ const syncSettlement = async (debtId) => {
     type: debt.type === 'owe' ? 'expense' : 'income',
     accountId: debt.accountId,
     description: `Acerto: ${debt.personName}${debt.description ? ' - ' + debt.description : ''}`,
-    ...(debt.transactionId != null ? { date: debt.date } : {}),
+    note: await buildSettlementNote(debt),
   };
 
   const [existing, ...duplicates] = await getSettlements(debtId);
@@ -40,7 +53,7 @@ const syncSettlement = async (debtId) => {
   if (existing) {
     await TransactionRepository.update(existing.id, txData);
   } else {
-    await TransactionRepository.add({ date: Date.now(), ...txData, note: settlementNote(debtId) });
+    await TransactionRepository.add({ date: Date.now(), ...txData });
   }
 };
 
@@ -136,9 +149,9 @@ export const DebtsRepository = {
   unmarkPaidBySettlementTx: async (txId) => {
     try {
       const [tx] = await db.select({ note: transactions.note }).from(transactions).where(eq(transactions.id, txId));
-      const match = tx?.note?.match(/^\[debt:(\d+)\]$/);
-      if (match) {
-        await db.update(debts).set({ isPaid: 0 }).where(eq(debts.id, Number(match[1])));
+      const debtId = InvoiceUtils.getSettlementDebtId(tx?.note);
+      if (debtId !== null) {
+        await db.update(debts).set({ isPaid: 0 }).where(eq(debts.id, debtId));
       }
       return true;
     } catch (e) {

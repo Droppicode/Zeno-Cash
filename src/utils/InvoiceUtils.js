@@ -1,10 +1,28 @@
+const HIDDEN_TAGS_RE = /\[(?:invoice:\d{4}-\d{2}|debt:\d+)\]/g;
+
 export const InvoiceUtils = {
   /**
-   * Remove a tag de fatura [invoice:YYYY-MM] de uma string (note) para exibição na UI
+   * Remove as tags internas ([invoice:YYYY-MM], [debt:ID]) de uma string (note) para exibição na UI
    */
   formatDisplayNote: (note) => {
     if (!note || typeof note !== 'string') return '';
-    return note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim();
+    return note.replace(HIDDEN_TAGS_RE, '').trim();
+  },
+
+  /**
+   * Retorna as tags internas presentes na note (para preservá-las ao editar)
+   */
+  extractHiddenTags: (note) => {
+    if (!note || typeof note !== 'string') return '';
+    return (note.match(HIDDEN_TAGS_RE) || []).join(' ');
+  },
+
+  /**
+   * Retorna o ID da dívida se a transação for um Acerto ([debt:ID]), senão null
+   */
+  getSettlementDebtId: (note) => {
+    const match = typeof note === 'string' ? note.match(/\[debt:(\d+)\]/) : null;
+    return match ? Number(match[1]) : null;
   },
 
   /**
@@ -45,7 +63,7 @@ export const InvoiceUtils = {
     // Ao atrasar o pagamento em 1 mês, garantimos que ele caia na fatura anterior na UI, 
     // fazendo o saldo dela zerar perfeitamente.
     // Acertos de dívida (reembolso de parte de uma compra) ficam na mesma fatura da compra.
-    const isDebtSettlement = typeof note === 'string' && /^\[debt:\d+\]$/.test(note);
+    const isDebtSettlement = InvoiceUtils.getSettlementDebtId(note) !== null;
     if (type === 'income' && !isDebtSettlement) {
       invoiceMonth -= 1;
     }
