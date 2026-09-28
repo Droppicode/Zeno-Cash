@@ -18,6 +18,7 @@ import { registerBackgroundFetchAsync } from './src/services/BackgroundTasks';
 import * as NavigationBar from 'expo-navigation-bar';
 import { performSilentDailyBackup } from './src/services/GoogleDriveBackup';
 import WebMockPanel from './src/components/WebMockPanel';
+import './src/utils/alertPolyfill';
 
 const prefix = Linking.createURL('/');
 
