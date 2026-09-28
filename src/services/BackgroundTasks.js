@@ -1,6 +1,7 @@
 import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { db } from '../database/db';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import { recurrences, transactions } from '../database/schema';
@@ -77,7 +78,7 @@ export const materializeRecurrencesUpToToday = async () => {
           }
         }
 
-        await Notifications.scheduleNotificationAsync({
+        if (Platform.OS !== 'web') await Notifications.scheduleNotificationAsync({
           content: {
             title: `Cobrança Pendente: ${txData.description}`,
             body: `Sua recorrência no valor de R$ ${CurrencyUtils.formatDisplay(txData.amount)} vence hoje. Toque para aprovar!`,
