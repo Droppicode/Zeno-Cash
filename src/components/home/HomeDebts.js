@@ -4,8 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 
 export default function HomeDebts({ debtsList, activeTheme, styles, navigation }) {
-  const totalOwe = debtsList.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
-  const totalOwed = debtsList.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
+  const openDebts = debtsList.filter(d => d.isPaid !== 1 && !(d.transactionId === null && d.recurrenceId !== null));
+  const totalOwe = openDebts.filter(d => d.type === 'owe').reduce((acc, d) => acc + d.amount, 0);
+  const totalOwed = openDebts.filter(d => d.type === 'owed').reduce((acc, d) => acc + d.amount, 0);
 
   if (totalOwe === 0 && totalOwed === 0) return null;
 

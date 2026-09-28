@@ -103,7 +103,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
       title={initialData ? 'Editar Dívida' : 'Nova Dívida'}
       onClose={onClose}
       headerRight={
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+        <TouchableOpacity onPress={() => onClose()} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={activeTheme.textSecondary} />
         </TouchableOpacity>
       }

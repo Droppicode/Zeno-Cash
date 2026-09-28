@@ -197,7 +197,7 @@ export default function DebtsScreen({ navigation }) {
           setModalVisible(false); 
           if (settlementData) {
             // Create settlement transaction
-            await saveTransaction({
+            await saveTransaction(null, {
               amount: settlementData.amount,
               description: `Acerto: ${settlementData.personName} ${settlementData.description ? '- ' + settlementData.description : ''}`,
               type: settlementData.type === 'owe' ? 'expense' : 'income',
@@ -232,7 +232,7 @@ export default function DebtsScreen({ navigation }) {
           if (editingTx && editingTx.id) {
             await updateTransaction(editingTx.id, data);
           } else {
-            await saveTransaction(data);
+            await saveTransaction(null, data);
           }
           setTxModalVisible(false);
           setEditingTx(null);
