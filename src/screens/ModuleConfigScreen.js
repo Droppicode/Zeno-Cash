@@ -248,6 +248,10 @@ export default function ModuleConfigScreen({ onBack }) {
             <Switch value={uiConfig.showInvestmentsTab} onValueChange={() => handleToggleUi('showInvestmentsTab')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Geral] Esconder Acertos de Dívidas nas Transações</Text>
+            <Switch value={uiConfig.hideDebtSettlements !== false} onValueChange={(value) => saveSetting('uiConfig', { ...uiConfig, hideDebtSettlements: value })} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Pendências</Text>
             <Switch value={uiConfig.homeShowPending !== false} onValueChange={() => handleToggleUi('homeShowPending')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
