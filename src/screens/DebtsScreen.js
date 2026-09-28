@@ -193,19 +193,8 @@ export default function DebtsScreen({ navigation }) {
 
       <DebtModal 
         visible={modalVisible}
-        onClose={async (settlementData) => { 
+        onClose={() => { 
           setModalVisible(false); 
-          if (settlementData) {
-            // Create settlement transaction
-            await saveTransaction(null, {
-              amount: settlementData.amount,
-              description: `Acerto: ${settlementData.personName} ${settlementData.description ? '- ' + settlementData.description : ''}`,
-              type: settlementData.type === 'owe' ? 'expense' : 'income',
-              accountId: settlementData.settlementAccountId,
-              date: Date.now()
-            });
-            await loadTransactions();
-          }
           loadDebts(); 
         }}
         onDelete={(id) => handleDelete(id)}

@@ -39,7 +39,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
         setType(initialData.type);
         setDebtDateObj(initialData.date ? new Date(initialData.date) : new Date());
         setIsPaid(initialData.isPaid === 1);
-        setSettlementAccountId(null);
+        setSettlementAccountId(initialData.accountId ?? null);
       } else {
         setPersonName('');
         setDescription('');
@@ -64,6 +64,8 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
     };
   }, []);
 
+  const isLinkedToTransaction = !!(initialData && (initialData.transactionId || initialData.recurrenceId));
+
   const handleSave = async () => {
     if (!personName || !amount) return;
     
@@ -79,7 +81,8 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
       amount: numAmount,
       type,
       date: parsedDate,
-      isPaid: isPaid ? 1 : 0
+      isPaid: isPaid ? 1 : 0,
+      ...(isLinkedToTransaction ? {} : { accountId: settlementAccountId })
     };
 
     if (initialData) {
@@ -88,11 +91,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
       await addDebt(data);
     }
 
-    if (isPaid && (!initialData || initialData.isPaid !== 1) && settlementAccountId) {
-      if (onClose) onClose({ settlementAccountId, amount: numAmount, type, personName, description });
-    } else {
-      if (onClose) onClose();
-    }
+    if (onClose) onClose();
 
     HapticFeedback.success();
   };
@@ -211,7 +210,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
               />
             </View>
 
-            {isPaid && (!initialData || initialData.isPaid !== 1) && (
+            {isPaid && !isLinkedToTransaction && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Em qual conta o dinheiro movimentou?</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountScroll}>
