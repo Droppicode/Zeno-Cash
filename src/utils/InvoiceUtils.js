@@ -44,7 +44,9 @@ export const InvoiceUtils = {
     // REGRA DE PAGAMENTOS: Pagamentos de fatura (income) costumam abater a fatura que acabou de fechar.
     // Ao atrasar o pagamento em 1 mês, garantimos que ele caia na fatura anterior na UI, 
     // fazendo o saldo dela zerar perfeitamente.
-    if (type === 'income') {
+    // Acertos de dívida (reembolso de parte de uma compra) ficam na mesma fatura da compra.
+    const isDebtSettlement = typeof note === 'string' && /^\[debt:\d+\]$/.test(note);
+    if (type === 'income' && !isDebtSettlement) {
       invoiceMonth -= 1;
     }
 

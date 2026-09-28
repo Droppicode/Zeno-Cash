@@ -30,6 +30,7 @@ const syncSettlement = async (debtId) => {
     type: debt.type === 'owe' ? 'expense' : 'income',
     accountId: debt.accountId,
     description: `Acerto: ${debt.personName}${debt.description ? ' - ' + debt.description : ''}`,
+    ...(debt.transactionId != null ? { date: debt.date } : {}),
   };
 
   const [existing, ...duplicates] = await getSettlements(debtId);
@@ -39,7 +40,7 @@ const syncSettlement = async (debtId) => {
   if (existing) {
     await TransactionRepository.update(existing.id, txData);
   } else {
-    await TransactionRepository.add({ ...txData, date: Date.now(), note: settlementNote(debtId) });
+    await TransactionRepository.add({ date: Date.now(), ...txData, note: settlementNote(debtId) });
   }
 };
 
