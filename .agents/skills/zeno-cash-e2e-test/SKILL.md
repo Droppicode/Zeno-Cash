@@ -23,35 +23,53 @@ npm install
 ```bash
 npx expo start --web --port 8081     # open http://localhost:8081
 ```
-- The web build uses sql.js. Check whether data survives a page reload (it depends on
-  whether localStorage persistence is enabled in the build under test).
+- The web build uses sql.js. With localStorage persistence, reload keeps data; builds
+  without it re-seed on reload. Restart Metro and reload after switching branches.
 - A "🧪 Ambiente de Teste (Web)" panel (`src/components/WebMockPanel.js`) is rendered next
   to the app: simulate notifications, reset DB (re-seed) and "Avançar 30 Dias (Time Travel)".
-- `Alert.alert` confirmations show up as browser `confirm()` dialogs — accept them.
+- `Alert.alert` is a no-op in react-native-web unless the app polyfills it with browser
+  `confirm()`/`alert()`. Verify each confirmation path (e.g. deleting an account) actually
+  opens a dialog and completes.
+- JSON/CSV export works on web as a browser download; verify the downloaded files are valid
+  and record counts match the app.
 - Native-only (skip on web, mark "untested (web)"): notification listener, widgets,
-  Google Sign-In / Drive backup, file sharing, haptics, swipe gestures may be awkward
+  Google Sign-In / Drive backup, device backups, haptics. Swipe gestures may be awkward
   (use mouse drag).
+- After switching branches, check console errors in a fresh tab; hot-reload history can
+  contain errors from the previous branch.
 
 ### Android (native path)
 ```bash
 npx expo run:android      # needs emulator running; dev build, not Expo Go
 ```
+- Known-good toolchain: Node 20, Java 17, Android SDK build-tools 36, API 35 emulator with KVM.
+- To reuse a running Metro: `npx expo run:android --no-bundler` (don't combine with
+  `--port`) and `adb reverse tcp:8081 tcp:8081`.
+- If stylus handwriting intercepts text input:
+  `adb shell settings put secure stylus_handwriting_enabled 0`.
+- Make sure the field is focused before `adb shell input text`; repeated `R` keystrokes can
+  trigger a React Native dev reload.
 - If Gradle gets HTTP 429 from Maven Central, configure a mirror in `~/.gradle/init.gradle`.
 - A `ForegroundServiceDidNotStartInTimeException` crash from
   `react-native-android-notification-listener` can happen on some emulators; it is not
-  reproducible on real devices. Note it but do not report it as an app bug.
+  reproducible on real devices. Save the crash log, reopen and continue, and do not report
+  it as an app bug.
 - Google Sign-In needs `EXPO_PUBLIC_WEB_CLIENT_ID` in the build environment; without it
   login fails.
 
 ### Seed data (after reset)
-- Accounts: `Nubank` (checking, 2450.80), `Carteira / Dinheiro` (cash, 220.00).
+- Accounts: `Nubank` (checking, opening balance 2450.80), `Carteira / Dinheiro` (cash,
+  opening balance 220.00). These are opening balances, not the displayed balances.
 - Card: `Cartão Nubank Ultravioleta` (credit, closing 25, due 5, limit 12000, pays from Nubank).
 - Debts: Gabriel Santos owed 350 (open), Beatriz Martins owed 85.50 (open),
   Matheus Costa owe 220 (open), Rodrigo Alves owed 60 (paid) + split debts
   (Lucas Ferreira, Mariana Duarte) attached to transactions.
-- Always start from "Resetar Banco de Dados" so numbers are reproducible. Write down every
-  account balance, card invoice total and Home debt totals BEFORE each section; every
-  assertion below is "value changed by exactly X" against those notes.
+- Historical seed transactions are randomised, so a reset does NOT make totals
+  reproducible. Write down every displayed account balance, card invoice total and Home
+  debt totals BEFORE each section; every assertion below is "value changed by exactly X"
+  against those notes.
+- Seeded paid split debts may not have an Acerto yet until they are saved again; account
+  for that when editing a seeded parent transaction.
 
 ## 1. Navigation smoke
 Tabs: Home, Transações, Análise, Investimentos (can be hidden), Config.
@@ -61,8 +79,8 @@ Stack screens: Debts (Controle de Dívidas), CreditCard, RecurrenceDetails, Extr
 
 ## 2. Home
 - [ ] "Balanço do Período" shows total, Receitas, Despesas.
-- [ ] MonthSelector: scroll left/right → centre month becomes the only selection, totals
-      and recent list change to that month.
+- [ ] MonthSelector: scroll left/right → centre month becomes the only selection and the
+      period totals change to that month.
 - [ ] Tap extra months → multi-select; totals equal the sum of the individual months.
       Tap a selected month again → it is removed (never empty selection crash).
 - [ ] Go to a month with no transactions → zeros, no crash. Go to a future month → only
@@ -71,7 +89,7 @@ Stack screens: Debts (Controle de Dívidas), CreditCard, RecurrenceDetails, Extr
 - [ ] Cards list: tap a card → CreditCard screen for that card.
 - [ ] Pendências (HomePendingTx): swipe right = accept (becomes confirmed, balance moves),
       swipe left = delete (disappears, balance unchanged).
-- [ ] Últimas transações: no pending, no ignored, no future items; notes never show
+- [ ] Últimas transações (global list, not filtered by the selected month): no pending, no ignored, no future items; notes never show
       `[invoice:…]` or `[debt:…]` tags.
 - [ ] Dívidas card: "Me devem" / "Eu devo" totals equal the open (unpaid) totals in the
       Debts screen; tapping navigates to Debts.
@@ -91,7 +109,9 @@ verify everything returns to the baseline.
 - [ ] T8 Future date → shows as pending/scheduled, not in current balance.
 - [ ] T9 Title autocomplete suggests previous titles; category auto-resolves from rules.
 - [ ] T10 Notes: add a note, save, reopen → note preserved; hidden tags preserved on edit.
-- [ ] T11 Validation: empty amount / zero / letters → blocked or sanitised, no crash.
+- [ ] T11 Amount fields may use different currency input conventions (transaction modal vs
+      partial invoice payment); check the displayed value before saving.
+- [ ] T11b Validation: empty amount / zero / letters → blocked or sanitised, no crash.
 - [ ] T12 Cancelar and closing the modal never create or change anything.
 - [ ] T13 Apagar asks for confirmation; recurrence delete behaves per contract.
 - [ ] T14 Change type expense↔income and account on edit → both old and new balances fix.
@@ -131,7 +151,8 @@ verify everything returns to the baseline.
 - [ ] D4 Change account of a paid debt → Acerto moves accounts (no duplicates).
 - [ ] D5 Change amount of a paid debt → Acerto amount updated.
 - [ ] D6 Mark unpaid → Acerto removed, balances restored.
-- [ ] D7 Delete a paid debt → Acerto removed.
+- [ ] D7 Delete a paid debt → Acerto removed. Paid debts leave the unpaid list, so only
+      mark this passed if you reached the paid debt through a real UI path.
 - [ ] D8 Delete the Acerto transaction from Transações → debt re-opens (isPaid 0).
 - [ ] D9 Linked debt (from split): NO account picker; "Transação" button opens the parent;
       paying it creates Acerto on parent's account/card.
@@ -165,8 +186,10 @@ verify everything returns to the baseline.
       analysis, Smart insights. No NaN/Infinity with empty data (test after reset + delete all).
 
 ## 9. Investimentos
-- [ ] "+ Novo Ativo" create, edit, delete; "Patrimônio Acumulado" updates.
-- [ ] Long names truncate without cutting the value.
+- [ ] "+ Novo Ativo" create, edit, delete; "Patrimônio Acumulado" updates. (The list may be
+      static and the button may have no handler; if so, report it as unavailable.)
+- [ ] Long names truncate without cutting the value (use existing rows if creation is
+      unavailable).
 
 ## 10. Config
 - [ ] Temas: select each default theme; create custom theme (name required → "Dê um nome"),
@@ -196,6 +219,11 @@ verify everything returns to the baseline.
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
 account. Home debt totals == Debts screen totals. Card invoice totals == CreditCard screen.
+
+## Secrets
+- None needed for local accounts, transactions, debts, invoices or exports.
+- `EXPO_PUBLIC_WEB_CLIENT_ID` is only needed for Google Sign-In; report a missing value
+  separately from local results.
 
 ## Reporting
 - Table of all case ids with passed / failed / untested (+ reason, e.g. "native only").
