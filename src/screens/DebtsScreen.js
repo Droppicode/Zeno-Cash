@@ -38,12 +38,12 @@ const DebtItem = React.memo(({ item, activeTheme, styles, onEdit, onDelete }) =>
                <Ionicons name={isOwe ? "arrow-up" : "arrow-down"} size={20} color={isOwe ? activeTheme.expense : activeTheme.income} />
             )}
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-               <Text style={[styles.personName, item.isPaid === 1 && { textDecorationLine: 'line-through', opacity: 0.5 }]}>{item.personName}</Text>
+               <Text numberOfLines={1} style={[styles.personName, { flexShrink: 1 }, item.isPaid === 1 && { textDecorationLine: 'line-through', opacity: 0.5 }]}>{item.personName}</Text>
                {item.transactionId && <Ionicons name="link" size={14} color={activeTheme.accent} style={{ marginLeft: 6 }} />}
             </View>
-            <Text style={styles.date}>
+            <Text style={styles.date} numberOfLines={1}>
               {item.description ? `${dateStr} • ${item.description}` : dateStr}
             </Text>
           </View>
@@ -128,9 +128,9 @@ export default function DebtsScreen({ navigation }) {
           style={[styles.groupCard, { backgroundColor: activeTheme.card, borderBottomLeftRadius: isExpanded ? 0 : 8, borderBottomRightRadius: isExpanded ? 0 : 8 }]} 
           onPress={() => toggleGroup(group.personName)}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
             <Ionicons name={isExpanded ? "chevron-down" : "chevron-forward"} size={20} color={activeTheme.textSecondary} style={{ marginRight: 8 }} />
-            <Text style={[styles.personName, { color: activeTheme.text, marginBottom: 0 }]}>{group.personName}</Text>
+            <Text numberOfLines={1} style={[styles.personName, { color: activeTheme.text, marginBottom: 0, flexShrink: 1 }]}>{group.personName}</Text>
           </View>
           <Text style={[styles.amount, { color: netColor }]}>
             {netAmount > 0 ? '+' : (netAmount < 0 ? '-' : '')} R$ {CurrencyUtils.formatDisplay(Math.abs(netAmount))}
@@ -193,19 +193,8 @@ export default function DebtsScreen({ navigation }) {
 
       <DebtModal 
         visible={modalVisible}
-        onClose={async (settlementData) => { 
+        onClose={() => { 
           setModalVisible(false); 
-          if (settlementData) {
-            // Create settlement transaction
-            await saveTransaction({
-              amount: settlementData.amount,
-              description: `Acerto: ${settlementData.personName} ${settlementData.description ? '- ' + settlementData.description : ''}`,
-              type: settlementData.type === 'owe' ? 'expense' : 'income',
-              accountId: settlementData.settlementAccountId,
-              date: Date.now()
-            });
-            await loadTransactions();
-          }
           loadDebts(); 
         }}
         onDelete={(id) => handleDelete(id)}
@@ -232,7 +221,7 @@ export default function DebtsScreen({ navigation }) {
           if (editingTx && editingTx.id) {
             await updateTransaction(editingTx.id, data);
           } else {
-            await saveTransaction(data);
+            await saveTransaction(null, data);
           }
           setTxModalVisible(false);
           setEditingTx(null);
@@ -267,11 +256,11 @@ const getLocalStyles = (theme) => {
     summaryLabel: { color: theme.textSecondary, fontSize: 14 * z, marginBottom: 8 * z, fontWeight: '600', fontFamily: f },
     summaryValue: { fontSize: 20 * z, fontWeight: 'bold', fontFamily: f },
     card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.card, padding: 16 * z, borderRadius: 6 * z, marginBottom: 12 * z },
-    cardLeft: { flexDirection: 'row', alignItems: 'center' },
+    cardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 12 * z },
     iconBox: { width: 44 * z, height: 44 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },
     personName: { fontSize: 16 * z, fontWeight: '600', color: theme.text, marginBottom: 4 * z, fontFamily: f },
     date: { fontSize: 13 * z, color: theme.textSecondary, fontFamily: f },
-    amount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
+    amount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f, flexShrink: 0 },
     groupCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderTopLeftRadius: 6 * z, borderTopRightRadius: 6 * z, borderRadius: 6 * z },
     fab: { position: 'absolute', right: 24 * z, bottom: 24 * z, width: 64 * z, height: 64 * z, borderRadius: 8 * z, backgroundColor: theme.accent, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65 }
   });

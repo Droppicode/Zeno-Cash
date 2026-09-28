@@ -17,6 +17,7 @@ import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
 import TransactionModal from '../components/TransactionModal';
 import { DebtsRepository } from '../services/DebtsRepository';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export default function RecurrenceDetailsScreen({ route, navigation }) {
   const { id } = route.params;
@@ -431,7 +432,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
               <TouchableOpacity key={item.id} onPress={() => handleTxPress(item)} style={[styles.txCard, { backgroundColor: activeTheme.card, opacity: isIgnored ? 0.6 : 1 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold', textDecorationLine: isIgnored ? 'line-through' : 'none' }}>
-                    {(item.note && item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()) || `Ocorrência ${index + 1}`}
+                    {InvoiceUtils.formatDisplayNote(item.note) || `Ocorrência ${index + 1}`}
                   </Text>
                   <Text style={{ color: activeTheme.textSecondary, fontSize: 14 * z, marginTop: 4 * z }}>
                     {new Date(item.date).toLocaleDateString('pt-BR')}

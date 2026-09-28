@@ -12,6 +12,7 @@ import { getZoomFactor } from '../utils/scaler';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import { DebtsRepository } from '../services/DebtsRepository';
 import { HapticFeedback } from '../utils/haptics';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export default function TransactionModal({ visible, onClose, onSave, onDelete, initialData, isContractEdit = false, initialSplitMode = false }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -62,14 +63,8 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setDescription(initialData.description);
       
       let rawNote = initialData.note || '';
-      const match = rawNote.match(/\[invoice:\d{4}-\d{2}\]/);
-      if (match) {
-        setHiddenInvoiceTag(match[0]);
-        rawNote = rawNote.replace(match[0], '').trim();
-      } else {
-        setHiddenInvoiceTag('');
-      }
-      setNote(rawNote);
+      setHiddenInvoiceTag(InvoiceUtils.extractHiddenTags(rawNote));
+      setNote(InvoiceUtils.formatDisplayNote(rawNote));
 
       setTxType(initialData.type);
       setSelectedAccountId(initialData.accountId);
@@ -130,6 +125,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setAmount('');
       setDescription('');
       setNote('');
+      setHiddenInvoiceTag('');
       setTxType('expense');
       setSelectedAccountId(accountList.length > 0 ? accountList[0].id : null);
       setSelectedCategoryId(null);
@@ -207,7 +203,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       _tempId: initialData?._tempId,
       amount: numAmount,
       description: description.trim(),
-      note: note.trim(),
+      note: [hiddenInvoiceTag, note.trim()].filter(Boolean).join(' '),
       date: txDateObj.getTime(),
       type: txType,
       accountId: selectedAccountId,

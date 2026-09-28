@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 import SwipeableCard from '../ui/SwipeableCard';
 import { resolveCategory } from '../../services/categorizer';
+import { InvoiceUtils } from '../../utils/InvoiceUtils';
 
 export default function HomePendingTx({
   displayPendingList,
@@ -60,7 +61,7 @@ export default function HomePendingTx({
                         )}
                       </View>
                       <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>
-                        {new Date(item.date).toLocaleDateString('pt-BR')} {(item.note && item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()) ? `- ${item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()}` : ''}
+                        {new Date(item.date).toLocaleDateString('pt-BR')} {InvoiceUtils.formatDisplayNote(item.note) ? `- ${InvoiceUtils.formatDisplayNote(item.note)}` : ''}
                       </Text>
                     </View>
                   </View>

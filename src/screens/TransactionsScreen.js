@@ -11,6 +11,7 @@ import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import TransactionItem from '../components/ui/TransactionItem';
 import TransactionsFilterBar from '../components/ui/TransactionsFilterBar';
@@ -25,6 +26,7 @@ import { ExtractionContext } from '../context/ExtractionContext';
 
 export default function TransactionsScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod, llmProvider, llmModel, llmKey } = React.useContext(SettingsContext);
+  const hideSettlements = uiConfig.hideDebtSettlements !== false;
   const { startExtraction, status } = React.useContext(ExtractionContext);
   const { txList, loadTransactions, saveTransaction, removeTransaction, updateTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
@@ -128,6 +130,7 @@ export default function TransactionsScreen({ route, navigation }) {
   const filteredList = useMemo(() => {
     let result = txList.filter(item => {
       if (item.isIgnored === 1) return false;
+      if (hideSettlements && InvoiceUtils.getSettlementDebtId(item.note) !== null) return false;
       const limit = DateUtils.getLimitDateForPeriod(period);
       if (item.date < limit) return false;
 
@@ -187,7 +190,7 @@ export default function TransactionsScreen({ route, navigation }) {
     }
 
     return result.sort((a, b) => b.date - a.date);
-  }, [txList, period, filter, accountFilter, selectedCats, search, startDateObj, endDateObj, categoryList, forecastPeriod, recurrences]);
+  }, [txList, period, filter, accountFilter, selectedCats, search, startDateObj, endDateObj, categoryList, forecastPeriod, recurrences, hideSettlements]);
 
   const uniqueCategories = Array.from(new Set(txList.map(item => resolveCategory(item, categoryList).categoryName)));
 
