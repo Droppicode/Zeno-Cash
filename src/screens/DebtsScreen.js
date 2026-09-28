@@ -67,6 +67,7 @@ export default function DebtsScreen({ navigation }) {
   
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDebt, setEditingDebt] = useState(null);
+  const [showPaid, setShowPaid] = useState(false);
   
   const [txModalVisible, setTxModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -82,7 +83,7 @@ export default function DebtsScreen({ navigation }) {
     }, [loadDebts, loadAccounts])
   );
 
-  const realDebts = debtsList.filter(d => d.isPaid !== 1 && !(d.transactionId === null && d.recurrenceId !== null));
+  const realDebts = debtsList.filter(d => (showPaid || d.isPaid !== 1) && !(d.transactionId === null && d.recurrenceId !== null));
 
   const totalOwe = realDebts.filter(d => d.type === 'owe' && d.isPaid !== 1).reduce((acc, d) => acc + d.amount, 0);
   const totalOwed = realDebts.filter(d => d.type === 'owed' && d.isPaid !== 1).reduce((acc, d) => acc + d.amount, 0);
@@ -100,7 +101,7 @@ export default function DebtsScreen({ navigation }) {
       }
     });
     return Object.values(groups).sort((a, b) => a.personName.localeCompare(b.personName));
-  }, [debtsList]);
+  }, [debtsList, showPaid]);
 
   const toggleGroup = (name) => {
     setExpandedGroups(prev => ({ ...prev, [name]: !prev[name] }));
@@ -175,6 +176,11 @@ export default function DebtsScreen({ navigation }) {
           <Text style={[styles.summaryValue, { color: activeTheme.income }]}>R$ {CurrencyUtils.formatDisplay(totalOwed)}</Text>
         </View>
       </View>
+
+      <TouchableOpacity style={styles.filterRow} onPress={() => setShowPaid(v => !v)}>
+        <Ionicons name={showPaid ? 'checkbox' : 'square-outline'} size={18} color={showPaid ? activeTheme.accent : activeTheme.textSecondary} />
+        <Text style={[styles.filterText, showPaid && { color: activeTheme.accent }]}>Mostrar pagas</Text>
+      </TouchableOpacity>
 
       <FlatList
         data={groupedDebts}
@@ -255,6 +261,8 @@ const getLocalStyles = (theme) => {
     summaryCard: { flex: 1, backgroundColor: theme.background, padding: 16 * z, borderRadius: 6 * z, alignItems: 'center' },
     summaryLabel: { color: theme.textSecondary, fontSize: 14 * z, marginBottom: 8 * z, fontWeight: '600', fontFamily: f },
     summaryValue: { fontSize: 20 * z, fontWeight: 'bold', fontFamily: f },
+    filterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16 * z, paddingTop: 12 * z, gap: 6 * z },
+    filterText: { color: theme.textSecondary, fontSize: 13 * z, fontFamily: f },
     card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.card, padding: 16 * z, borderRadius: 6 * z, marginBottom: 12 * z },
     cardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 12 * z },
     iconBox: { width: 44 * z, height: 44 * z, borderRadius: 8 * z, justifyContent: 'center', alignItems: 'center', marginRight: 14 * z },

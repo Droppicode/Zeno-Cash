@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { getZoomFactor } from '../../utils/scaler';
 
@@ -10,23 +10,40 @@ export default function AutocompleteInput({
   theme,
   label,
   placeholder,
-  style
+  style,
+  inputStyle,
+  excludeItems = [],
+  ...rest
 }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const blurTimeout = useRef(null);
   const z = getZoomFactor(theme);
   const f = theme.fontFamily || 'monospace';
 
+  const refresh = async (text) => {
+    if (!fetchSuggestions) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const normalizedText = text.toLowerCase();
+    const normalizedExcluded = excludeItems.map(item => item?.toLowerCase());
+    const items = await fetchSuggestions();
+    const filtered = items.filter(item => {
+      const normalizedItem = item.toLowerCase();
+      return normalizedItem.includes(normalizedText) &&
+        normalizedItem !== normalizedText &&
+        !normalizedExcluded.includes(normalizedItem);
+    });
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  };
+
   const handleChange = async (text) => {
     onChangeText(text);
-    if (text.length > 0 && fetchSuggestions) {
-      const items = await fetchSuggestions();
-      const filtered = items.filter(n => n.toLowerCase().includes(text.toLowerCase()));
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
+    await refresh(text);
   };
 
   const handleSelect = (item) => {
@@ -34,6 +51,12 @@ export default function AutocompleteInput({
     if (onSelect) onSelect(item);
     setShowSuggestions(false);
   };
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeout.current) clearTimeout(blurTimeout.current);
+    };
+  }, []);
 
   const styles = StyleSheet.create({
     inputGroup: { marginBottom: 20 * z, zIndex: 1 },
@@ -48,11 +71,16 @@ export default function AutocompleteInput({
     <View style={[styles.inputGroup, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
-        style={styles.input}
+        {...rest}
+        style={[styles.input, inputStyle]}
         value={value}
         onChangeText={handleChange}
         placeholder={placeholder}
         placeholderTextColor={theme.textSecondary}
+        onFocus={() => refresh(value || '')}
+        onBlur={() => {
+          blurTimeout.current = setTimeout(() => setShowSuggestions(false), 150);
+        }}
       />
       {showSuggestions && (
         <View style={styles.suggestionsContainer}>
