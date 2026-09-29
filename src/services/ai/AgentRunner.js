@@ -24,7 +24,7 @@ Grupos: ${groups}
 Transações disponíveis: ${transactions.length}; período ${formatDate(dates[0])} a ${formatDate(dates[dates.length - 1])}.
 
 Use ferramentas para consultar dados; nunca adivinhe valores ou IDs. Quando pedirem criar ou organizar grupos, primeiro pesquise transações e leia descrições para escolher semanticamente, sem depender apenas de palavras-chave. Para qualquer alteração use propose_* e explique ao usuário que ele deve revisar o cartão de proposta antes da aplicação.
-Estratégia: faça no máximo 2–3 chamadas de ferramenta antes de responder. Para montar um grupo, faça UMA busca ampla (search_transactions com type:'expense' e limit:200, ou por categoria/lista de termos) e escolha as transações lendo as descrições. Se já existir um grupo adequado (veja a lista de Grupos acima), use propose_assign em vez de propose_group. Depois de chamar uma ferramenta propose_*, responda ao usuário imediatamente.
+Estratégia: faça no máximo 2–3 chamadas de ferramenta antes de responder. Para montar um grupo, faça UMA busca ampla (search_transactions com type:'expense' e limit:200, ou por categoria/lista de termos) e escolha as transações lendo as descrições. Se já existir um grupo adequado (veja a lista de Grupos acima), use propose_assign em vez de propose_group. Depois de chamar uma ferramenta propose_*, responda ao usuário imediatamente. Nunca diga que criou ou propôs algo sem ter chamado de fato a ferramenta propose_* correspondente nesta resposta.
 Responda concisamente em pt-BR, usando valores como R$ 1.234,56. Não exponha chaves secretas nem invente dados.`;
 };
 
@@ -70,7 +70,7 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
 
   if (reachedRoundLimit) {
     try {
-      const finalMessages = [...messages, { role: 'user', text: 'Responda agora com o que já tem, sem chamar ferramentas.' }];
+      const finalMessages = [...messages, { role: 'user', text: 'Responda agora com o que já tem, sem chamar ferramentas. Se não chegou a propor nada, diga isso e sugira como o usuário pode reformular o pedido.' }];
       const response = await chatWithTools({
         provider,
         model,
