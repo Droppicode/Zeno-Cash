@@ -361,7 +361,7 @@ export default function TransactionsScreen({ route, navigation }) {
             onPress={() => setGroupPickerMode('add')}
           >
             <Ionicons name="add-circle-outline" size={18} color={activeTheme.accent} />
-            <Text style={[styles.selectionButtonText, { color: activeTheme.text }]}>Adicionar a grupo</Text>
+            <Text style={[styles.selectionButtonText, { color: activeTheme.text }]}>Adicionar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.selectionButton, { backgroundColor: activeTheme.cardSecondary }]}
@@ -369,7 +369,7 @@ export default function TransactionsScreen({ route, navigation }) {
             onPress={() => setGroupPickerMode('remove')}
           >
             <Ionicons name="remove-circle-outline" size={18} color={activeTheme.expense} />
-            <Text style={[styles.selectionButtonText, { color: activeTheme.text }]}>Remover de grupo</Text>
+            <Text style={[styles.selectionButtonText, { color: activeTheme.text }]}>Remover</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={cancelSelection}>
             <Text style={[styles.cancelSelectionText, { color: activeTheme.accent }]}>Cancelar</Text>
@@ -505,8 +505,8 @@ const getStyles = (theme) => {
   return StyleSheet.create({
     container: { flex: 1 },
     header: { padding: 16 * z, borderBottomWidth: 1, borderBottomColor: 'transparent' },
-    selectionToolbar: { flexDirection: 'row', alignItems: 'center', gap: 8 * z, padding: 12 * z, minHeight: 68 * z },
-    selectionTitle: { fontWeight: 'bold', fontFamily: f, marginRight: 'auto' },
+    selectionToolbar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 * z, padding: 12 * z, minHeight: 68 * z },
+    selectionTitle: { fontWeight: 'bold', fontFamily: f, marginRight: 'auto', fontSize: 13 * z },
     selectionButton: { flexDirection: 'row', alignItems: 'center', gap: 4 * z, paddingHorizontal: 8 * z, paddingVertical: 8 * z, borderRadius: 6 * z },
     selectionButtonText: { fontSize: 11 * z, fontFamily: f },
     cancelSelectionText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },

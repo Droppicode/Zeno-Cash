@@ -9,7 +9,7 @@ export default function GroupPickerModal({
   visible,
   theme,
   groups = [],
-  initialSelectedIds = [],
+  initialSelectedIds,
   mode = 'add',
   onClose,
   onConfirm,
@@ -20,9 +20,10 @@ export default function GroupPickerModal({
   const z = getZoomFactor(theme);
   const styles = useMemo(() => getStyles(theme), [theme]);
 
+  const initialKey = (initialSelectedIds || []).join(',');
   useEffect(() => {
-    if (visible) setSelectedIds(initialSelectedIds.map(Number));
-  }, [visible, initialSelectedIds]);
+    if (visible) setSelectedIds(initialKey ? initialKey.split(',').map(Number) : []);
+  }, [visible, initialKey]);
 
   const toggle = id => {
     setSelectedIds(current => current.includes(id)
