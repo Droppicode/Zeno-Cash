@@ -264,6 +264,21 @@ verify everything returns to the baseline.
       invoking repository helpers.
 - [ ] Persistência verificada após reload web e reabertura Android.
 
+## Fase 3 — Assistente IA
+- Preconditions: configure uma chave em Config → Extração de Dados, selecione Google Gemini
+  e o modelo `gemini-3.5-flash`; nunca registre a chave em screenshots ou logs.
+- [ ] Sem chave: Home → sparkles abre Assistente e mostra a orientação para configurar a
+      chave, sem red screen.
+- [ ] Perguntar "Quanto gastei este mês?" e comparar o total com Home.
+- [ ] Perguntar um resumo filtrado por categoria e conferir os valores exibidos.
+- [ ] Pedir "crie um grupo com meus gastos de combustível": a proposta lista as transações
+      corretas; Aplicar cria o grupo e atribui os vínculos.
+- [ ] Descartar uma proposta não grava nada; Editar altera o nome do grupo antes de aplicar.
+- [ ] Propor uma regra e confirmar que ela aparece em GroupDetails → Regras.
+- [ ] Erro do provedor aparece em uma bolha vermelha, sem travar a conversa.
+- [ ] Repetir os fluxos na web e no Android; se a API estiver indisponível, marcar os casos
+      dependentes como untested e registrar o motivo.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
