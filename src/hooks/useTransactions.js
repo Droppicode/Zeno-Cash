@@ -6,6 +6,8 @@ import { RecurrenceRepository } from '../services/RecurrenceRepository';
 
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
 import { GroupsRepository } from '../services/GroupsRepository';
+import { GroupRulesRepository } from '../services/GroupRulesRepository';
+import { matchGroupIdsForTransaction } from '../utils/GroupRules';
 
 export const useTransactions = () => {
   const [txList, setTxList] = useState([]);
@@ -55,7 +57,14 @@ export const useTransactions = () => {
         ...txParams,
         date: txParams.date || Date.now()
       });
-      await GroupsRepository.setTransactionGroups(newTxId, groupIds || []);
+      const newTx = {
+        ...txParams,
+        id: newTxId,
+        date: txParams.date || Date.now()
+      };
+      const rules = await GroupRulesRepository.getAll();
+      const matchedGroupIds = matchGroupIdsForTransaction(rules, newTx);
+      await GroupsRepository.setTransactionGroups(newTxId, [...new Set([...(groupIds || []), ...matchedGroupIds])]);
     }
     
     const isRecurrence = recurrenceType && recurrenceType !== 'single' && recurrenceData;

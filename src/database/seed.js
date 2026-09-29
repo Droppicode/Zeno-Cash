@@ -11,6 +11,7 @@ export const resetDatabase = async () => {
       DELETE FROM recurrences;
       DELETE FROM transaction_groups;
       DELETE FROM recurrence_groups;
+      DELETE FROM group_rules;
       DELETE FROM groups;
       DELETE FROM monthly_balances;
       DELETE FROM accounts;
@@ -55,6 +56,7 @@ export const seedDatabase = async (force = false) => {
       DELETE FROM recurrences;
       DELETE FROM transaction_groups;
       DELETE FROM recurrence_groups;
+      DELETE FROM group_rules;
       DELETE FROM groups;
       DELETE FROM monthly_balances;
       DELETE FROM accounts;
