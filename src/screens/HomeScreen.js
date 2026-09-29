@@ -149,12 +149,7 @@ export default function HomeScreen({ route, navigation }) {
         {/* Resumo Dinâmico (Total do Período) */}
         <View style={[styles.summaryCard, { backgroundColor: activeTheme.card }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={[styles.summaryTitle, { color: activeTheme.textSecondary }]}>Balanço do Período</Text>
-              <TouchableOpacity onPress={() => Alert.alert('Assistente IA', 'Em breve.')}>
-                <Ionicons name="sparkles-outline" size={17} color={activeTheme.textSecondary} />
-              </TouchableOpacity>
-            </View>
+            <Text style={[styles.summaryTitle, { color: activeTheme.textSecondary }]}>Balanço do Período</Text>
             <MonthSelector 
               theme={activeTheme}
               centerDate={centerMonthDate}
@@ -240,6 +235,9 @@ export default function HomeScreen({ route, navigation }) {
       </ScrollView>
 
       {/* FAB */}
+      <TouchableOpacity style={[styles.assistantFab, { backgroundColor: activeTheme.card }]} onPress={() => Alert.alert('Assistente IA', 'Em breve.')}>
+        <Ionicons name="sparkles-outline" size={22} color={activeTheme.accent} />
+      </TouchableOpacity>
       <TouchableOpacity style={[styles.fab, { backgroundColor: activeTheme.accent }]} onPress={() => { setEditingTx(null); setModalVisible(true); }}>
         <Ionicons name="add" size={32} color="#121212" />
       </TouchableOpacity>
@@ -293,6 +291,7 @@ const getStyles = (theme) => {
     groupedAmount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
     fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 6 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+    assistantFab: { position: 'absolute', right: 20 * z, bottom: 92 * z, width: 44 * z, height: 44 * z, borderRadius: 6 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     modalContent: { borderTopLeftRadius: 6 * z, borderTopRightRadius: 6 * z, padding: 24 * z, minHeight: 300 * z },
     modalTitle: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 16 * z, fontFamily: f },
