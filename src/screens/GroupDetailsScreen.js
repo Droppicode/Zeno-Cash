@@ -48,8 +48,9 @@ export default function GroupDetailsScreen({ route, navigation }) {
 
   useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
+  const settledTxs = useMemo(() => groupTxs.filter(tx => tx.isPending !== 1), [groupTxs]);
   const analyticsData = useAnalytics({
-    txList: groupTxs,
+    txList: settledTxs,
     categoryList,
     accountList,
     recurrences: [],
