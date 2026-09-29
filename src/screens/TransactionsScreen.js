@@ -291,6 +291,7 @@ export default function TransactionsScreen({ route, navigation }) {
     await saveTransaction(data.id, data);
     await loadAccounts(); 
     await loadDebts();
+    await loadTxGroupMap();
     setModalVisible(false);
     setEditingTx(null);
   };
