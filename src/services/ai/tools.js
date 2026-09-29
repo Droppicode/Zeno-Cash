@@ -203,7 +203,7 @@ export const TOOL_SPECS = [
   },
   {
     name: 'month_summary',
-    description: 'Resume o mês atual ou um mês informado em 4–6 pontos curtos.',
+    description: 'Resume o mês atual ou um mês informado em 4–6 pontos curtos. Os totais seguem o cabeçalho da Home (incluem pendentes; pendingCount informa quantas há).',
     parameters: {
       type: 'object',
       properties: { month: { type: 'string', description: 'YYYY-MM' } }
@@ -392,17 +392,15 @@ export async function executeTool(name, args = {}, ctx = {}) {
     const range = monthRange(args.month);
     const transactions = (ctx.txList || []).filter(tx =>
       !tx.isIgnored &&
-      !isHidden(tx) &&
       tx.date >= range.start &&
       tx.date <= range.end
     );
     const previousTransactions = (ctx.txList || []).filter(tx =>
       !tx.isIgnored &&
-      !isHidden(tx) &&
       tx.date >= range.previousStart &&
       tx.date <= range.previousEnd
     );
-    const usable = transactions.filter(tx => tx.isPending !== 1);
+    const usable = transactions;
     const income = usable
       .filter(tx => tx.type === 'income')
       .reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
@@ -410,7 +408,7 @@ export async function executeTool(name, args = {}, ctx = {}) {
       .filter(tx => tx.type === 'expense')
       .reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
     const previousExpense = previousTransactions
-      .filter(tx => tx.type === 'expense' && tx.isPending !== 1)
+      .filter(tx => tx.type === 'expense')
       .reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
     const categoryTotals = new Map();
     usable.filter(tx => tx.type === 'expense').forEach(tx => {
@@ -423,7 +421,7 @@ export async function executeTool(name, args = {}, ctx = {}) {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
     const topExpenses = usable
-      .filter(tx => tx.type === 'expense')
+      .filter(tx => tx.type === 'expense' && !isHidden(tx))
       .sort((a, b) => Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0)))
       .slice(0, 3)
       .map(tx => ({ date: dateText(tx.date), description: tx.description, amount: Math.abs(Number(tx.amount || 0)) }));
