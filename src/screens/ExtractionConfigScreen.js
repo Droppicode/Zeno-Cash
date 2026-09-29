@@ -14,7 +14,7 @@ const PROVIDER_MODELS = {
   gemini: [
     { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', desc: 'Nova Geração • Recomendado' },
     { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', desc: 'Alta Capacidade' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Rápido e Atualizado' },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', desc: 'Rápido • Cota gratuita maior' },
   ],
   claude: [
     { id: 'claude-fable-5', name: 'Claude 5 Fable', desc: 'Agente Autônomo • Top de Linha' },
