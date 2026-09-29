@@ -308,6 +308,18 @@ verify everything returns to the baseline.
 - [ ] Repetir no web e Android; marcar dependências de provedor como untested se a API estiver
       indisponível. Aplicar as notas de cota do Fase 3.
 
+Notas da Fase 4:
+- A transação do recibo tem data histórica (12/03); em Transações mude o período avançado para
+  "Sempre" antes de procurar, senão o filtro de 30/90 dias esconde a linha.
+- Teste PNG e PDF pelo file picker real (no Android, `adb push` para `/sdcard/Download`).
+  Descarte a proposta do segundo formato e confirme que continua 1 transação (sem duplicar).
+- O "Resumo do mês" segue o cabeçalho da Home: inclui pendentes e acertos, exclui só ignoradas.
+  Não confundir com GroupDetails, que exclui pendentes dos KPIs.
+- Peça duas preferências diferentes para exercitar remoção individual vs. "Limpar tudo";
+  reabra o app antes da remoção e depois do limpar para checar os dois estados.
+- Câmera no emulador só valida permissão/captura/recorte/anexo/remoção (cena sintética).
+  Não declare reconhecimento de recibo via câmera sem um recibo real.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
