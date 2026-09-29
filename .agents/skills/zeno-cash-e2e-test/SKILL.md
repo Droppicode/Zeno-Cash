@@ -290,6 +290,24 @@ verify everything returns to the baseline.
 - [ ] Repetir os fluxos na web e no Android; se a API estiver indisponível, marcar os casos
       dependentes como untested e registrar o motivo.
 
+## Fase 4 — IA multimodal, configurações e memória
+- [ ] Anexar uma imagem de recibo no Assistente. Gere uma fixture PNG simples com:
+      `python -c "from PIL import Image,ImageDraw; im=Image.new('RGB',(900,300),'white'); ImageDraw.Draw(im).text((20,20),'PADARIA CENTRAL 12/03/2026 TOTAL R$ 23,50',fill='black'); im.save('/tmp/recibo.png')"`
+      O cartão deve propor 1 transação com categoria e conta.
+- [ ] Aplicar a proposta do recibo e confirmar a transação em Transações com categoria e conta.
+- [ ] Anexar um PDF no web e confirmar que o documento é enviado ao Assistente.
+- [ ] Pedir "Resumo do mês" e comparar receitas, despesas e saldo com os totais da Home.
+- [ ] Pedir "Mude para o tema claro"; aplicar o cartão de configurações e confirmar a mudança imediata.
+- [ ] Pedir "Esconda os cartões na Home"; aplicar a proposta e confirmar o módulo oculto.
+- [ ] Dizer "sempre responda em tópicos"; verificar a linha "Lembrado" e o item em
+      Config → Extração → Memória do assistente.
+- [ ] Remover uma preferência e usar "Limpar tudo"; confirmar que a memória fica vazia.
+- [ ] Descartar uma proposta de configurações e confirmar que tema, módulos e período não mudam.
+- [ ] Confirmar persistência de propostas aplicadas, configurações e memória após reload web
+      e reabertura Android.
+- [ ] Repetir no web e Android; marcar dependências de provedor como untested se a API estiver
+      indisponível. Aplicar as notas de cota do Fase 3.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
