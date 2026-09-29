@@ -6,7 +6,7 @@ import { useGroups } from '../../hooks/useGroups';
 import { calculateGroupStats } from '../../utils/GroupStats';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 
-export default function HomeGroups({ activeTheme, styles, navigation }) {
+export default function HomeGroups({ activeTheme, styles, navigation, refreshKey }) {
   const { groupList, loadGroups } = useGroups();
   const [groupsWithTransactions, setGroupsWithTransactions] = useState([]);
 
@@ -19,7 +19,7 @@ export default function HomeGroups({ activeTheme, styles, navigation }) {
     setGroupsWithTransactions(rows.sort((a, b) => b.latest - a.latest).slice(0, 3));
   }, [loadGroups]);
 
-  useEffect(() => { loadData(); }, [loadData, groupList.length]);
+  useEffect(() => { loadData(); }, [loadData, groupList.length, refreshKey]);
   if (groupsWithTransactions.length === 0) return null;
 
   return (

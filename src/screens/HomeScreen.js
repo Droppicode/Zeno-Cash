@@ -130,6 +130,7 @@ export default function HomeScreen({ route, navigation }) {
     await saveTx(data.id, data);
     await loadAccounts(); // Recarrega os saldos do DB
     await loadDebts(); // Recarrega dívidas caso a transação envolva divisão
+    await loadTxGroupMap();
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -227,7 +228,7 @@ export default function HomeScreen({ route, navigation }) {
           }
 
           if (modKey === 'groups' && uiConfig.homeShowGroups !== false) {
-            return <HomeGroups key="groups" activeTheme={activeTheme} styles={styles} navigation={navigation} />;
+            return <HomeGroups key="groups" activeTheme={activeTheme} styles={styles} navigation={navigation} refreshKey={txList} />;
           }
           
           return null;
