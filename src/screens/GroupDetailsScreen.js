@@ -41,7 +41,7 @@ export default function GroupDetailsScreen({ route, navigation }) {
       GroupsRepository.getTransactionsForGroup(route.params.id)
     ]);
     setGroup(loadedGroup);
-    setGroupTxs(txs);
+    setGroupTxs(txs.filter(tx => tx.isIgnored !== 1));
     loadCategories();
     loadAccounts();
   }, [route.params.id, loadCategories, loadAccounts]);
