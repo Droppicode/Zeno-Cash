@@ -203,6 +203,7 @@ export default function AssistantScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Assistente</Text>
@@ -233,20 +234,19 @@ export default function AssistantScreen({ navigation }) {
         )}
       />
       {step ? <Text style={styles.step}>{step}</Text> : null}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Pergunte ao assistente..."
-            placeholderTextColor={activeTheme.textSecondary}
-            multiline
-          />
-          <TouchableOpacity style={[styles.send, { backgroundColor: activeTheme.accent, opacity: busy || !input.trim() ? 0.5 : 1 }]} disabled={busy || !input.trim()} onPress={() => submit()}>
-            {busy ? <ActivityIndicator size="small" color="#121212" /> : <Ionicons name="arrow-up" size={21} color="#121212" />}
-          </TouchableOpacity>
-        </View>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          value={input}
+          onChangeText={setInput}
+          placeholder="Pergunte ao assistente..."
+          placeholderTextColor={activeTheme.textSecondary}
+          multiline
+        />
+        <TouchableOpacity style={[styles.send, { backgroundColor: activeTheme.accent, opacity: busy || !input.trim() ? 0.5 : 1 }]} disabled={busy || !input.trim()} onPress={() => submit()}>
+          {busy ? <ActivityIndicator size="small" color="#121212" /> : <Ionicons name="arrow-up" size={21} color="#121212" />}
+        </TouchableOpacity>
+      </View>
       </KeyboardAvoidingView>
       <GroupModal
         visible={!!editingProposal}
