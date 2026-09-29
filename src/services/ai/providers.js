@@ -37,7 +37,19 @@ const requestJson = async (url, options, provider) => {
 };
 
 const geminiContents = messages => messages.flatMap(message => {
-  if (message.role === 'user') return [{ role: 'user', parts: [{ text: message.text || '' }] }];
+  if (message.role === 'user') {
+    const attachments = message.attachments || [];
+    const parts = [
+      { text: message.text || '' },
+      ...attachments.map(attachment => ({
+        inline_data: {
+          mime_type: attachment.mimeType,
+          data: attachment.base64
+        }
+      }))
+    ];
+    return [{ role: 'user', parts }];
+  }
   if (message.role === 'assistant') {
     if (message.raw) return [{ role: 'model', parts: message.raw.parts || [] }];
     return [{ role: 'model', parts: [{ text: message.text || '' }] }];
@@ -54,7 +66,30 @@ const geminiContents = messages => messages.flatMap(message => {
 });
 
 const openAiMessages = messages => messages.flatMap(message => {
-  if (message.role === 'user') return [{ role: 'user', content: message.text || '' }];
+  if (message.role === 'user') {
+    const attachments = message.attachments || [];
+    if (!attachments.length) return [{ role: 'user', content: message.text || '' }];
+    return [{
+      role: 'user',
+      content: [
+        { type: 'text', text: message.text || '' },
+        ...attachments.map(attachment => attachment.mimeType === 'application/pdf'
+          ? {
+            type: 'file',
+            file: {
+              filename: attachment.name || 'documento.pdf',
+              file_data: `data:application/pdf;base64,${attachment.base64}`
+            }
+          }
+          : {
+            type: 'image_url',
+            image_url: {
+              url: `data:${attachment.mimeType};base64,${attachment.base64}`
+            }
+          })
+      ]
+    }];
+  }
   if (message.role === 'assistant') {
     const raw = message.raw || {};
     return [{
@@ -78,7 +113,33 @@ const openAiMessages = messages => messages.flatMap(message => {
 });
 
 const claudeMessages = messages => messages.flatMap(message => {
-  if (message.role === 'user') return [{ role: 'user', content: message.text || '' }];
+  if (message.role === 'user') {
+    const attachments = message.attachments || [];
+    if (!attachments.length) return [{ role: 'user', content: message.text || '' }];
+    return [{
+      role: 'user',
+      content: [
+        { type: 'text', text: message.text || '' },
+        ...attachments.map(attachment => attachment.mimeType === 'application/pdf'
+          ? {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: attachment.base64
+            }
+          }
+          : {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: attachment.mimeType,
+              data: attachment.base64
+            }
+          })
+      ]
+    }];
+  }
   if (message.role === 'assistant') return [{ role: 'assistant', content: message.raw || [{ type: 'text', text: message.text || '' }] }];
   if (message.role === 'tool') return [{
     role: 'user',

@@ -153,6 +153,7 @@ export const SettingsProvider = ({ children }) => {
   const [activeTheme, setActiveTheme] = useState(defaultTheme);
   const [customThemes, setCustomThemes] = useState([defaultTheme, defaultLightTheme, ...EXTRA_PRESETS]);
   const [defaultPeriod, setDefaultPeriod] = useState('30d');
+  const [assistantMemory, setAssistantMemory] = useState([]);
   const [llmProvider, setLlmProvider] = useState('openai');
   const [llmModel, setLlmModel] = useState('');
   const [llmKey, setLlmKey] = useState('');
@@ -206,6 +207,7 @@ export const SettingsProvider = ({ children }) => {
             loadedThemes = finalThemes;
           }
           if (item.key === 'defaultPeriod') setDefaultPeriod(item.value);
+          if (item.key === 'assistantMemory') setAssistantMemory(JSON.parse(item.value));
           if (item.key === 'llmProvider') setLlmProvider(item.value);
           if (item.key === 'llmModel') setLlmModel(item.value);
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
@@ -272,6 +274,7 @@ export const SettingsProvider = ({ children }) => {
     if (key === 'activeTheme') setActiveTheme(value);
     if (key === 'customThemes') setCustomThemes(value);
     if (key === 'defaultPeriod') setDefaultPeriod(value);
+    if (key === 'assistantMemory') setAssistantMemory(Array.isArray(value) ? value.slice(-10) : []);
     if (key === 'llmProvider') {
       setLlmProvider(value);
       getSecureKey(value).then(k => setLlmKey(k));
@@ -319,7 +322,7 @@ export const SettingsProvider = ({ children }) => {
   };
 
   const contextValue = useMemo(() => ({
-    activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig,
+    activeTheme, customThemes, defaultPeriod, assistantMemory, llmProvider, llmModel, llmKey, uiConfig,
     macroTargets, macroOptions, macroMapping, backupLimit, backupFrequency,
     autoBackupEnabled, autoBackupDestination,
     isLoaded,
@@ -327,7 +330,7 @@ export const SettingsProvider = ({ children }) => {
     getSecureKey,
     saveSecureKey
   }), [
-    activeTheme, customThemes, defaultPeriod, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
+    activeTheme, customThemes, defaultPeriod, assistantMemory, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
     macroOptions, macroMapping, backupLimit, backupFrequency, autoBackupEnabled, autoBackupDestination, isLoaded,
     saveSetting, getSecureKey, saveSecureKey
   ]);

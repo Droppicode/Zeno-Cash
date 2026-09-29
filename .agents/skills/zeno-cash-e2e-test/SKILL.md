@@ -290,6 +290,36 @@ verify everything returns to the baseline.
 - [ ] Repetir os fluxos na web e no Android; se a API estiver indisponível, marcar os casos
       dependentes como untested e registrar o motivo.
 
+## Fase 4 — IA multimodal, configurações e memória
+- [ ] Anexar uma imagem de recibo no Assistente. Gere uma fixture PNG simples com:
+      `python -c "from PIL import Image,ImageDraw; im=Image.new('RGB',(900,300),'white'); ImageDraw.Draw(im).text((20,20),'PADARIA CENTRAL 12/03/2026 TOTAL R$ 23,50',fill='black'); im.save('/tmp/recibo.png')"`
+      O cartão deve propor 1 transação com categoria e conta.
+- [ ] Aplicar a proposta do recibo e confirmar a transação em Transações com categoria e conta.
+- [ ] Anexar um PDF no web e confirmar que o documento é enviado ao Assistente.
+- [ ] Pedir "Resumo do mês" e comparar receitas, despesas e saldo com os totais da Home.
+- [ ] Pedir "Mude para o tema claro"; aplicar o cartão de configurações e confirmar a mudança imediata.
+- [ ] Pedir "Esconda os cartões na Home"; aplicar a proposta e confirmar o módulo oculto.
+- [ ] Dizer "sempre responda em tópicos"; verificar a linha "Lembrado" e o item em
+      Config → Extração → Memória do assistente.
+- [ ] Remover uma preferência e usar "Limpar tudo"; confirmar que a memória fica vazia.
+- [ ] Descartar uma proposta de configurações e confirmar que tema, módulos e período não mudam.
+- [ ] Confirmar persistência de propostas aplicadas, configurações e memória após reload web
+      e reabertura Android.
+- [ ] Repetir no web e Android; marcar dependências de provedor como untested se a API estiver
+      indisponível. Aplicar as notas de cota do Fase 3.
+
+Notas da Fase 4:
+- A transação do recibo tem data histórica (12/03); em Transações mude o período avançado para
+  "Sempre" antes de procurar, senão o filtro de 30/90 dias esconde a linha.
+- Teste PNG e PDF pelo file picker real (no Android, `adb push` para `/sdcard/Download`).
+  Descarte a proposta do segundo formato e confirme que continua 1 transação (sem duplicar).
+- O "Resumo do mês" segue o cabeçalho da Home: inclui pendentes e acertos, exclui só ignoradas.
+  Não confundir com GroupDetails, que exclui pendentes dos KPIs.
+- Peça duas preferências diferentes para exercitar remoção individual vs. "Limpar tudo";
+  reabra o app antes da remoção e depois do limpar para checar os dois estados.
+- Câmera no emulador só valida permissão/captura/recorte/anexo/remoção (cena sintética).
+  Não declare reconhecimento de recibo via câmera sem um recibo real.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that

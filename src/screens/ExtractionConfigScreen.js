@@ -27,7 +27,7 @@ const PROVIDER_MODELS = {
 };
 
 export default function ExtractionConfigScreen({ onBack }) {
-  const { activeTheme, llmKey, llmProvider, llmModel, saveSetting, getSecureKey, saveSecureKey } = useContext(SettingsContext);
+  const { activeTheme, llmKey, llmProvider, llmModel, assistantMemory, saveSetting, getSecureKey, saveSecureKey } = useContext(SettingsContext);
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
   const [providerLocal, setProviderLocal] = useState(llmProvider || 'openai');
   const [modelLocal, setModelLocal] = useState(llmModel || PROVIDER_MODELS[providerLocal || 'openai'][0].id);
@@ -133,6 +133,27 @@ export default function ExtractionConfigScreen({ onBack }) {
             onBlur={() => saveSecureKey(providerLocal, llmKeyLocal)}
           />
         </View>
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Memória do assistente</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>
+            Preferências duráveis que o assistente pode usar nas próximas conversas.
+          </Text>
+          {assistantMemory.length ? assistantMemory.map((item, index) => (
+            <View key={`${item}_${index}`} style={styles.memoryRow}>
+              <Text style={[styles.memoryText, { color: activeTheme.text }]}>• {item}</Text>
+              <TouchableOpacity onPress={() => saveSetting('assistantMemory', assistantMemory.filter((_, itemIndex) => itemIndex !== index))}>
+                <Ionicons name="close-circle-outline" size={20} color={activeTheme.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          )) : (
+            <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Nenhuma preferência lembrada.</Text>
+          )}
+          {assistantMemory.length ? (
+            <TouchableOpacity style={[styles.clearMemory, { borderColor: activeTheme.expense }]} onPress={() => saveSetting('assistantMemory', [])}>
+              <Text style={{ color: activeTheme.expense, fontFamily: f, fontWeight: 'bold' }}>Limpar tudo</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </ScrollView>
 
       <BaseModalCenter
@@ -171,6 +192,9 @@ const getLocalStyles = (theme) => {
     modelTitle: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f, marginBottom: 2 * z },
     modelDesc: { fontSize: 12 * z, fontFamily: f },
 
-    input: { padding: 12 * z, borderRadius: 4 * z, fontFamily: f, fontSize: 16 * z }
+    input: { padding: 12 * z, borderRadius: 4 * z, fontFamily: f, fontSize: 16 * z },
+    memoryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 * z },
+    memoryText: { flex: 1, fontFamily: f, marginRight: 8 * z },
+    clearMemory: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 4 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, marginTop: 8 * z }
   });
 };

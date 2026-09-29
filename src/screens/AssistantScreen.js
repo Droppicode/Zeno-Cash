@@ -9,6 +9,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useGroups } from '../hooks/useGroups';
 import { GroupsRepository } from '../services/GroupsRepository';
 import { GroupRulesRepository } from '../services/GroupRulesRepository';
+import { DocumentScanner } from '../services/DocumentScanner';
 import { runAgent } from '../services/ai/AgentRunner';
 import GroupModal from '../components/GroupModal';
 import { getZoomFactor } from '../utils/scaler';
@@ -16,13 +17,24 @@ import { getZoomFactor } from '../utils/scaler';
 const suggestions = [
   'Quanto gastei este mês?',
   'Crie um grupo com meus gastos de carro',
-  'Resumo por categoria dos últimos 3 meses'
+  'Resumo por categoria dos últimos 3 meses',
+  'Resumo do mês',
+  'Mudar para o tema claro'
 ];
 
-const proposalLabel = type => ({ group: 'Novo grupo', assign: 'Atribuição de transações', rule: 'Regra automática', transactions: 'Novas transações' }[type] || 'Proposta');
+const proposalLabel = type => ({
+  group: 'Novo grupo',
+  assign: 'Atribuição de transações',
+  rule: 'Regra automática',
+  transactions: 'Novas transações',
+  settings: 'Alteração de configurações'
+}[type] || 'Proposta');
 
 export default function AssistantScreen({ navigation }) {
-  const { activeTheme, llmProvider, llmModel, llmKey, defaultPeriod, uiConfig, getSecureKey } = useContext(SettingsContext);
+  const {
+    activeTheme, customThemes, llmProvider, llmModel, llmKey, defaultPeriod, uiConfig,
+    assistantMemory, saveSetting, getSecureKey
+  } = useContext(SettingsContext);
   const { txList, loadTransactions, saveTransaction } = useTransactions();
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
@@ -31,6 +43,7 @@ export default function AssistantScreen({ navigation }) {
   const [messages, setMessages] = useState([]);
   const [history, setHistory] = useState([]);
   const [input, setInput] = useState('');
+  const [attachment, setAttachment] = useState(null);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState('');
   const [editingProposal, setEditingProposal] = useState(null);
@@ -61,25 +74,36 @@ export default function AssistantScreen({ navigation }) {
       provider: llmProvider,
       model: llmModel,
       theme: activeTheme.name,
-      hideSettlements: uiConfig.hideDebtSettlements !== false
-    }
-  }), [txList, accountList, categoryList, groupList, txGroupMap, defaultPeriod, llmProvider, llmModel, activeTheme, uiConfig]);
+      hideSettlements: uiConfig.hideDebtSettlements !== false,
+      activeThemeId: activeTheme.id
+    },
+    themes: customThemes,
+    activeTheme,
+    activeThemeId: activeTheme.id,
+    uiConfig,
+    defaultPeriod,
+    assistantMemory,
+    accounts: accountList
+  }), [txList, accountList, categoryList, groupList, txGroupMap, defaultPeriod, llmProvider, llmModel, activeTheme, uiConfig, customThemes, assistantMemory]);
 
   useEffect(() => {
     if (messages.length) setTimeout(() => listRef.current?.scrollToEnd?.({ animated: true }), 20);
   }, [messages, step]);
 
   const submit = useCallback(async value => {
-    const userText = (value ?? input).trim();
+    const typedText = (value ?? input).trim();
+    const userText = typedText || (attachment ? 'Crie transações a partir deste documento.' : '');
     if (!userText || busy) return;
     if (!apiKey) {
       setMessages(current => [...current, { id: `m_${Date.now()}`, role: 'assistant', text: 'Configure a chave em Config → Extração de Dados para usar o assistente.', error: true }]);
       return;
     }
     setInput('');
+    const sentAttachment = attachment;
+    setAttachment(null);
     setBusy(true);
     setStep('Consultando transações…');
-    const userMessage = { id: `m_${Date.now()}_u`, role: 'user', text: userText };
+    const userMessage = { id: `m_${Date.now()}_u`, role: 'user', text: userText, attachment: sentAttachment };
     setMessages(current => [...current, userMessage]);
     try {
       const result = await runAgent({
@@ -88,15 +112,25 @@ export default function AssistantScreen({ navigation }) {
         apiKey,
         history,
         userText,
+        attachments: sentAttachment ? [{
+          mimeType: sentAttachment.mimeType,
+          base64: sentAttachment.base64,
+          name: sentAttachment.name
+        }] : undefined,
         ctx,
         onStep: name => setStep(name === 'search_transactions' ? 'Consultando transações…' : 'Analisando dados…')
       });
       setHistory(result.history);
+      if (result.memoryWrites?.length) {
+        const nextMemory = [...assistantMemory, ...result.memoryWrites].slice(-10);
+        await saveSetting('assistantMemory', nextMemory);
+      }
       setMessages(current => [...current, {
         id: `m_${Date.now()}_a`,
         role: 'assistant',
         text: result.text,
-        proposals: result.proposals
+        proposals: result.proposals,
+        remembered: result.memoryWrites?.length ? result.memoryWrites : []
       }]);
     } catch (error) {
       setMessages(current => [...current, { id: `m_${Date.now()}_e`, role: 'assistant', text: error.message || 'Não foi possível consultar o provedor.', error: true }]);
@@ -104,7 +138,17 @@ export default function AssistantScreen({ navigation }) {
       setBusy(false);
       setStep('');
     }
-  }, [input, busy, apiKey, llmProvider, llmModel, history, ctx]);
+  }, [input, attachment, busy, apiKey, llmProvider, llmModel, history, ctx, assistantMemory, saveSetting]);
+
+  const pickDocument = async () => {
+    const picked = await DocumentScanner.pickDocument();
+    if (picked) setAttachment(picked);
+  };
+
+  const pickImage = async () => {
+    const picked = await DocumentScanner.pickImage();
+    if (picked) setAttachment(picked);
+  };
 
   const refreshData = async () => {
     await Promise.all([loadGroups(), loadTxGroupMap(), loadTransactions()]);
@@ -143,13 +187,23 @@ export default function AssistantScreen({ navigation }) {
       await addRule(item.groupId, item);
     } else if (item.type === 'transactions') {
       for (const transaction of item.items || []) {
-        await saveTransaction(null, {
+        const newId = await saveTransaction(null, {
           ...transaction,
           amount: Math.abs(Number(transaction.amount || 0)),
           date: typeof transaction.date === 'string' ? new Date(transaction.date).getTime() : transaction.date,
           isPending: 0
         });
+        if (newId && transaction.groupIds?.length) {
+          await GroupsRepository.setTransactionGroups(newId, transaction.groupIds);
+        }
       }
+    } else if (item.type === 'settings') {
+      if (item.themeId) {
+        const theme = customThemes.find(candidate => candidate.id === item.themeId);
+        if (theme) await saveSetting('activeTheme', theme);
+      }
+      if (item.uiConfig) await saveSetting('uiConfig', { ...uiConfig, ...item.uiConfig });
+      if (item.defaultPeriod) await saveSetting('defaultPeriod', item.defaultPeriod);
     }
     await refreshData();
     markProposal(messageId, item.proposalId, 'applied');
@@ -178,7 +232,13 @@ export default function AssistantScreen({ navigation }) {
       {item.type === 'group' && <Text style={styles.proposalText}>{item.name} · {item.kind === 'event' ? 'Evento' : 'Contínuo'}{item.budget ? ` · R$ ${Number(item.budget).toFixed(2).replace('.', ',')}` : ''}</Text>}
       {item.type === 'assign' && <Text style={styles.proposalText}>{item.transactionIds?.length || 0} transações serão adicionadas ao grupo #{item.groupId}.</Text>}
       {item.type === 'rule' && <Text style={styles.proposalText}>Critérios: {(item.keywords || []).join(', ') || 'categoria/conta/valor'}</Text>}
-      {item.type === 'transactions' && <Text style={styles.proposalText}>{item.items?.length || 0} transações serão criadas.</Text>}
+      {item.type === 'transactions' && <Text style={styles.proposalText}>{item.count || item.items?.length || 0} transações · R$ {Number(item.total || 0).toFixed(2).replace('.', ',')}</Text>}
+      {item.type === 'settings' && <Text style={styles.proposalText}>{(item.summary || []).map(line => `• ${line}`).join('\n')}</Text>}
+      {item.type === 'transactions' && item.items?.slice(0, 5).map((transaction, index) => (
+        <Text key={`${item.proposalId}_${index}`} style={styles.preview}>
+          {transaction.date ? `${String(transaction.date).split('-').reverse().join('/')}` : '—'} · {transaction.description} · R$ {Number(transaction.amount || 0).toFixed(2).replace('.', ',')}
+        </Text>
+      ))}
       {item.transactionPreview?.length ? <Text style={styles.preview}>• {item.transactionPreview.join('\n• ')}</Text> : null}
       {item.status === 'applied' ? (
         <Text style={styles.applied}>Aplicado ✓</Text>
@@ -196,7 +256,9 @@ export default function AssistantScreen({ navigation }) {
 
   const renderMessage = ({ item }) => (
     <View style={[styles.message, item.role === 'user' ? styles.userMessage : styles.assistantMessage]}>
+      {item.role === 'user' && item.attachment ? <Text style={styles.attachmentLine}>📎 {item.attachment.name}</Text> : null}
       <Text style={[styles.messageText, item.error && { color: activeTheme.expense }]}>{item.text}</Text>
+      {item.role === 'assistant' && item.remembered?.map(text => <Text key={text} style={styles.remembered}>Lembrado: {text}</Text>)}
       {(item.proposals || []).map(proposal => renderProposal(item.id, proposal))}
     </View>
   );
@@ -234,16 +296,30 @@ export default function AssistantScreen({ navigation }) {
         )}
       />
       {step ? <Text style={styles.step}>{step}</Text> : null}
+      {attachment ? (
+        <View style={styles.pendingAttachment}>
+          <Text style={styles.pendingAttachmentText} numberOfLines={1}>📎 {attachment.name}</Text>
+          <TouchableOpacity onPress={() => setAttachment(null)}><Ionicons name="close" size={18} color={activeTheme.textSecondary} /></TouchableOpacity>
+        </View>
+      ) : null}
       <View style={styles.inputRow}>
+        <TouchableOpacity onPress={pickDocument} disabled={busy} style={styles.attachButton}>
+          <Ionicons name="attach-outline" size={22} color={activeTheme.accent} />
+        </TouchableOpacity>
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity onPress={pickImage} disabled={busy} style={styles.attachButton}>
+            <Ionicons name="camera-outline" size={21} color={activeTheme.accent} />
+          </TouchableOpacity>
+        )}
         <TextInput
           style={styles.input}
           value={input}
           onChangeText={setInput}
-          placeholder="Pergunte ao assistente..."
+          placeholder={attachment && !input ? 'Crie transações a partir deste documento.' : 'Pergunte ao assistente...'}
           placeholderTextColor={activeTheme.textSecondary}
           multiline
         />
-        <TouchableOpacity style={[styles.send, { backgroundColor: activeTheme.accent, opacity: busy || !input.trim() ? 0.5 : 1 }]} disabled={busy || !input.trim()} onPress={() => submit()}>
+        <TouchableOpacity style={[styles.send, { backgroundColor: activeTheme.accent, opacity: busy || (!input.trim() && !attachment) ? 0.5 : 1 }]} disabled={busy || (!input.trim() && !attachment)} onPress={() => submit()}>
           {busy ? <ActivityIndicator size="small" color="#121212" /> : <Ionicons name="arrow-up" size={21} color="#121212" />}
         </TouchableOpacity>
       </View>
@@ -278,13 +354,18 @@ const getStyles = theme => {
     userMessage: { alignSelf: 'flex-end', backgroundColor: theme.cardSecondary },
     assistantMessage: { alignSelf: 'flex-start', backgroundColor: theme.card },
     messageText: { color: theme.text, lineHeight: 20 * z, fontFamily: f },
+    attachmentLine: { color: theme.textSecondary, fontSize: 11 * z, marginBottom: 5 * z, fontFamily: f },
+    remembered: { color: theme.textSecondary, fontSize: 11 * z, marginTop: 8 * z, fontFamily: f },
     empty: { alignItems: 'center', paddingTop: 45 * z },
     emptyText: { color: theme.textSecondary, marginTop: 10 * z, fontFamily: f },
     suggestions: { gap: 8 * z, marginTop: 18 * z, width: '100%' },
     suggestion: { borderWidth: 1, borderColor: theme.cardSecondary, borderRadius: 18 * z, padding: 10 * z },
     suggestionText: { color: theme.text, fontSize: 12 * z, fontFamily: f },
     step: { color: theme.textSecondary, fontSize: 11 * z, paddingHorizontal: 14 * z, paddingBottom: 5 * z, fontFamily: f },
+    pendingAttachment: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 12 * z, paddingHorizontal: 10 * z, paddingVertical: 6 * z, borderRadius: 6 * z, backgroundColor: theme.cardSecondary },
+    pendingAttachmentText: { color: theme.textSecondary, flex: 1, fontSize: 11 * z, fontFamily: f },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 * z, padding: 12 * z, backgroundColor: theme.card },
+    attachButton: { width: 30 * z, height: 40 * z, alignItems: 'center', justifyContent: 'center' },
     input: { flex: 1, maxHeight: 100 * z, color: theme.text, backgroundColor: theme.cardSecondary, borderRadius: 18 * z, paddingHorizontal: 14 * z, paddingVertical: 10 * z, fontFamily: f },
     send: { width: 40 * z, height: 40 * z, borderRadius: 20 * z, alignItems: 'center', justifyContent: 'center' },
     proposal: { marginTop: 10 * z, padding: 10 * z, borderRadius: 7 * z, borderWidth: 1, borderColor: theme.accent + '70' },
