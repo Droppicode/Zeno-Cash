@@ -23,6 +23,7 @@ import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 import { DocumentScanner } from '../services/DocumentScanner';
 import { ExtractionContext } from '../context/ExtractionContext';
+import { useGroups } from '../hooks/useGroups';
 
 export default function TransactionsScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod, llmProvider, llmModel, llmKey } = React.useContext(SettingsContext);
@@ -32,6 +33,7 @@ export default function TransactionsScreen({ route, navigation }) {
   const { categoryList, loadCategories } = useCategories();
   const { accountList, loadAccounts } = useAccounts();
   const { debtsList, loadDebts } = useDebts();
+  const { txGroupMap, loadTxGroupMap } = useGroups();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -123,8 +125,9 @@ export default function TransactionsScreen({ route, navigation }) {
       loadCategories();
       loadAccounts();
       loadDebts();
+      loadTxGroupMap();
       RecurrenceRepository.getActive().then(setRecurrences);
-    }, [loadTransactions, loadCategories, loadAccounts, loadDebts])
+    }, [loadTransactions, loadCategories, loadAccounts, loadDebts, loadTxGroupMap])
   );
 
   const filteredList = useMemo(() => {
@@ -274,9 +277,10 @@ export default function TransactionsScreen({ route, navigation }) {
         onAccept={item.isPending === 1 ? () => handleAccept(item) : undefined}
         onSplit={() => handleEdit(item, true)}
         hasSplit={hasSplit}
+        txGroupMap={txGroupMap}
       />
     );
-  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList]);
+  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList, txGroupMap]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>

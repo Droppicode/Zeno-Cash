@@ -215,7 +215,24 @@ verify everything returns to the baseline.
 - [ ] Web: reload page → note whether data persists (only if the web build persists to localStorage).
 - [ ] Settings (theme, module toggles, default period) persist after restart.
 
-## 12. Cross-screen consistency (final check)
+## 12. Grupos de transações
+- [ ] Criar grupo de evento em Config → Grupos, com ícone, cor, datas e orçamento.
+- [ ] Criar grupo contínuo em Config → Grupos, com meta mensal.
+- [ ] Criar grupo pelo "+" da TransactionModal e auto-selecionar.
+- [ ] Atribuir e editar grupos pelos chips da TransactionModal; remover atribuição.
+- [ ] Indicadores de grupo aparecem nas linhas de Transações e Home.
+- [ ] GroupsScreen mostra totais, contagem, barra de orçamento de eventos e média mensal contínua.
+- [ ] GroupDetails mostra KPIs, evolução mensal, composição, ranking e top vilões.
+- [ ] Remover da tela de detalhes remove apenas o vínculo, mantendo a transação.
+- [ ] Editar transação a partir de GroupDetails salva normalmente.
+- [ ] Card de Grupos na Home mostra os mais recentes e "Ver Tudo".
+- [ ] Arquivar grupo; apagar grupo mantém todas as transações.
+- [ ] Grupos de recorrência propagam para ocorrências materializadas.
+- [ ] Exportação JSON inclui grupos; importação restaura grupos antigos e novos.
+- [ ] Reset do banco limpa grupos e vínculos.
+- [ ] Persistência verificada após reload web e reabertura Android.
+
+## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
 account. Home debt totals == Debts screen totals. Card invoice totals == CreditCard screen.

@@ -17,7 +17,8 @@ export default function HomeRecentTx({
   loadAccounts,
   loadDebts,
   setEditingTx,
-  setModalVisible
+  setModalVisible,
+  txGroupMap
 }) {
   return (
     <View style={styles.section}>
@@ -58,6 +59,9 @@ export default function HomeRecentTx({
                           {item.recurrenceId && (
                             <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
                           )}
+                          {txGroupMap?.[item.id]?.slice(0, 2).map((groupId, groupIndex) => (
+                            <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: ['#4CAF50', '#FF9800', '#2196F3', '#E91E63'][groupIndex] }} />
+                          ))}
                         </View>
                         {InvoiceUtils.formatDisplayNote(item.note) ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{InvoiceUtils.formatDisplayNote(item.note)}</Text> : null}
                       </View>

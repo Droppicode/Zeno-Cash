@@ -118,6 +118,7 @@ export const TransactionRepository = {
   remove: async (id) => {
     try {
       const oldTx = await db.select().from(transactions).where(eq(transactions.id, id));
+      await expoDb.runAsync('DELETE FROM transaction_groups WHERE transaction_id = ?', [id]);
       await db.delete(transactions).where(eq(transactions.id, id));
       if (oldTx.length > 0) {
         await TransactionRepository.recalculateMonth(oldTx[0].date);

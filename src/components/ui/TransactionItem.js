@@ -16,7 +16,9 @@ const TransactionItem = React.memo(({
   onDelete, 
   onAccept, 
   onSplit, 
-  hasSplit 
+  hasSplit,
+  deleteText = 'Apagar',
+  txGroupMap
 }) => {
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   
@@ -26,6 +28,7 @@ const TransactionItem = React.memo(({
   return (
     <SwipeableCard 
       onDelete={onDelete}
+      deleteText={deleteText}
       onAccept={onAccept}
       containerStyle={[
         isFirst && { borderTopLeftRadius: 6, borderTopRightRadius: 6 },
@@ -72,6 +75,9 @@ const TransactionItem = React.memo(({
                     <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} />
                   </View>
                 )}
+                {txGroupMap?.[item.id]?.slice(0, 2).map((groupId, groupIndex) => (
+                  <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: ['#4CAF50', '#FF9800', '#2196F3', '#E91E63'][groupIndex] }} />
+                ))}
               </View>
               <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {accountName}</Text>
             </View>
@@ -95,7 +101,8 @@ const TransactionItem = React.memo(({
          prevProps.accountName === nextProps.accountName &&
          prevProps.sectionLength === nextProps.sectionLength &&
          prevProps.index === nextProps.index &&
-         prevProps.hasSplit === nextProps.hasSplit;
+         prevProps.hasSplit === nextProps.hasSplit &&
+         prevProps.txGroupMap === nextProps.txGroupMap;
 });
 
 export default TransactionItem;

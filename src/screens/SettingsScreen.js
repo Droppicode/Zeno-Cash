@@ -9,6 +9,7 @@ import ThemeConfigScreen from './ThemeConfigScreen';
 import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
+import GroupsConfigScreen from './GroupsConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
 import ExtractionConfigScreen from './ExtractionConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
@@ -19,7 +20,7 @@ import { CloudBackupButtons, DangerZoneButtons } from '../components/settings/Se
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
   
-  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations', 'extraction'
+  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'groups', 'automations', 'extraction'
 
   useFocusEffect(
     useCallback(() => {
@@ -72,6 +73,14 @@ export default function SettingsScreen({ navigation }) {
     );
   }
 
+  if (currentScreen === 'groups') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
+        <GroupsConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
   if (currentScreen === 'automations') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
@@ -116,6 +125,12 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="pricetags" size={32} color={activeTheme.accent} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Categorias</Text>
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Regras e cores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('groups')}>
+            <Ionicons name="albums" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Grupos</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Viagens, carro, projetos</Text>
           </TouchableOpacity>
         </View>
 

@@ -23,12 +23,15 @@ export const DataExportService = {
       const categories = await expoDb.getAllAsync('SELECT * FROM categories');
       const recurrences = await expoDb.getAllAsync('SELECT * FROM recurrences');
       const debts = await expoDb.getAllAsync('SELECT * FROM debts');
+      const groups = await expoDb.getAllAsync('SELECT * FROM groups');
+      const transactionGroups = await expoDb.getAllAsync('SELECT * FROM transaction_groups');
+      const recurrenceGroups = await expoDb.getAllAsync('SELECT * FROM recurrence_groups');
       const settingsTable = await expoDb.getAllAsync('SELECT * FROM settings');
 
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        data: { accounts, transactions, categories, recurrences, debts, settingsTable }
+        data: { accounts, transactions, categories, recurrences, debts, groups, transactionGroups, recurrenceGroups, settingsTable }
       };
 
       const jsonStr = JSON.stringify(data, null, 2);
@@ -63,7 +66,10 @@ export const DataExportService = {
       const query = `
         SELECT 
           t.id, t.amount, t.description, t.type, t.date, t.note, t.is_pending,
-          c.name as category_name, a.name as account_name
+          c.name as category_name, a.name as account_name,
+          (SELECT GROUP_CONCAT(g.name, ';') FROM transaction_groups tg
+            INNER JOIN groups g ON g.id = tg.group_id
+            WHERE tg.transaction_id = t.id) as groups
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
         LEFT JOIN accounts a ON t.account_id = a.id
@@ -71,7 +77,7 @@ export const DataExportService = {
       `;
       const txs = await expoDb.getAllAsync(query);
       
-      let csvStr = 'ID,Valor,Descricao,Tipo,Data,Nota,Status,Categoria,Conta\n';
+      let csvStr = 'ID,Valor,Descricao,Tipo,Data,Nota,Status,Categoria,Conta,Grupos\n';
       txs.forEach(t => {
         const dateStr = new Date(t.date).toISOString().split('T')[0];
         const status = t.is_pending ? 'Pendente' : 'Confirmado';
@@ -80,7 +86,8 @@ export const DataExportService = {
         const note = (t.note || '').replace(/,/g, '');
         const cat = (t.category_name || '').replace(/,/g, '');
         const acc = (t.account_name || '').replace(/,/g, '');
-        csvStr += `${t.id},${amount},${desc},${t.type},${dateStr},${note},${status},${cat},${acc}\n`;
+        const groupNames = (t.groups || '').replace(/,/g, '');
+        csvStr += `${t.id},${amount},${desc},${t.type},${dateStr},${note},${status},${cat},${acc},${groupNames}\n`;
       });
 
       if (Platform.OS === 'web') {
@@ -116,12 +123,15 @@ export const DataExportService = {
       const categories = await expoDb.getAllAsync('SELECT * FROM categories');
       const recurrences = await expoDb.getAllAsync('SELECT * FROM recurrences');
       const debts = await expoDb.getAllAsync('SELECT * FROM debts');
+      const groups = await expoDb.getAllAsync('SELECT * FROM groups');
+      const transactionGroups = await expoDb.getAllAsync('SELECT * FROM transaction_groups');
+      const recurrenceGroups = await expoDb.getAllAsync('SELECT * FROM recurrence_groups');
       const settingsTable = await expoDb.getAllAsync('SELECT * FROM settings');
 
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        data: { accounts, transactions, categories, recurrences, debts, settingsTable }
+        data: { accounts, transactions, categories, recurrences, debts, groups, transactionGroups, recurrenceGroups, settingsTable }
       };
 
       const jsonStr = JSON.stringify(data);
@@ -183,7 +193,17 @@ export const DataExportService = {
 
   executeImport: async (data, mode = 'merge') => {
     try {
-      const { accounts = [], transactions = [], categories = [], recurrences = [], debts = [], settingsTable = [] } = data.data;
+      const {
+        accounts = [],
+        transactions = [],
+        categories = [],
+        recurrences = [],
+        debts = [],
+        groups = [],
+        transactionGroups = [],
+        recurrenceGroups = [],
+        settingsTable = []
+      } = data.data;
 
       await expoDb.withTransactionAsync(async () => {
         const insertWithoutId = async (table, rows) => {
@@ -209,19 +229,25 @@ export const DataExportService = {
         };
 
         if (mode === 'replace') {
-          await expoDb.execAsync('DELETE FROM recurrences; DELETE FROM categories; DELETE FROM accounts; DELETE FROM settings; DELETE FROM transactions; DELETE FROM debts;');
+          await expoDb.execAsync('DELETE FROM transaction_groups; DELETE FROM recurrence_groups; DELETE FROM groups; DELETE FROM recurrences; DELETE FROM categories; DELETE FROM accounts; DELETE FROM settings; DELETE FROM transactions; DELETE FROM debts;');
 
           if (accounts.length > 0) await insertWithId('accounts', accounts);
           if (categories.length > 0) await insertWithId('categories', categories);
           if (transactions.length > 0) await insertWithId('transactions', transactions);
           if (recurrences.length > 0) await insertWithId('recurrences', recurrences);
           if (debts.length > 0) await insertWithId('debts', debts);
+          if (groups.length > 0) await insertWithId('groups', groups);
+          if (transactionGroups.length > 0) await insertWithId('transaction_groups', transactionGroups);
+          if (recurrenceGroups.length > 0) await insertWithId('recurrence_groups', recurrenceGroups);
         } else {
           if (accounts.length > 0) await insertWithoutId('accounts', accounts);
           if (categories.length > 0) await insertWithoutId('categories', categories);
           if (transactions.length > 0) await insertWithoutId('transactions', transactions);
           if (recurrences.length > 0) await insertWithoutId('recurrences', recurrences);
           if (debts.length > 0) await insertWithoutId('debts', debts);
+          if (groups.length > 0) await insertWithoutId('groups', groups);
+          if (transactionGroups.length > 0) await insertWithoutId('transaction_groups', transactionGroups);
+          if (recurrenceGroups.length > 0) await insertWithoutId('recurrence_groups', recurrenceGroups);
         }
         
         if (settingsTable && settingsTable.length > 0) {

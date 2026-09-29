@@ -15,12 +15,16 @@ import { HapticFeedback } from '../utils/haptics';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
 import { useDebts } from '../hooks/useDebts';
 import AutocompleteInput from './ui/AutocompleteInput';
+import { useGroups } from '../hooks/useGroups';
+import { GroupsRepository } from '../services/GroupsRepository';
+import GroupModal from './GroupModal';
 
 export default function TransactionModal({ visible, onClose, onSave, onDelete, initialData, isContractEdit = false, initialSplitMode = false }) {
   const { activeTheme } = useContext(SettingsContext);
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
   const { getUniqueNames } = useDebts();
+  const { groupList, loadGroups, saveGroup } = useGroups();
   const navigation = useNavigation();
   
   const [errorMsg, setErrorMsg] = useState('');
@@ -32,6 +36,8 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
   const [txType, setTxType] = useState('expense');
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
+  const [groupModalVisible, setGroupModalVisible] = useState(false);
   const isManuallyCategoryModified = useRef(false);
   const descriptionRef = useRef(null);
   const noteRef = useRef(null);
@@ -74,6 +80,14 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setTxType(initialData.type);
       setSelectedAccountId(initialData.accountId);
       setSelectedCategoryId(initialData.categoryId || null);
+      loadGroups();
+      setSelectedGroupIds(initialData.groupIds || []);
+      if (!initialData.groupIds) {
+        const loadAssignedGroups = isContractEdit
+          ? GroupsRepository.getGroupIdsForRecurrence(initialData.id)
+          : GroupsRepository.getGroupIdsForTransaction(initialData.id);
+        loadAssignedGroups.then(setSelectedGroupIds);
+      }
       
       setTxDateObj(new Date(initialData.date || initialData.startDate || Date.now()));
       
@@ -134,6 +148,8 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setTxType('expense');
       setSelectedAccountId(accountList.length > 0 ? accountList[0].id : null);
       setSelectedCategoryId(null);
+      setSelectedGroupIds([]);
+      loadGroups();
       setErrorMsg('');
       setRecurrenceType('single');
       setFrequencyType('monthly');
@@ -148,7 +164,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setTxDateObj(new Date());
     }
     isManuallyCategoryModified.current = false;
-  }, [visible, initialData, accountList]);
+  }, [visible, initialData, accountList, isContractEdit, loadGroups]);
 
   // Auto-categorize only if the user hasn't manually selected a category and we are not editing
   // Auto-categorize only if the user hasn't manually selected a category and we are not editing (or if editing a pending tx and title changed)
@@ -213,6 +229,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       type: txType,
       accountId: selectedAccountId,
       categoryId: selectedCategoryId,
+      groupIds: selectedGroupIds,
       recurrenceType,
       recurrenceData: recurrenceType === 'single' ? null : {
         frequencyType,
@@ -423,6 +440,30 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                 </ScrollView>
               </View>
             )}
+
+            <View style={styles.selectorBlock}>
+              <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Grupos</Text>
+              <View style={styles.groupChipRow}>
+                {groupList.map(group => {
+                  const selected = selectedGroupIds.includes(group.id);
+                  const groupColor = group.color || activeTheme.accent;
+                  return (
+                    <TouchableOpacity
+                      key={group.id}
+                      style={[styles.groupChip, { borderColor: groupColor, backgroundColor: selected ? groupColor : `${groupColor}20` }]}
+                      onPress={() => setSelectedGroupIds(ids => selected ? ids.filter(id => id !== group.id) : [...ids, group.id])}
+                    >
+                      <Ionicons name={group.icon || 'albums'} size={14} color={selected ? '#fff' : groupColor} />
+                      <Text style={{ color: selected ? '#fff' : groupColor, fontSize: 12 * z }}>{group.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity style={[styles.groupChip, { borderColor: activeTheme.accent, backgroundColor: activeTheme.accent + '20' }]} onPress={() => setGroupModalVisible(true)}>
+                  <Ionicons name="add" size={16} color={activeTheme.accent} />
+                  <Text style={{ color: activeTheme.accent, fontSize: 12 * z }}>{groupList.length ? 'Criar' : 'Criar grupo'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Configurações de Recorrência */}
             {recurrenceType !== 'single' && (!initialData?.id || isContractEdit) && (
@@ -662,6 +703,17 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+      <GroupModal
+        visible={groupModalVisible}
+        theme={activeTheme}
+        onClose={() => setGroupModalVisible(false)}
+        onSave={async (id, data) => {
+          const newId = await saveGroup(id, data);
+          await loadGroups();
+          if (!id && newId) setSelectedGroupIds(ids => [...ids, newId]);
+          return newId;
+        }}
+      />
     </Modal>
   );
 }
@@ -696,5 +748,7 @@ const getStyles = (z, f, theme) => StyleSheet.create({
   deleteButtonText: { color: theme?.expense || '#FF4B4B', fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
   clearBtn: { padding: 12 * z, marginLeft: 8 * z, justifyContent: 'center', alignItems: 'center' },
   recurrenceBox: { padding: 16 * z, borderRadius: 6 * z, marginBottom: 16 * z },
-  splitRow: { padding: 12 * z, borderRadius: 6 * z, marginBottom: 12 * z }
+  splitRow: { padding: 12 * z, borderRadius: 6 * z, marginBottom: 12 * z },
+  groupChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 * z },
+  groupChip: { flexDirection: 'row', alignItems: 'center', gap: 4 * z, borderWidth: 1, borderRadius: 14 * z, paddingHorizontal: 10 * z, paddingVertical: 7 * z }
 });

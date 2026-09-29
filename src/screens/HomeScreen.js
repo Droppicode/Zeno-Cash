@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image, DeviceEventEmitter, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image, DeviceEventEmitter, Platform, Alert } from 'react-native';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import MonthSelector from '../components/ui/MonthSelector';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,8 @@ import HomeCreditCardsList from '../components/home/HomeCreditCardsList';
 import HomePendingTx from '../components/home/HomePendingTx';
 import HomeRecentTx from '../components/home/HomeRecentTx';
 import HomeDebts from '../components/home/HomeDebts';
+import HomeGroups from '../components/home/HomeGroups';
+import { useGroups } from '../hooks/useGroups';
 
 export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -55,6 +57,7 @@ export default function HomeScreen({ route, navigation }) {
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
   const { debtsList, loadDebts } = useDebts();
+  const { txGroupMap, loadTxGroupMap } = useGroups();
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
 
@@ -64,7 +67,8 @@ export default function HomeScreen({ route, navigation }) {
       loadAccounts();
       loadCategories();
       loadDebts();
-    }, [])
+      loadTxGroupMap();
+    }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadTxGroupMap])
   );
 
   useEffect(() => {
@@ -74,10 +78,11 @@ export default function HomeScreen({ route, navigation }) {
         loadAccounts();
         loadCategories();
         loadDebts();
+        loadTxGroupMap();
       });
       return () => subscription.remove();
     }
-  }, [loadTransactions, loadAccounts, loadCategories, loadDebts]);
+  }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadTxGroupMap]);
 
   const accountBalances = useMemo(() => {
     return accountList.map(acc => {
@@ -103,8 +108,11 @@ export default function HomeScreen({ route, navigation }) {
         && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
   }, [txList, hideSettlements]);
+  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
-  let homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
+  if (!homeOrder.includes('debts')) homeOrder.push('debts');
+  if (!homeOrder.includes('groups')) homeOrder.push('groups');
   if (!homeOrder.includes('creditCards')) {
     const idx = homeOrder.indexOf('accounts');
     if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
@@ -135,7 +143,12 @@ export default function HomeScreen({ route, navigation }) {
         {/* Resumo Dinâmico (Total do Período) */}
         <View style={[styles.summaryCard, { backgroundColor: activeTheme.card }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={[styles.summaryTitle, { color: activeTheme.textSecondary }]}>Balanço do Período</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={[styles.summaryTitle, { color: activeTheme.textSecondary }]}>Balanço do Período</Text>
+              <TouchableOpacity onPress={() => Alert.alert('Assistente IA', 'Em breve.')}>
+                <Ionicons name="sparkles-outline" size={17} color={activeTheme.textSecondary} />
+              </TouchableOpacity>
+            </View>
             <MonthSelector 
               theme={activeTheme}
               centerDate={centerMonthDate}
@@ -202,12 +215,17 @@ export default function HomeScreen({ route, navigation }) {
                 loadDebts={loadDebts}
                 setEditingTx={setEditingTx}
                 setModalVisible={setModalVisible}
+                txGroupMap={txGroupMap}
               />
             );
           }
 
           if (modKey === 'debts' && uiConfig.homeShowDebts !== false) {
             return <HomeDebts key="debts" debtsList={debtsList} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
+          }
+
+          if (modKey === 'groups' && uiConfig.homeShowGroups !== false) {
+            return <HomeGroups key="groups" activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
           
           return null;

@@ -135,6 +135,34 @@ export const initWebDb = async () => {
       expense REAL DEFAULT 0,
       total REAL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      icon TEXT,
+      color TEXT,
+      kind TEXT DEFAULT 'ongoing',
+      start_date INTEGER,
+      end_date INTEGER,
+      budget REAL,
+      is_archived INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS transaction_groups (
+      transaction_id INTEGER NOT NULL,
+      group_id INTEGER NOT NULL,
+      PRIMARY KEY (transaction_id, group_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS recurrence_groups (
+      recurrence_id INTEGER NOT NULL,
+      group_id INTEGER NOT NULL,
+      PRIMARY KEY (recurrence_id, group_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_transaction_groups_group ON transaction_groups(group_id);
   `);
 
   // A estrutura e o seed das tabelas serão feitos na chamada seedDatabase() de seed.js
