@@ -62,6 +62,7 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
     messages = appendToolResults(messages, response, results);
     if (response.toolCalls.some(call => call.name?.startsWith('propose_'))) {
       finalText = response.text || 'Preparei uma proposta para você revisar.';
+      messages = [...messages, { role: 'assistant', text: finalText, toolCalls: [] }];
       reachedRoundLimit = false;
       break;
     }
