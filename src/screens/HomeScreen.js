@@ -236,7 +236,7 @@ export default function HomeScreen({ route, navigation }) {
       </ScrollView>
 
       {/* FAB */}
-      <TouchableOpacity style={[styles.assistantFab, { backgroundColor: activeTheme.card }]} onPress={() => Alert.alert('Assistente IA', 'Em breve.')}>
+      <TouchableOpacity style={[styles.assistantFab, { backgroundColor: activeTheme.card }]} onPress={() => navigation.navigate('Assistant')}>
         <Ionicons name="sparkles-outline" size={22} color={activeTheme.accent} />
       </TouchableOpacity>
       <TouchableOpacity style={[styles.fab, { backgroundColor: activeTheme.accent }]} onPress={() => { setEditingTx(null); setModalVisible(true); }}>
