@@ -207,14 +207,17 @@ export const DataExportService = {
 
       await expoDb.withTransactionAsync(async () => {
         const insertWithoutId = async (table, rows) => {
+          const insertedIds = [];
           for (const row of rows) {
             const { id, ...rest } = row;
             if (Object.keys(rest).length === 0) continue;
             const cols = Object.keys(rest).join(', ');
             const placeholders = Object.keys(rest).map(() => '?').join(', ');
             const values = Object.values(rest);
-            await expoDb.runAsync(`INSERT INTO ${table} (${cols}) VALUES (${placeholders})`, values);
+            const result = await expoDb.runAsync(`INSERT INTO ${table} (${cols}) VALUES (${placeholders})`, values);
+            insertedIds.push(result?.lastInsertRowId);
           }
+          return insertedIds;
         };
 
         const insertWithId = async (table, rows) => {
@@ -242,12 +245,34 @@ export const DataExportService = {
         } else {
           if (accounts.length > 0) await insertWithoutId('accounts', accounts);
           if (categories.length > 0) await insertWithoutId('categories', categories);
-          if (transactions.length > 0) await insertWithoutId('transactions', transactions);
-          if (recurrences.length > 0) await insertWithoutId('recurrences', recurrences);
+          const transactionIdMap = {};
+          for (const row of transactions) {
+            const [newId] = await insertWithoutId('transactions', [row]);
+            if (newId) transactionIdMap[row.id] = newId;
+          }
+          const recurrenceIdMap = {};
+          for (const row of recurrences) {
+            const [newId] = await insertWithoutId('recurrences', [row]);
+            if (newId) recurrenceIdMap[row.id] = newId;
+          }
           if (debts.length > 0) await insertWithoutId('debts', debts);
-          if (groups.length > 0) await insertWithoutId('groups', groups);
-          if (transactionGroups.length > 0) await insertWithoutId('transaction_groups', transactionGroups);
-          if (recurrenceGroups.length > 0) await insertWithoutId('recurrence_groups', recurrenceGroups);
+          const groupIdMap = {};
+          for (const row of groups) {
+            const [newId] = await insertWithoutId('groups', [row]);
+            if (newId) groupIdMap[row.id] = newId;
+          }
+          for (const row of transactionGroups) {
+            await insertWithoutId('transaction_groups', [{
+              transaction_id: transactionIdMap[row.transaction_id] || row.transaction_id,
+              group_id: groupIdMap[row.group_id] || row.group_id
+            }]);
+          }
+          for (const row of recurrenceGroups) {
+            await insertWithoutId('recurrence_groups', [{
+              recurrence_id: recurrenceIdMap[row.recurrence_id] || row.recurrence_id,
+              group_id: groupIdMap[row.group_id] || row.group_id
+            }]);
+          }
         }
         
         if (settingsTable && settingsTable.length > 0) {
