@@ -494,7 +494,8 @@ export async function executeTool(name, args = {}, ctx = {}) {
         analyticsShowCharts: 'gráficos da análise',
         transactionsShowFilters: 'filtros de transações'
       };
-      summary.push(`${value ? 'Mostrar' : 'Ocultar'} ${labels[key] || key}`);
+      const show = key === 'hideDebtSettlements' ? !value : value;
+      summary.push(`${show ? 'Mostrar' : 'Ocultar'} ${labels[key] || key}`);
     });
     if (defaultPeriod) summary.push(`Período padrão: ${defaultPeriod}`);
     return proposal(ctx, 'settings', {
