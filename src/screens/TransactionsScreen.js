@@ -24,6 +24,8 @@ import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 import { DocumentScanner } from '../services/DocumentScanner';
 import { ExtractionContext } from '../context/ExtractionContext';
 import { useGroups } from '../hooks/useGroups';
+import GroupPickerModal from '../components/GroupPickerModal';
+import { GroupsRepository } from '../services/GroupsRepository';
 
 export default function TransactionsScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod, llmProvider, llmModel, llmKey } = React.useContext(SettingsContext);
@@ -110,6 +112,10 @@ export default function TransactionsScreen({ route, navigation }) {
   
   const [recurrences, setRecurrences] = useState([]);
   const [forecastPeriod, setForecastPeriod] = useState('none');
+  const [groupFilter, setGroupFilter] = useState('all');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [groupPickerMode, setGroupPickerMode] = useState(null);
 
   const [visibleCount, setVisibleCount] = useState(50);
 
@@ -121,7 +127,7 @@ export default function TransactionsScreen({ route, navigation }) {
 
   React.useEffect(() => {
     setVisibleCount(50);
-  }, [filter, accountFilter, period, search, startDateObj, endDateObj, selectedCats, forecastPeriod]);
+  }, [filter, accountFilter, period, search, startDateObj, endDateObj, selectedCats, forecastPeriod, groupFilter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -149,6 +155,10 @@ export default function TransactionsScreen({ route, navigation }) {
       
       const catInfo = resolveCategory(item, categoryList);
       if (selectedCats.length > 0 && !selectedCats.includes(catInfo.categoryName)) {
+        return false;
+      }
+
+      if (groupFilter !== 'all' && !(txGroupMap[item.id] || []).map(String).includes(String(groupFilter))) {
         return false;
       }
       
@@ -188,6 +198,7 @@ export default function TransactionsScreen({ route, navigation }) {
       if (filter === 'income') virtualsToInclude = virtualsToInclude.filter(t => t.type === 'income');
       if (filter === 'expense') virtualsToInclude = virtualsToInclude.filter(t => t.type === 'expense');
       if (accountFilter !== 'all') virtualsToInclude = virtualsToInclude.filter(t => t.accountId === accountFilter);
+      if (groupFilter !== 'all') virtualsToInclude = [];
 
       if (search.trim() !== '') {
         const s = search.toLowerCase();
@@ -198,7 +209,7 @@ export default function TransactionsScreen({ route, navigation }) {
     }
 
     return result.sort((a, b) => b.date - a.date);
-  }, [txList, period, filter, accountFilter, selectedCats, search, startDateObj, endDateObj, categoryList, forecastPeriod, recurrences, hideSettlements]);
+  }, [txList, period, filter, accountFilter, selectedCats, search, startDateObj, endDateObj, categoryList, forecastPeriod, recurrences, hideSettlements, groupFilter, txGroupMap]);
 
   const uniqueCategories = Array.from(new Set(txList.map(item => resolveCategory(item, categoryList).categoryName)));
 
@@ -211,6 +222,54 @@ export default function TransactionsScreen({ route, navigation }) {
   };
 
   const paginatedList = filteredList.slice(0, visibleCount);
+
+  const toggleSelection = useCallback(id => {
+    setSelectedIds(current => current.includes(id)
+      ? current.filter(value => value !== id)
+      : [...current, id]);
+  }, []);
+
+  const enterSelectionMode = useCallback((item = null) => {
+    if (item?.isVirtual) return;
+    setSelectionMode(true);
+    if (item?.id != null) setSelectedIds([item.id]);
+  }, []);
+
+  const cancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds([]);
+    setGroupPickerMode(null);
+  }, []);
+
+  const selectedTransactions = useMemo(
+    () => txList.filter(tx => selectedIds.includes(tx.id) && !tx.isVirtual),
+    [txList, selectedIds]
+  );
+
+  const pickerGroups = useMemo(() => {
+    if (groupPickerMode !== 'remove') return groupList;
+    const ids = new Set(selectedTransactions.flatMap(tx => txGroupMap[tx.id] || []).map(Number));
+    return groupList.filter(group => ids.has(Number(group.id)));
+  }, [groupPickerMode, groupList, selectedTransactions, txGroupMap]);
+
+  const applyGroupPicker = useCallback(async groupIds => {
+    for (const tx of selectedTransactions) {
+      const existing = txGroupMap[tx.id] || [];
+      const next = groupPickerMode === 'remove'
+        ? existing.filter(id => !groupIds.map(Number).includes(Number(id)))
+        : [...new Set([...existing, ...groupIds])];
+      await GroupsRepository.setTransactionGroups(tx.id, next);
+    }
+    await loadTxGroupMap();
+    setGroupPickerMode(null);
+    cancelSelection();
+  }, [selectedTransactions, txGroupMap, groupPickerMode, loadTxGroupMap, cancelSelection]);
+
+  const handleCreatePickerGroup = useCallback(async (id, data) => {
+    const createdId = await GroupsRepository.add(data);
+    await loadGroups();
+    return createdId;
+  }, [loadGroups]);
 
   const groupedData = paginatedList.reduce((acc, tx) => {
     const d = new Date(tx.date);
@@ -284,13 +343,40 @@ export default function TransactionsScreen({ route, navigation }) {
         hasSplit={hasSplit}
         txGroupMap={txGroupMap}
         groupColorMap={groupColorMap}
+        selectable={selectionMode && !item.isVirtual}
+        selected={selectedIds.includes(item.id)}
+        onLongPress={() => item.isVirtual ? undefined : (selectionMode ? toggleSelection(item.id) : enterSelectionMode(item))}
       />
     );
-  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList, txGroupMap, groupColorMap]);
+  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList, txGroupMap, groupColorMap, selectionMode, selectedIds, toggleSelection, enterSelectionMode]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>
-      <View style={[styles.header, { backgroundColor: activeTheme.card }]}>
+      {selectionMode ? (
+        <View style={[styles.selectionToolbar, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.selectionTitle, { color: activeTheme.text }]}>{selectedIds.length} selecionadas</Text>
+          <TouchableOpacity
+            style={[styles.selectionButton, { backgroundColor: activeTheme.cardSecondary }]}
+            disabled={selectedIds.length === 0}
+            onPress={() => setGroupPickerMode('add')}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={activeTheme.accent} />
+            <Text style={[styles.selectionButtonText, { color: activeTheme.text }]}>Adicionar a grupo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.selectionButton, { backgroundColor: activeTheme.cardSecondary }]}
+            disabled={selectedIds.length === 0 || pickerGroups.length === 0}
+            onPress={() => setGroupPickerMode('remove')}
+          >
+            <Ionicons name="remove-circle-outline" size={18} color={activeTheme.expense} />
+            <Text style={[styles.selectionButtonText, { color: activeTheme.text }]}>Remover de grupo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={cancelSelection}>
+            <Text style={[styles.cancelSelectionText, { color: activeTheme.accent }]}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={[styles.header, { backgroundColor: activeTheme.card }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={[styles.searchBox, { backgroundColor: activeTheme.cardSecondary, flex: 1, marginBottom: 16 * getZoomFactor(activeTheme) }]}>
             <Ionicons name="search" size={20} color={activeTheme.textSecondary} style={styles.searchIcon} />
@@ -328,11 +414,12 @@ export default function TransactionsScreen({ route, navigation }) {
           activeTheme={activeTheme}
           styles={styles}
           accountList={accountList}
-          filterState={{ accountFilter, showAdvanced, filter, period, forecastPeriod, startDateObj, endDateObj, selectedCats, uniqueCategories }}
-          filterActions={{ setAccountFilter, setShowAdvanced, setFilter, setPeriod, setForecastPeriod, setStartDateObj, setEndDateObj, toggleCategory }}
+          filterState={{ accountFilter, showAdvanced, filter, period, forecastPeriod, startDateObj, endDateObj, selectedCats, uniqueCategories, groupFilter, groupList, selectionMode }}
+          filterActions={{ setAccountFilter, setShowAdvanced, setFilter, setPeriod, setForecastPeriod, setStartDateObj, setEndDateObj, toggleCategory, setGroupFilter, onStartSelection: enterSelectionMode }}
         />
 
-      </View>
+        </View>
+      )}
 
       <View style={{ flex: 1, backgroundColor: activeTheme.background }}>
         <SectionList 
@@ -351,14 +438,24 @@ export default function TransactionsScreen({ route, navigation }) {
               setVisibleCount(v => v + 50);
             }
           }}
-          onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.5}
           initialNumToRender={15}
           maxToRenderPerBatch={10}
           updateCellsBatchingPeriod={50}
           windowSize={5}
           removeClippedSubviews={true}
-        />
+      />
       </View>
+
+      <GroupPickerModal
+        visible={groupPickerMode != null}
+        theme={activeTheme}
+        groups={pickerGroups}
+        mode={groupPickerMode || 'add'}
+        onClose={() => setGroupPickerMode(null)}
+        onConfirm={applyGroupPicker}
+        onCreateGroup={handleCreatePickerGroup}
+      />
 
       <TransactionModal 
         visible={modalVisible}
@@ -408,6 +505,11 @@ const getStyles = (theme) => {
   return StyleSheet.create({
     container: { flex: 1 },
     header: { padding: 16 * z, borderBottomWidth: 1, borderBottomColor: 'transparent' },
+    selectionToolbar: { flexDirection: 'row', alignItems: 'center', gap: 8 * z, padding: 12 * z, minHeight: 68 * z },
+    selectionTitle: { fontWeight: 'bold', fontFamily: f, marginRight: 'auto' },
+    selectionButton: { flexDirection: 'row', alignItems: 'center', gap: 4 * z, paddingHorizontal: 8 * z, paddingVertical: 8 * z, borderRadius: 6 * z },
+    selectionButtonText: { fontSize: 11 * z, fontFamily: f },
+    cancelSelectionText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f },
     searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 6 * z, paddingHorizontal: 12 * z, height: 44 * z },
     searchIcon: { marginRight: 8 * z },
     searchInput: { flex: 1, fontSize: 16 * z, fontFamily: f },
