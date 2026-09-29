@@ -7,6 +7,13 @@ const monthIndex = (timestamp) => {
 
 export function calculateGroupStats(transactions = [], group = {}, now = Date.now()) {
   const validTransactions = transactions.filter(tx => tx?.date != null && tx.isIgnored !== 1 && tx.isPending !== 1);
+  const nowDate = new Date(now);
+  const currentMonthTotal = validTransactions
+    .filter(tx => {
+      const date = new Date(tx.date);
+      return date.getFullYear() === nowDate.getFullYear() && date.getMonth() === nowDate.getMonth();
+    })
+    .reduce((sum, tx) => sum + (tx.type === 'income' ? -Math.abs(tx.amount || 0) : Math.abs(tx.amount || 0)), 0);
   const sorted = [...validTransactions].sort((a, b) => a.date - b.date);
   const total = validTransactions.reduce((sum, tx) => sum + (tx.type === 'income' ? -Math.abs(tx.amount || 0) : Math.abs(tx.amount || 0)), 0);
   const firstDate = sorted[0]?.date || null;
@@ -22,7 +29,8 @@ export function calculateGroupStats(transactions = [], group = {}, now = Date.no
     lastDate,
     monthsSpan,
     monthlyAverage,
-    yearlyAverage: monthlyAverage * 12
+    yearlyAverage: monthlyAverage * 12,
+    currentMonthTotal
   };
 
   if (group.kind === 'event') {

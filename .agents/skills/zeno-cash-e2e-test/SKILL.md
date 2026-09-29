@@ -226,8 +226,23 @@ verify everything returns to the baseline.
 - [ ] Criar grupo contínuo em Config → Grupos, com meta mensal.
 - [ ] Criar grupo pelo "+" da TransactionModal e auto-selecionar.
 - [ ] Atribuir e editar grupos pelos chips da TransactionModal; remover atribuição.
+- [ ] Long-press a real transaction (or use the header checkbox) to enter bulk selection;
+      virtual/forecast rows are not selectable, swipe actions are disabled, and Add/Remove
+      group preserves unrelated memberships.
+- [ ] In Transações → filtros avançados, the Grupos chips filter real transactions and
+      resets pagination.
+- [ ] GroupTransactionPicker searches descriptions, paginates with "Carregar mais", excludes
+      ignored/settlement rows, and assigns additively.
+- [ ] GroupDetails → Regras supports rule CRUD, active toggles, keyword/category/account/
+      amount/date criteria, and apply-to-existing preview; uncheck one preview row and verify
+      only the remaining rows are assigned.
+- [ ] A matching rule auto-assigns a newly created transaction and a materialized recurrence
+      occurrence, but does not change groups when editing an existing transaction.
 - [ ] Indicadores de grupo aparecem nas linhas de Transações e Home.
-- [ ] GroupsScreen mostra totais, contagem, barra de orçamento de eventos e média mensal contínua.
+- [ ] GroupsScreen and GroupDetails show event budgets and ongoing monthly targets; verify an
+      over-budget progress bar is red.
+- [ ] GroupsScreen → compare opens a 2–4 group table and six-month chart; empty groups show
+      zeros (never NaN/Infinity).
 - [ ] GroupDetails mostra KPIs, evolução mensal, composição, ranking e top vilões.
 - [ ] Remover da tela de detalhes remove apenas o vínculo, mantendo a transação.
 - [ ] Editar transação a partir de GroupDetails salva normalmente.
@@ -235,6 +250,7 @@ verify everything returns to the baseline.
 - [ ] Arquivar grupo; apagar grupo mantém todas as transações.
 - [ ] Grupos de recorrência propagam para ocorrências materializadas.
 - [ ] Exportação JSON inclui grupos; importação restaura grupos antigos e novos.
+- [ ] Exportação JSON inclui `groupRules`; reset clears rules while retaining seeded groups.
 - [ ] Pending occurrences remain listed in GroupDetails, but contribute 0 to KPI counts,
       totals and charts; ignored ("Excluído") occurrences disappear from the KPI, charts
       and transaction list.

@@ -11,6 +11,8 @@ import { Logger } from '../utils/logger';
 import { performSilentDailyBackup } from './GoogleDriveBackup';
 import { DebtsRepository } from './DebtsRepository';
 import { GroupsRepository } from './GroupsRepository';
+import { GroupRulesRepository } from './GroupRulesRepository';
+import { matchGroupIdsForTransaction } from '../utils/GroupRules';
 
 const BACKGROUND_FETCH_TASK = 'background-recurrence-fetch';
 
@@ -43,7 +45,9 @@ export const materializeRecurrencesUpToToday = async () => {
         const newTxId = res[0]?.id;
         if (newTxId && txData.recurrenceId) {
           const recurrenceGroupIds = await GroupsRepository.getGroupIdsForRecurrence(txData.recurrenceId);
-          await GroupsRepository.setTransactionGroups(newTxId, recurrenceGroupIds);
+          const rules = await GroupRulesRepository.getAll();
+          const matchedGroupIds = matchGroupIdsForTransaction(rules, { ...txData, id: newTxId });
+          await GroupsRepository.setTransactionGroups(newTxId, [...new Set([...recurrenceGroupIds, ...matchedGroupIds])]);
           const globalDebts = await DebtsRepository.getByRecurrenceId(txData.recurrenceId);
           if (globalDebts && globalDebts.length > 0) {
             const parentRec = activeRecurrences.find(r => r.id === txData.recurrenceId);

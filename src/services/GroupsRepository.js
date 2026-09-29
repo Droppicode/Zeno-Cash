@@ -70,6 +70,7 @@ export const GroupsRepository = {
     try {
       await expoDb.runAsync('DELETE FROM transaction_groups WHERE group_id = ?', [id]);
       await expoDb.runAsync('DELETE FROM recurrence_groups WHERE group_id = ?', [id]);
+      await expoDb.runAsync('DELETE FROM group_rules WHERE group_id = ?', [id]);
       await db.delete(groups).where(eq(groups.id, id));
       return true;
     } catch (err) {

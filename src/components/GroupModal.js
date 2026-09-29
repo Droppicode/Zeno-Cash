@@ -9,7 +9,7 @@ import { getZoomFactor } from '../utils/scaler';
 export const GROUP_ICONS = ['airplane', 'car', 'home', 'briefcase', 'gift', 'albums'];
 export const GROUP_COLORS = ['#4CAF50', '#FF9800', '#F44336', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#795548', '#607D8B'];
 
-export default function GroupModal({ visible, onClose, onSave, onDelete, initialGroup = null, theme }) {
+export default function GroupModal({ visible, onClose, onSave, onDelete, onRules, initialGroup = null, theme }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState(GROUP_ICONS[0]);
@@ -144,10 +144,18 @@ export default function GroupModal({ visible, onClose, onSave, onDelete, initial
         />
 
         {initialGroup && (
+          <>
+          {onRules && (
+            <TouchableOpacity style={styles.rulesRow} onPress={onRules}>
+              <Ionicons name="funnel-outline" size={18} color={theme.accent} />
+              <Text style={{ color: theme.accent, fontFamily: theme.fontFamily || 'monospace' }}>Regras automáticas</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.archiveRow} onPress={() => setIsArchived(value => !value)}>
             <Ionicons name={isArchived ? 'checkbox' : 'square-outline'} size={20} color={isArchived ? theme.accent : theme.textSecondary} />
             <Text style={{ color: isArchived ? theme.accent : theme.textSecondary, fontFamily: theme.fontFamily || 'monospace' }}>Arquivar grupo</Text>
           </TouchableOpacity>
+          </>
         )}
         {initialGroup && onDelete && (
           <TouchableOpacity style={styles.deleteRow} onPress={handleDelete}>
@@ -171,6 +179,7 @@ const getLocalStyles = (theme) => {
     pickerItem: { width: 42 * z, height: 42 * z, borderWidth: 1, borderColor: theme.cardSecondary, borderRadius: 6 * z, alignItems: 'center', justifyContent: 'center' },
     colorItem: { width: 30 * z, height: 30 * z, borderRadius: 15 * z },
     archiveRow: { flexDirection: 'row', alignItems: 'center', gap: 8 * z, paddingVertical: 12 * z },
+    rulesRow: { flexDirection: 'row', alignItems: 'center', gap: 8 * z, paddingVertical: 12 * z },
     deleteRow: { flexDirection: 'row', alignItems: 'center', gap: 8 * z, paddingVertical: 12 * z }
   });
 };

@@ -26,12 +26,13 @@ export const DataExportService = {
       const groups = await expoDb.getAllAsync('SELECT * FROM groups');
       const transactionGroups = await expoDb.getAllAsync('SELECT * FROM transaction_groups');
       const recurrenceGroups = await expoDb.getAllAsync('SELECT * FROM recurrence_groups');
+      const groupRules = await expoDb.getAllAsync('SELECT * FROM group_rules');
       const settingsTable = await expoDb.getAllAsync('SELECT * FROM settings');
 
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        data: { accounts, transactions, categories, recurrences, debts, groups, transactionGroups, recurrenceGroups, settingsTable }
+        data: { accounts, transactions, categories, recurrences, debts, groups, transactionGroups, recurrenceGroups, groupRules, settingsTable }
       };
 
       const jsonStr = JSON.stringify(data, null, 2);
@@ -126,12 +127,13 @@ export const DataExportService = {
       const groups = await expoDb.getAllAsync('SELECT * FROM groups');
       const transactionGroups = await expoDb.getAllAsync('SELECT * FROM transaction_groups');
       const recurrenceGroups = await expoDb.getAllAsync('SELECT * FROM recurrence_groups');
+      const groupRules = await expoDb.getAllAsync('SELECT * FROM group_rules');
       const settingsTable = await expoDb.getAllAsync('SELECT * FROM settings');
 
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        data: { accounts, transactions, categories, recurrences, debts, groups, transactionGroups, recurrenceGroups, settingsTable }
+        data: { accounts, transactions, categories, recurrences, debts, groups, transactionGroups, recurrenceGroups, groupRules, settingsTable }
       };
 
       const jsonStr = JSON.stringify(data);
@@ -202,6 +204,7 @@ export const DataExportService = {
         groups = [],
         transactionGroups = [],
         recurrenceGroups = [],
+        groupRules = [],
         settingsTable = []
       } = data.data;
 
@@ -232,7 +235,7 @@ export const DataExportService = {
         };
 
         if (mode === 'replace') {
-          await expoDb.execAsync('DELETE FROM transaction_groups; DELETE FROM recurrence_groups; DELETE FROM groups; DELETE FROM recurrences; DELETE FROM categories; DELETE FROM accounts; DELETE FROM settings; DELETE FROM transactions; DELETE FROM debts;');
+          await expoDb.execAsync('DELETE FROM transaction_groups; DELETE FROM recurrence_groups; DELETE FROM group_rules; DELETE FROM groups; DELETE FROM recurrences; DELETE FROM categories; DELETE FROM accounts; DELETE FROM settings; DELETE FROM transactions; DELETE FROM debts;');
 
           if (accounts.length > 0) await insertWithId('accounts', accounts);
           if (categories.length > 0) await insertWithId('categories', categories);
@@ -242,6 +245,7 @@ export const DataExportService = {
           if (groups.length > 0) await insertWithId('groups', groups);
           if (transactionGroups.length > 0) await insertWithId('transaction_groups', transactionGroups);
           if (recurrenceGroups.length > 0) await insertWithId('recurrence_groups', recurrenceGroups);
+          if (groupRules.length > 0) await insertWithId('group_rules', groupRules);
         } else {
           if (accounts.length > 0) await insertWithoutId('accounts', accounts);
           if (categories.length > 0) await insertWithoutId('categories', categories);
@@ -270,6 +274,13 @@ export const DataExportService = {
           for (const row of recurrenceGroups) {
             await insertWithoutId('recurrence_groups', [{
               recurrence_id: recurrenceIdMap[row.recurrence_id] || row.recurrence_id,
+              group_id: groupIdMap[row.group_id] || row.group_id
+            }]);
+          }
+          for (const row of groupRules) {
+            const { id, ...rule } = row;
+            await insertWithoutId('group_rules', [{
+              ...rule,
               group_id: groupIdMap[row.group_id] || row.group_id
             }]);
           }

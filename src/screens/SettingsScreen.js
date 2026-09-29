@@ -76,7 +76,7 @@ export default function SettingsScreen({ navigation }) {
   if (currentScreen === 'groups') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
-        <GroupsConfigScreen onBack={() => setCurrentScreen('hub')} />
+        <GroupsConfigScreen onBack={() => setCurrentScreen('hub')} navigation={navigation} />
       </SafeAreaView>
     );
   }

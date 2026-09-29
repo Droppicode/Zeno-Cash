@@ -101,3 +101,17 @@ export const recurrenceGroups = sqliteTable('recurrence_groups', {
   recurrenceId: integer('recurrence_id').notNull(),
   groupId: integer('group_id').notNull(),
 });
+
+export const groupRules = sqliteTable('group_rules', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  groupId: integer('group_id').notNull(),
+  keywords: text('keywords'),
+  categoryIds: text('category_ids'),
+  accountId: integer('account_id'),
+  minAmount: real('min_amount'),
+  maxAmount: real('max_amount'),
+  dateFrom: integer('date_from'),
+  dateTo: integer('date_to'),
+  isActive: integer('is_active').default(1),
+  createdAt: integer('created_at').notNull(),
+});

@@ -6,7 +6,7 @@ import { SettingsContext } from '../../context/SettingsContext';
 import { getZoomFactor } from '../../utils/scaler';import { HapticFeedback } from '../../utils/haptics';
 import { Platform } from 'react-native';
 
-export default function SwipeableCard({ children, onDelete, onAccept, deleteText = 'Apagar', acceptText = 'Aprovar', containerStyle }) {
+export default function SwipeableCard({ children, onDelete, onAccept, deleteText = 'Apagar', acceptText = 'Aprovar', containerStyle, enabled = true }) {
   const { activeTheme } = useContext(SettingsContext);
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
@@ -48,6 +48,10 @@ export default function SwipeableCard({ children, onDelete, onAccept, deleteText
 
   const flattenedStyle = StyleSheet.flatten(containerStyle) || {};
   const [isSwiping, setIsSwiping] = useState(false);
+
+  if (!enabled) {
+    return <View style={containerStyle}>{typeof children === 'function' ? children(false) : children}</View>;
+  }
 
   return (
     <View style={containerStyle}>

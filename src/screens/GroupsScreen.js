@@ -34,6 +34,9 @@ export default function GroupsScreen({ navigation }) {
   const renderGroup = (group) => {
     const stats = calculateGroupStats(transactionsByGroup[group.id] || [], group);
     const color = group.color || activeTheme.accent;
+    const target = group.budget > 0 ? group.budget : null;
+    const progress = target ? (group.kind === 'ongoing' ? stats.currentMonthTotal : stats.total) / target * 100 : 0;
+    const progressColor = progress > 100 ? activeTheme.expense : color;
     return (
       <TouchableOpacity key={group.id} style={styles.card} onPress={() => navigation.navigate('GroupDetails', { id: group.id })}>
         <View style={styles.cardHeader}>
@@ -47,11 +50,16 @@ export default function GroupsScreen({ navigation }) {
         <Text style={styles.count}>{stats.count} {stats.count === 1 ? 'transação' : 'transações'}</Text>
         {group.kind === 'event' && group.budget > 0 && (
           <View style={{ marginTop: 10 * z }}>
-            <View style={styles.progressTrack}><View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, stats.budgetUsedPct || 0))}%`, backgroundColor: color }]} /></View>
+            <View style={styles.progressTrack}><View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, stats.budgetUsedPct || 0))}%`, backgroundColor: progressColor }]} /></View>
             <Text style={styles.progressText}>{Math.round(stats.budgetUsedPct || 0)}% do orçamento</Text>
           </View>
         )}
-        {group.kind === 'ongoing' && <Text style={styles.average}>Média mensal: R$ {CurrencyUtils.formatDisplay(Math.abs(stats.monthlyAverage))}</Text>}
+        {group.kind === 'ongoing' && (
+          <View style={{ marginTop: 10 * z }}>
+            <Text style={styles.average}>Este mês: R$ {CurrencyUtils.formatDisplay(Math.abs(stats.currentMonthTotal))}{target ? ` / R$ ${CurrencyUtils.formatDisplay(target)} (${Math.round(progress)}%)` : ''}</Text>
+            {target && <View style={styles.progressTrack}><View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, progress))}%`, backgroundColor: progressColor }]} /></View>}
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -61,7 +69,7 @@ export default function GroupsScreen({ navigation }) {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={activeTheme.text} /></TouchableOpacity>
         <Text style={styles.title}>Grupos</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity onPress={() => navigation.navigate('GroupCompare')}><Ionicons name="git-compare-outline" size={23} color={activeTheme.text} /></TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         {activeGroups.map(renderGroup)}
