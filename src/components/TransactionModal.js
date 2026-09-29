@@ -12,11 +12,15 @@ import { getZoomFactor } from '../utils/scaler';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import { DebtsRepository } from '../services/DebtsRepository';
 import { HapticFeedback } from '../utils/haptics';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
+import { useDebts } from '../hooks/useDebts';
+import AutocompleteInput from './ui/AutocompleteInput';
 
 export default function TransactionModal({ visible, onClose, onSave, onDelete, initialData, isContractEdit = false, initialSplitMode = false }) {
   const { activeTheme } = useContext(SettingsContext);
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
+  const { getUniqueNames } = useDebts();
   const navigation = useNavigation();
   
   const [errorMsg, setErrorMsg] = useState('');
@@ -29,6 +33,8 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const isManuallyCategoryModified = useRef(false);
+  const descriptionRef = useRef(null);
+  const noteRef = useRef(null);
   const [txDateObj, setTxDateObj] = useState(new Date());
 
   // Estados para Recorrência
@@ -62,14 +68,8 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setDescription(initialData.description);
       
       let rawNote = initialData.note || '';
-      const match = rawNote.match(/\[invoice:\d{4}-\d{2}\]/);
-      if (match) {
-        setHiddenInvoiceTag(match[0]);
-        rawNote = rawNote.replace(match[0], '').trim();
-      } else {
-        setHiddenInvoiceTag('');
-      }
-      setNote(rawNote);
+      setHiddenInvoiceTag(InvoiceUtils.extractHiddenTags(rawNote));
+      setNote(InvoiceUtils.formatDisplayNote(rawNote));
 
       setTxType(initialData.type);
       setSelectedAccountId(initialData.accountId);
@@ -130,6 +130,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       setAmount('');
       setDescription('');
       setNote('');
+      setHiddenInvoiceTag('');
       setTxType('expense');
       setSelectedAccountId(accountList.length > 0 ? accountList[0].id : null);
       setSelectedCategoryId(null);
@@ -207,7 +208,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
       _tempId: initialData?._tempId,
       amount: numAmount,
       description: description.trim(),
-      note: note.trim(),
+      note: [hiddenInvoiceTag, note.trim()].filter(Boolean).join(' '),
       date: txDateObj.getTime(),
       type: txType,
       accountId: selectedAccountId,
@@ -313,6 +314,9 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
               value={amount}
               onChangeText={handleAmountChange}
               autoFocus={!initialData?.id}
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => descriptionRef.current?.focus()}
             />
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -354,10 +358,14 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
 
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput 
+                ref={descriptionRef}
                 style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
                 placeholder="Título (Ex: Uber, Ifood...)"
                 placeholderTextColor={activeTheme.textSecondary}
                 value={description}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => noteRef.current?.focus()}
                 onChangeText={(text) => {
                   isManuallyCategoryModified.current = false;
                   setDescription(text);
@@ -372,6 +380,7 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
             
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput 
+                ref={noteRef}
                 style={[styles.inputField, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text, flex: 1 }]}
                 placeholder="Notas adicionais (Opcional)"
                 placeholderTextColor={activeTheme.textSecondary}
@@ -530,17 +539,20 @@ export default function TransactionModal({ visible, onClose, onSave, onDelete, i
                 <Text style={[styles.label, { color: activeTheme.textSecondary, marginBottom: 12 * z }]}>Pessoas na divisão</Text>
                 {splitDebts.map((debt, idx) => (
                   <View key={idx} style={[styles.splitRow, { backgroundColor: activeTheme.cardSecondary }]}>
-                    <View style={{ flexDirection: 'row', gap: 8 * z, marginBottom: 8 * z }}>
-                      <TextInput
-                        style={[styles.inputField, { backgroundColor: activeTheme.card, color: activeTheme.text, flex: 1, marginBottom: 0, paddingVertical: 10 * z }]}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 * z, marginBottom: 8 * z }}>
+                      <AutocompleteInput
+                        style={{ flex: 1, marginBottom: 0 }}
+                        inputStyle={{ backgroundColor: activeTheme.card, color: activeTheme.text, paddingVertical: 10 * z, padding: undefined, paddingHorizontal: 12 * z, fontSize: styles.inputField.fontSize }}
                         placeholder="Nome"
-                        placeholderTextColor={activeTheme.textSecondary}
                         value={debt.personName}
                         onChangeText={(text) => {
                           const newSplits = [...splitDebts];
                           newSplits[idx].personName = text;
                           setSplitDebts(newSplits);
                         }}
+                        fetchSuggestions={getUniqueNames}
+                        excludeItems={splitDebts.filter((_, i) => i !== idx).map(d => d.personName)}
+                        theme={activeTheme}
                       />
                       <TextInput
                         style={[styles.inputField, { backgroundColor: activeTheme.card, color: activeTheme.text, width: 80 * z, marginBottom: 0, paddingVertical: 10 * z }]}

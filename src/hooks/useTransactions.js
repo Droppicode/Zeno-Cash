@@ -85,12 +85,14 @@ export const useTransactions = () => {
     
     if (splitDebts) {
       const { DebtsRepository } = require('../services/DebtsRepository');
-      // Recalculate percentage debts if transaction amount changed
-      // But it's easier to just remove old and insert new ones
-      await DebtsRepository.removeByTransactionId(id);
-      
+      const existing = await DebtsRepository.getByTransactionId(id);
+      const keptIds = splitDebts.filter(d => d.id).map(d => d.id);
+      for (const old of existing) {
+        if (!keptIds.includes(old.id)) await DebtsRepository.remove(old.id);
+      }
+
       for (const debt of splitDebts) {
-        await DebtsRepository.add({
+        const debtData = {
           personName: debt.personName,
           type: debt.type || 'owed',
           amount: debt.amount,
@@ -101,7 +103,12 @@ export const useTransactions = () => {
           isPercentage: debt.isPercentage ? 1 : 0,
           ignoresInterest: debt.ignoresInterest ? 1 : 0,
           description: debt.description || txParams.description
-        });
+        };
+        if (debt.id && existing.some(e => e.id === debt.id)) {
+          await DebtsRepository.update(debt.id, debtData);
+        } else {
+          await DebtsRepository.add(debtData);
+        }
       }
     }
     
@@ -117,8 +124,9 @@ export const useTransactions = () => {
   }, [updateTransaction, addTransaction]);
 
   const removeTransaction = useCallback(async (id) => {
-    await TransactionRepository.remove(id);
     const { DebtsRepository } = require('../services/DebtsRepository');
+    await DebtsRepository.unmarkPaidBySettlementTx(id);
+    await TransactionRepository.remove(id);
     await DebtsRepository.removeByTransactionId(id);
     await loadTransactions();
   }, [loadTransactions]);

@@ -6,6 +6,15 @@ import { TransactionRepository } from './TransactionRepository';
 import { Alert, Platform, NativeModules } from 'react-native';
 import { Logger } from '../utils/logger';
 
+const downloadOnWeb = (content, fileName, mimeType) => {
+  const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export const DataExportService = {
   exportToJSON: async () => {
     try {
@@ -23,6 +32,10 @@ export const DataExportService = {
       };
 
       const jsonStr = JSON.stringify(data, null, 2);
+      if (Platform.OS === 'web') {
+        downloadOnWeb(jsonStr, 'zenocash_export.json', 'application/json');
+        return;
+      }
       const fileUri = FileSystem.cacheDirectory + 'zenocash_export.json';
       await FileSystem.writeAsStringAsync(fileUri, jsonStr);
 
@@ -70,6 +83,10 @@ export const DataExportService = {
         csvStr += `${t.id},${amount},${desc},${t.type},${dateStr},${note},${status},${cat},${acc}\n`;
       });
 
+      if (Platform.OS === 'web') {
+        downloadOnWeb(csvStr, 'zenocash_transactions.csv', 'text/csv');
+        return;
+      }
       const fileUri = FileSystem.cacheDirectory + 'zenocash_transactions.csv';
       await FileSystem.writeAsStringAsync(fileUri, csvStr);
 

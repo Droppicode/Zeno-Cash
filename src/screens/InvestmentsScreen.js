@@ -40,8 +40,8 @@ export default function InvestmentsScreen() {
                   color={activeTheme.accent} 
                 />
               </View>
-              <View>
-                <Text style={[styles.assetName, { color: activeTheme.text }]}>{item.name}</Text>
+              <View style={{ flex: 1 }}>
+                <Text numberOfLines={1} style={[styles.assetName, { color: activeTheme.text }]}>{item.name}</Text>
                 <Text style={[styles.assetType, { color: activeTheme.textSecondary }]}>{item.type}</Text>
               </View>
             </View>
@@ -104,8 +104,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 12,
   },
   iconBox: {
     width: 40,
@@ -125,6 +127,7 @@ const styles = StyleSheet.create({
   },
   cardRight: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   assetValue: {
     fontSize: 16,

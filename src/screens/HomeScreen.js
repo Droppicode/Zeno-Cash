@@ -14,6 +14,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useDebts } from '../hooks/useDebts';
 import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 import HomeAccountsList from '../components/home/HomeAccountsList';
 import HomeCreditCardsList from '../components/home/HomeCreditCardsList';
@@ -23,6 +24,7 @@ import HomeDebts from '../components/home/HomeDebts';
 
 export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
+  const hideSettlements = uiConfig.hideDebtSettlements !== false;
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
   
@@ -97,9 +99,10 @@ export default function HomeScreen({ route, navigation }) {
     return {
       pendingTxList: pending,
       displayPendingList: pending.slice(0, 10),
-      recentTxList: txList.filter(t => t.isPending !== 1 && t.isIgnored !== 1 && t.date <= Date.now())
+      recentTxList: txList.filter(t => t.isPending !== 1 && t.isIgnored !== 1 && t.date <= Date.now()
+        && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
-  }, [txList]);
+  }, [txList, hideSettlements]);
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
   let homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
   if (!homeOrder.includes('creditCards')) {
