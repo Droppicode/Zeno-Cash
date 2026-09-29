@@ -6,6 +6,16 @@ import { normalizeText } from '../../utils/GroupRules.js';
 const DAY = 24 * 60 * 60 * 1000;
 
 const asArray = value => value == null ? [] : (Array.isArray(value) ? value : [value]);
+const SETTINGS_UI_KEYS = [
+  'homeShowAccounts',
+  'homeShowCreditCards',
+  'homeShowPending',
+  'showInvestmentsTab',
+  'hideDebtSettlements',
+  'analyticsShowCharts',
+  'transactionsShowFilters'
+];
+const DEFAULT_PERIODS = ['30d', '90d', 'all'];
 
 const normalizeFilters = (args = {}) => ({
   text: asArray(args.text),
@@ -43,6 +53,43 @@ const dateText = value => {
 const parseNumber = value => value == null || value === '' ? null : Number(value);
 
 const isHidden = tx => String(tx?.note || '').includes('[debt:');
+
+const monthStart = (year, month) => new Date(year, month, 1).getTime();
+
+const monthKey = value => {
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const monthRange = value => {
+  const [year, month] = (value || monthKey(Date.now())).split('-').map(Number);
+  const start = monthStart(year, month - 1);
+  return {
+    month: `${year}-${String(month).padStart(2, '0')}`,
+    start,
+    end: monthStart(year, month) - 1,
+    previousStart: monthStart(year, month - 2),
+    previousEnd: start - 1
+  };
+};
+
+const normalizeTransactionItem = (item, ctx) => {
+  const accounts = ctx.accounts || ctx.accountList || [];
+  const categories = ctx.categoryList || ctx.categories || [];
+  const groups = ctx.groupList || ctx.groups || [];
+  const account = accounts.find(candidate => String(candidate.id) === String(item.accountId));
+  const category = categories.find(candidate => String(candidate.id) === String(item.categoryId));
+  const validGroupIds = asArray(item.groupIds)
+    .map(Number)
+    .filter(id => groups.some(group => Number(group.id) === id));
+  return {
+    ...item,
+    amount: Math.abs(Number(item.amount || 0)),
+    accountId: account?.id ?? accounts[0]?.id ?? null,
+    categoryId: category?.id ?? null,
+    groupIds: validGroupIds
+  };
+};
 
 const filteredTransactions = (args = {}, ctx = {}) => {
   const {
@@ -155,6 +202,14 @@ export const TOOL_SPECS = [
     parameters: { type: 'object', properties: {} }
   },
   {
+    name: 'month_summary',
+    description: 'Resume o mês atual ou um mês informado em 4–6 pontos curtos.',
+    parameters: {
+      type: 'object',
+      properties: { month: { type: 'string', description: 'YYYY-MM' } }
+    }
+  },
+  {
     name: 'propose_group',
     description: 'Propõe criar um grupo e opcionalmente atribuir transações e uma regra.',
     parameters: {
@@ -206,9 +261,49 @@ export const TOOL_SPECS = [
     parameters: {
       type: 'object',
       properties: {
-        items: { type: 'array', items: { type: 'object' } }
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              description: { type: 'string' },
+              amount: { type: 'number', description: 'valor positivo' },
+              type: { type: 'string', enum: ['expense', 'income'] },
+              date: { type: 'string', description: 'YYYY-MM-DD' },
+              categoryId: { type: 'integer' },
+              accountId: { type: 'integer' },
+              note: { type: 'string' },
+              groupIds: { type: 'array', items: { type: 'integer' } }
+            },
+            required: ['description', 'amount', 'type', 'date']
+          }
+        }
       },
       required: ['items']
+    }
+  },
+  {
+    name: 'propose_settings_change',
+    description: 'Propõe alterar tema, módulos da interface ou período padrão.',
+    parameters: {
+      type: 'object',
+      properties: {
+        themeId: { type: 'string', description: 'id de um tema de get_settings.themes' },
+        uiConfig: {
+          type: 'object',
+          description: 'chaves booleanas: homeShowAccounts, homeShowCreditCards, homeShowPending, showInvestmentsTab, hideDebtSettlements, analyticsShowCharts, transactionsShowFilters'
+        },
+        defaultPeriod: { type: 'string', enum: DEFAULT_PERIODS }
+      }
+    }
+  },
+  {
+    name: 'remember_preference',
+    description: 'Guarda uma preferência durável e curta do usuário.',
+    parameters: {
+      type: 'object',
+      properties: { text: { type: 'string' } },
+      required: ['text']
     }
   }
 ];
@@ -279,7 +374,70 @@ export async function executeTool(name, args = {}, ctx = {}) {
     return { items: rules };
   }
   if (name === 'get_settings') {
-    return { currency: 'BRL', ...(ctx.settings || {}), hideSettlements: ctx.settings?.hideSettlements !== false };
+    return {
+      currency: 'BRL',
+      ...(ctx.settings || {}),
+      hideSettlements: ctx.settings?.hideSettlements !== false,
+      themes: (ctx.themes || []).map(theme => ({ id: theme.id, name: theme.name })),
+      activeThemeId: ctx.activeThemeId || ctx.activeTheme?.id || null,
+      uiConfig: Object.fromEntries(
+        SETTINGS_UI_KEYS
+          .filter(key => ctx.uiConfig?.[key] !== undefined)
+          .map(key => [key, ctx.uiConfig[key]])
+      ),
+      defaultPeriod: ctx.defaultPeriod || null
+    };
+  }
+  if (name === 'month_summary') {
+    const range = monthRange(args.month);
+    const transactions = (ctx.txList || []).filter(tx =>
+      !tx.isIgnored &&
+      !isHidden(tx) &&
+      tx.date >= range.start &&
+      tx.date <= range.end
+    );
+    const previousTransactions = (ctx.txList || []).filter(tx =>
+      !tx.isIgnored &&
+      !isHidden(tx) &&
+      tx.date >= range.previousStart &&
+      tx.date <= range.previousEnd
+    );
+    const usable = transactions.filter(tx => tx.isPending !== 1);
+    const income = usable
+      .filter(tx => tx.type === 'income')
+      .reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
+    const expense = usable
+      .filter(tx => tx.type === 'expense')
+      .reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
+    const previousExpense = previousTransactions
+      .filter(tx => tx.type === 'expense' && tx.isPending !== 1)
+      .reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
+    const categoryTotals = new Map();
+    usable.filter(tx => tx.type === 'expense').forEach(tx => {
+      const category = (ctx.categoryList || []).find(item => String(item.id) === String(tx.categoryId));
+      const key = category?.name || 'Sem categoria';
+      categoryTotals.set(key, (categoryTotals.get(key) || 0) + Math.abs(Number(tx.amount || 0)));
+    });
+    const topCategories = [...categoryTotals.entries()]
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    const topExpenses = usable
+      .filter(tx => tx.type === 'expense')
+      .sort((a, b) => Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0)))
+      .slice(0, 3)
+      .map(tx => ({ date: dateText(tx.date), description: tx.description, amount: Math.abs(Number(tx.amount || 0)) }));
+    return {
+      month: range.month,
+      income,
+      expense,
+      balance: income - expense,
+      previousExpense,
+      expenseChangePct: previousExpense ? ((expense - previousExpense) / previousExpense) * 100 : null,
+      topCategories,
+      topExpenses,
+      pendingCount: transactions.filter(tx => tx.isPending === 1).length
+    };
   }
   if (name === 'propose_group') {
     const rule = args.rule ? {
@@ -305,9 +463,52 @@ export async function executeTool(name, args = {}, ctx = {}) {
     transactionPreview: (args.transactionIds || []).map(Number).map(id => ctx.txList?.find(tx => Number(tx.id) === id)?.description).filter(Boolean).slice(0, 5)
   });
   if (name === 'propose_rule') return proposal(ctx, 'rule', { groupId: Number(args.groupId), ...args });
-  if (name === 'propose_transactions') return proposal(ctx, 'transactions', {
-    items: args.items || [],
-    transactionPreview: (args.items || []).map(item => item.description).filter(Boolean).slice(0, 5)
-  });
+  if (name === 'propose_transactions') {
+    const items = (args.items || []).map(item => normalizeTransactionItem(item, ctx));
+    return proposal(ctx, 'transactions', {
+      items,
+      count: items.length,
+      total: items.reduce((sum, item) => sum + item.amount, 0),
+      transactionPreview: items.map(item => item.description).filter(Boolean).slice(0, 5)
+    });
+  }
+  if (name === 'propose_settings_change') {
+    const themes = ctx.themes || [];
+    const theme = args.themeId ? themes.find(item => item.id === args.themeId) : null;
+    if (args.themeId && !theme) return { error: 'Tema não encontrado.' };
+    const uiConfig = Object.fromEntries(
+      Object.entries(args.uiConfig || {}).filter(([key, value]) =>
+        SETTINGS_UI_KEYS.includes(key) && typeof value === 'boolean'
+      )
+    );
+    const defaultPeriod = DEFAULT_PERIODS.includes(args.defaultPeriod) ? args.defaultPeriod : undefined;
+    const summary = [];
+    if (theme) summary.push(`Tema: ${theme.name}`);
+    Object.entries(uiConfig).forEach(([key, value]) => {
+      const labels = {
+        homeShowAccounts: 'contas na Home',
+        homeShowCreditCards: 'cartões na Home',
+        homeShowPending: 'pendências na Home',
+        showInvestmentsTab: 'aba de investimentos',
+        hideDebtSettlements: 'liquidações de dívidas',
+        analyticsShowCharts: 'gráficos da análise',
+        transactionsShowFilters: 'filtros de transações'
+      };
+      summary.push(`${value ? 'Mostrar' : 'Ocultar'} ${labels[key] || key}`);
+    });
+    if (defaultPeriod) summary.push(`Período padrão: ${defaultPeriod}`);
+    return proposal(ctx, 'settings', {
+      themeId: theme?.id || null,
+      themeName: theme?.name || null,
+      uiConfig,
+      defaultPeriod: defaultPeriod || null,
+      summary
+    });
+  }
+  if (name === 'remember_preference') {
+    const text = String(args.text || '').trim();
+    if (text) ctx.memoryWrites = [...(ctx.memoryWrites || []), text].slice(-10);
+    return { ok: true, text };
+  }
   throw new Error(`Ferramenta desconhecida: ${name}`);
 }

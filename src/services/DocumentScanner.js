@@ -1,7 +1,18 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+
+const readWebBase64 = async uri => {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
 export class DocumentScanner {
   static async pickDocument() {
@@ -16,8 +27,9 @@ export class DocumentScanner {
       }
 
       const file = result.assets[0];
-      const fsFile = new File(file.uri);
-      const base64 = await fsFile.base64();
+      const base64 = Platform.OS === 'web'
+        ? await readWebBase64(file.uri)
+        : await new File(file.uri).base64();
 
       return {
         uri: file.uri,

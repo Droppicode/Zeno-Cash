@@ -89,6 +89,7 @@ export const useTransactions = () => {
     }
 
     await loadTransactions();
+    return newTxId;
   }, [loadTransactions]);
 
   const updateTransaction = useCallback(async (id, data) => {
@@ -133,9 +134,9 @@ export const useTransactions = () => {
 
   const saveTransaction = useCallback(async (id, data) => {
     if (id) {
-      await updateTransaction(id, data);
+      return updateTransaction(id, data);
     } else {
-      await addTransaction(data);
+      return addTransaction(data);
     }
   }, [updateTransaction, addTransaction]);
 

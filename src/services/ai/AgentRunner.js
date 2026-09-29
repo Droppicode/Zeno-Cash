@@ -16,21 +16,25 @@ const systemPrompt = ctx => {
   const accounts = (ctx.accountList || []).map(item => `${item.id}: ${item.name} (${item.type || 'conta'})`).join(', ') || 'nenhuma';
   const categories = (ctx.categoryList || []).map(item => `${item.id}: ${item.name}`).join(', ') || 'nenhuma';
   const groups = (ctx.groupList || []).map(item => `${item.id}: ${item.name} (${item.kind || 'ongoing'})`).join(', ') || 'nenhum';
+  const memory = (ctx.assistantMemory || []).map(item => `- ${item}`).join('\n');
   return `Você é o Assistente Financeiro do Zeno Cash.
 Hoje: ${formatDate(Date.now())}. Moeda: BRL.
 Contas: ${accounts}
 Categorias: ${categories}
 Grupos: ${groups}
 Transações disponíveis: ${transactions.length}; período ${formatDate(dates[0])} a ${formatDate(dates[dates.length - 1])}.
+${memory ? `Preferências do usuário:\n${memory}` : ''}
 
 Use ferramentas para consultar dados; nunca adivinhe valores ou IDs. Quando pedirem criar ou organizar grupos, primeiro pesquise transações e leia descrições para escolher semanticamente, sem depender apenas de palavras-chave. Para qualquer alteração use propose_* e explique ao usuário que ele deve revisar o cartão de proposta antes da aplicação.
 Estratégia: faça no máximo 2–3 chamadas de ferramenta antes de responder. Para montar um grupo, faça UMA busca ampla (search_transactions com type:'expense' e limit:200, ou por categoria/lista de termos) e escolha as transações lendo as descrições. Se já existir um grupo adequado (veja a lista de Grupos acima), use propose_assign em vez de propose_group. Depois de chamar uma ferramenta propose_*, responda ao usuário imediatamente. Nunca diga que criou ou propôs algo sem ter chamado de fato a ferramenta propose_* correspondente nesta resposta.
+Quando o usuário enviar uma imagem ou PDF (recibo, nota ou extrato), leia o documento, mapeie cada linha para uma categoria pelo nome e uma conta. Chame propose_transactions para revisão. Nunca invente valores que não estejam no documento; pergunte sobre a conta apenas se houver mais de uma conta e nenhuma estiver implícita.
+Para "resumo do mês", chame month_summary uma vez e responda em 4–6 tópicos curtos. Quando o usuário expressar uma preferência durável (por exemplo, "sempre responda em tópicos" ou "meu carro é o Fiesta"), chame remember_preference com uma frase curta.
 Responda concisamente em pt-BR, usando valores como R$ 1.234,56. Não exponha chaves secretas nem invente dados.`;
 };
 
-export async function runAgent({ provider, model, apiKey, history = [], userText, ctx = {}, onStep }) {
-  const workingCtx = { ...ctx, proposals: ctx.proposals || [] };
-  let messages = [...history, { role: 'user', text: userText }];
+export async function runAgent({ provider, model, apiKey, history = [], userText, attachments, ctx = {}, onStep }) {
+  const workingCtx = { ...ctx, proposals: ctx.proposals || [], memoryWrites: [] };
+  let messages = [...history, { role: 'user', text: userText, ...(attachments?.length ? { attachments } : {}) }];
   let finalText = null;
 
   let reachedRoundLimit = true;
@@ -86,5 +90,10 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
     }
   }
   if (!finalText) finalText = 'Não consegui formular uma resposta.';
-  return { text: finalText, proposals: workingCtx.proposals, history: messages };
+  return {
+    text: finalText,
+    proposals: workingCtx.proposals,
+    memoryWrites: workingCtx.memoryWrites,
+    history: messages
+  };
 }
