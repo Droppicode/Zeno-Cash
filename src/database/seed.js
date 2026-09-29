@@ -4,7 +4,6 @@ import { TransactionRepository } from '../services/TransactionRepository';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export const resetDatabase = async () => {
-  if (Platform.OS === 'web') return true;
   try {
     expoDb.execSync(`
       DELETE FROM transactions;
