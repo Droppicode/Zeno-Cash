@@ -8,7 +8,7 @@ import ListCard from '../components/ui/ListCard';
 import { getSharedStyles } from '../utils/StyleHub';
 import { getZoomFactor } from '../utils/scaler';
 
-export default function GroupsConfigScreen({ onBack }) {
+export default function GroupsConfigScreen({ onBack, navigation }) {
   const { activeTheme } = useContext(SettingsContext);
   const { groupList, loadGroups, saveGroup, deleteGroup } = useGroups();
   const [showEditor, setShowEditor] = useState(false);
@@ -54,6 +54,7 @@ export default function GroupsConfigScreen({ onBack }) {
         onClose={() => setShowEditor(false)}
         onSave={async (id, data) => saveGroup(id, data)}
         onDelete={deleteGroup}
+        onRules={editingGroup ? () => { setShowEditor(false); navigation.navigate('GroupRules', { groupId: editingGroup.id }); } : undefined}
       />
     </View>
   );

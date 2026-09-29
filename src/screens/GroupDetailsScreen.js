@@ -20,9 +20,10 @@ import { calculateGroupStats } from '../utils/GroupStats';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import { resolveCategory } from '../services/categorizer';
 import { getZoomFactor } from '../utils/scaler';
+import GroupTransactionPicker from '../components/GroupTransactionPicker';
 
 export default function GroupDetailsScreen({ route, navigation }) {
-  const { activeTheme, macroTargets } = useContext(SettingsContext);
+  const { activeTheme, macroTargets, uiConfig } = useContext(SettingsContext);
   const { categoryList, loadCategories } = useCategories();
   const { accountList, loadAccounts } = useAccounts();
   const { updateTransaction, loadTransactions } = useTransactions();
@@ -31,6 +32,7 @@ export default function GroupDetailsScreen({ route, navigation }) {
   const [editingTx, setEditingTx] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [groupModalVisible, setGroupModalVisible] = useState(false);
+  const [transactionPickerVisible, setTransactionPickerVisible] = useState(false);
   const [isMacro, setIsMacro] = useState(false);
   const z = getZoomFactor(activeTheme);
   const styles = useMemo(() => getStyles(activeTheme), [activeTheme]);
@@ -69,6 +71,9 @@ export default function GroupDetailsScreen({ route, navigation }) {
   const daysRemainingLabel = stats.daysRemaining != null
     ? `${stats.daysRemaining} dias`
     : (group.endDate && group.endDate <= Date.now() ? 'Encerrado' : '—');
+  const ongoingTarget = group.kind === 'ongoing' && group.budget > 0 ? group.budget : null;
+  const ongoingProgress = ongoingTarget ? (stats.currentMonthTotal / ongoingTarget) * 100 : 0;
+  const ongoingProgressColor = ongoingProgress > 100 ? activeTheme.expense : (group.color || activeTheme.accent);
 
   const removeFromGroup = (tx) => {
     Alert.alert('Remover do grupo', 'A transação será mantida e apenas deixará este grupo.', [
@@ -89,12 +94,26 @@ export default function GroupDetailsScreen({ route, navigation }) {
     await loadData();
   };
 
+  const addTransactions = async ids => {
+    const map = await GroupsRepository.getTransactionGroupMap();
+    for (const id of ids) {
+      const existing = map[id] || [];
+      await GroupsRepository.setTransactionGroups(id, [...new Set([...existing, group.id])]);
+    }
+    setTransactionPickerVisible(false);
+    await loadData();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={activeTheme.text} /></TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>{group.name}</Text>
-        <TouchableOpacity onPress={() => setGroupModalVisible(true)}><Ionicons name="pencil" size={21} color={activeTheme.text} /></TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setTransactionPickerVisible(true)}><Ionicons name="add-circle-outline" size={22} color={activeTheme.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('GroupRules', { groupId: group.id })}><Ionicons name="funnel-outline" size={21} color={activeTheme.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setGroupModalVisible(true)}><Ionicons name="pencil" size={21} color={activeTheme.text} /></TouchableOpacity>
+        </View>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.kpiRow}>
@@ -117,10 +136,16 @@ export default function GroupDetailsScreen({ route, navigation }) {
             </>
           )}
         </View>
+        {group.kind === 'ongoing' && ongoingTarget && (
+          <View style={styles.budgetProgress}>
+            <View style={styles.progressTrack}><View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, ongoingProgress))}%`, backgroundColor: ongoingProgressColor }]} /></View>
+            <Text style={styles.progressText}>Este mês: R$ {CurrencyUtils.formatDisplay(Math.abs(stats.currentMonthTotal))} / R$ {CurrencyUtils.formatDisplay(ongoingTarget)} ({Math.round(ongoingProgress)}%)</Text>
+          </View>
+        )}
         {group.kind === 'event' && group.budget > 0 && (
           <View style={styles.budgetProgress}>
             <View style={styles.progressTrack}>
-              <View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, stats.budgetUsedPct || 0))}%`, backgroundColor: group.color || activeTheme.accent }]} />
+              <View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, stats.budgetUsedPct || 0))}%`, backgroundColor: (stats.budgetUsedPct || 0) > 100 ? activeTheme.expense : (group.color || activeTheme.accent) }]} />
             </View>
             <Text style={styles.progressText}>{Math.round(stats.budgetUsedPct || 0)}% do orçamento</Text>
           </View>
@@ -131,7 +156,13 @@ export default function GroupDetailsScreen({ route, navigation }) {
           <CategoryRanking theme={activeTheme} ranking={analyticsData.categoryRanking} initiallyExpanded={false} />
           <TopVillains theme={activeTheme} expenses={analyticsData.topExpenses} categoryList={categoryList} initiallyExpanded={false} />
         </View>
-        <Text style={styles.sectionTitle}>Transações</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Transações</Text>
+          <TouchableOpacity style={styles.addTransactionsButton} onPress={() => setTransactionPickerVisible(true)}>
+            <Ionicons name="add" size={17} color="#121212" />
+            <Text style={styles.addTransactionsText}>Adicionar transações</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.transactionList}>
           {groupTxs.map((item, index) => {
             const catInfo = resolveCategory(item, categoryList);
@@ -162,6 +193,15 @@ export default function GroupDetailsScreen({ route, navigation }) {
         onClose={() => setGroupModalVisible(false)}
         onSave={async (id, data) => { await GroupsRepository.update(id, data); await loadData(); }}
         onDelete={async id => { await GroupsRepository.remove(id); navigation.goBack(); }}
+        onRules={() => { setGroupModalVisible(false); navigation.navigate('GroupRules', { groupId: group.id }); }}
+      />
+      <GroupTransactionPicker
+        visible={transactionPickerVisible}
+        theme={activeTheme}
+        groupId={group.id}
+        hideSettlements={uiConfig.hideDebtSettlements !== false}
+        onClose={() => setTransactionPickerVisible(false)}
+        onConfirm={addTransactions}
       />
     </SafeAreaView>
   );
@@ -173,6 +213,7 @@ const getStyles = (theme) => {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, backgroundColor: theme.card },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 * z },
     title: { color: theme.text, fontSize: 19 * z, fontWeight: 'bold', fontFamily: f, maxWidth: '75%' },
     scroll: { padding: 16 * z, paddingBottom: 40 * z },
     kpiRow: { flexDirection: 'row', gap: 8 * z, marginBottom: 16 * z },
@@ -184,7 +225,10 @@ const getStyles = (theme) => {
     progressBar: { height: '100%', borderRadius: 4 * z },
     progressText: { color: theme.textSecondary, fontSize: 11 * z, marginTop: 4 * z, fontFamily: f },
     chartList: { gap: 12 * z },
-    sectionTitle: { color: theme.text, fontSize: 18 * z, fontWeight: 'bold', marginVertical: 16 * z, fontFamily: f },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 16 * z },
+    sectionTitle: { color: theme.text, fontSize: 18 * z, fontWeight: 'bold', fontFamily: f },
+    addTransactionsButton: { flexDirection: 'row', alignItems: 'center', gap: 4 * z, backgroundColor: theme.accent, borderRadius: 6 * z, paddingHorizontal: 9 * z, paddingVertical: 8 * z },
+    addTransactionsText: { color: '#121212', fontSize: 11 * z, fontWeight: 'bold', fontFamily: f },
     transactionList: { borderRadius: 8 * z, overflow: 'hidden' },
     card: { backgroundColor: theme.card, padding: 14 * z },
     iconBox: { width: 38 * z, height: 38 * z },
