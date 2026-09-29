@@ -57,9 +57,13 @@ export default function HomeScreen({ route, navigation }) {
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
   const { debtsList, loadDebts } = useDebts();
-  const { txGroupMap, loadTxGroupMap } = useGroups();
+  const { groupList, loadGroups, txGroupMap, loadTxGroupMap } = useGroups();
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
+  const groupColorMap = useMemo(
+    () => Object.fromEntries(groupList.map(group => [group.id, group.color || activeTheme.accent])),
+    [groupList, activeTheme.accent]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -67,8 +71,9 @@ export default function HomeScreen({ route, navigation }) {
       loadAccounts();
       loadCategories();
       loadDebts();
+      loadGroups();
       loadTxGroupMap();
-    }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadTxGroupMap])
+    }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadGroups, loadTxGroupMap])
   );
 
   useEffect(() => {
@@ -78,11 +83,12 @@ export default function HomeScreen({ route, navigation }) {
         loadAccounts();
         loadCategories();
         loadDebts();
+        loadGroups();
         loadTxGroupMap();
       });
       return () => subscription.remove();
     }
-  }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadTxGroupMap]);
+  }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadGroups, loadTxGroupMap]);
 
   const accountBalances = useMemo(() => {
     return accountList.map(acc => {
@@ -216,6 +222,7 @@ export default function HomeScreen({ route, navigation }) {
                 setEditingTx={setEditingTx}
                 setModalVisible={setModalVisible}
                 txGroupMap={txGroupMap}
+                groupColorMap={groupColorMap}
               />
             );
           }

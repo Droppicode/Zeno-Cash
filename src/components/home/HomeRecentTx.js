@@ -18,7 +18,8 @@ export default function HomeRecentTx({
   loadDebts,
   setEditingTx,
   setModalVisible,
-  txGroupMap
+  txGroupMap,
+  groupColorMap
 }) {
   return (
     <View style={styles.section}>
@@ -60,7 +61,7 @@ export default function HomeRecentTx({
                             <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
                           )}
                           {txGroupMap?.[item.id]?.slice(0, 2).map((groupId, groupIndex) => (
-                            <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: ['#4CAF50', '#FF9800', '#2196F3', '#E91E63'][groupIndex] }} />
+                            <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: groupColorMap?.[groupId] || activeTheme.accent }} />
                           ))}
                         </View>
                         {InvoiceUtils.formatDisplayNote(item.note) ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{InvoiceUtils.formatDisplayNote(item.note)}</Text> : null}

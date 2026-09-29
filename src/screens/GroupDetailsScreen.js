@@ -59,6 +59,15 @@ export default function GroupDetailsScreen({ route, navigation }) {
   });
   if (!group) return <SafeAreaView style={styles.container} />;
   const stats = calculateGroupStats(groupTxs, group);
+  const firstTxMonth = stats.firstDate
+    ? `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][new Date(stats.firstDate).getMonth()]}/${new Date(stats.firstDate).getFullYear()}`
+    : '—';
+  const budgetLabel = group.budget > 0
+    ? `R$ ${CurrencyUtils.formatDisplay(Math.abs(stats.total))} / R$ ${CurrencyUtils.formatDisplay(group.budget)} (${Math.round(stats.budgetUsedPct || 0)}%)`
+    : '—';
+  const daysRemainingLabel = stats.daysRemaining != null
+    ? `${stats.daysRemaining} dias`
+    : (group.endDate && group.endDate <= Date.now() ? 'Encerrado' : '—');
 
   const removeFromGroup = (tx) => {
     Alert.alert('Remover do grupo', 'A transação será mantida e apenas deixará este grupo.', [
@@ -92,6 +101,29 @@ export default function GroupDetailsScreen({ route, navigation }) {
           <View style={styles.kpi}><Text style={styles.kpiLabel}>Transações</Text><Text style={styles.kpiValue}>{stats.count}</Text></View>
           <View style={styles.kpi}><Text style={styles.kpiLabel}>Média/mês</Text><Text style={styles.kpiValue}>R$ {CurrencyUtils.formatDisplay(Math.abs(stats.monthlyAverage))}</Text></View>
         </View>
+        <View style={styles.kpiRow}>
+          {group.kind === 'event' ? (
+            <>
+              <View style={styles.kpi}><Text style={styles.kpiLabel}>Orçamento</Text><Text style={styles.kpiValue}>{budgetLabel}</Text></View>
+              <View style={styles.kpi}><Text style={styles.kpiLabel}>Média/dia</Text><Text style={styles.kpiValue}>R$ {CurrencyUtils.formatDisplay(Math.abs(stats.dailyAverage || 0))}</Text></View>
+              <View style={styles.kpi}><Text style={styles.kpiLabel}>Dias restantes</Text><Text style={styles.kpiValue}>{daysRemainingLabel}</Text></View>
+            </>
+          ) : (
+            <>
+              <View style={styles.kpi}><Text style={styles.kpiLabel}>Média/ano</Text><Text style={styles.kpiValue}>R$ {CurrencyUtils.formatDisplay(Math.abs(stats.yearlyAverage))}</Text></View>
+              <View style={styles.kpi}><Text style={styles.kpiLabel}>Desde</Text><Text style={styles.kpiValue}>{firstTxMonth}</Text></View>
+              <View style={styles.kpi}><Text style={styles.kpiLabel}>Meses</Text><Text style={styles.kpiValue}>{stats.monthsSpan}</Text></View>
+            </>
+          )}
+        </View>
+        {group.kind === 'event' && group.budget > 0 && (
+          <View style={styles.budgetProgress}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, stats.budgetUsedPct || 0))}%`, backgroundColor: group.color || activeTheme.accent }]} />
+            </View>
+            <Text style={styles.progressText}>{Math.round(stats.budgetUsedPct || 0)}% do orçamento</Text>
+          </View>
+        )}
         <View style={styles.chartList}>
           <MonthlyEvolution theme={activeTheme} bars={analyticsData.monthlyBars} line={analyticsData.monthlyLine} initiallyExpanded />
           <ExpenseComposition theme={activeTheme} data={analyticsData.compositionData} totalExpense={analyticsData.kpis.totalExpense} isMacro={isMacro} setIsMacro={setIsMacro} macroTargets={macroTargets} initiallyExpanded />
@@ -146,6 +178,10 @@ const getStyles = (theme) => {
     kpi: { flex: 1, backgroundColor: theme.card, padding: 12 * z, borderRadius: 8 * z },
     kpiLabel: { color: theme.textSecondary, fontSize: 11 * z, fontFamily: f },
     kpiValue: { color: theme.text, fontSize: 15 * z, fontWeight: 'bold', marginTop: 5 * z, fontFamily: f },
+    budgetProgress: { marginBottom: 16 * z },
+    progressTrack: { height: 7 * z, borderRadius: 4 * z, backgroundColor: theme.cardSecondary, overflow: 'hidden' },
+    progressBar: { height: '100%', borderRadius: 4 * z },
+    progressText: { color: theme.textSecondary, fontSize: 11 * z, marginTop: 4 * z, fontFamily: f },
     chartList: { gap: 12 * z },
     sectionTitle: { color: theme.text, fontSize: 18 * z, fontWeight: 'bold', marginVertical: 16 * z, fontFamily: f },
     transactionList: { borderRadius: 8 * z, overflow: 'hidden' },

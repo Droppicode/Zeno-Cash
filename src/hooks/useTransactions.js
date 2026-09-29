@@ -88,9 +88,6 @@ export const useTransactions = () => {
 
     if (groupIds) {
       await GroupsRepository.setTransactionGroups(id, groupIds);
-      if (data.recurrenceId) {
-        await GroupsRepository.setRecurrenceGroups(data.recurrenceId, groupIds);
-      }
     }
     
     if (splitDebts) {

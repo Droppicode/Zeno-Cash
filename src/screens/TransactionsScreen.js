@@ -33,7 +33,7 @@ export default function TransactionsScreen({ route, navigation }) {
   const { categoryList, loadCategories } = useCategories();
   const { accountList, loadAccounts } = useAccounts();
   const { debtsList, loadDebts } = useDebts();
-  const { txGroupMap, loadTxGroupMap } = useGroups();
+  const { groupList, loadGroups, txGroupMap, loadTxGroupMap } = useGroups();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -114,6 +114,10 @@ export default function TransactionsScreen({ route, navigation }) {
   const [visibleCount, setVisibleCount] = useState(50);
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
+  const groupColorMap = useMemo(
+    () => Object.fromEntries(groupList.map(group => [group.id, group.color || activeTheme.accent])),
+    [groupList, activeTheme.accent]
+  );
 
   React.useEffect(() => {
     setVisibleCount(50);
@@ -125,9 +129,10 @@ export default function TransactionsScreen({ route, navigation }) {
       loadCategories();
       loadAccounts();
       loadDebts();
+      loadGroups();
       loadTxGroupMap();
       RecurrenceRepository.getActive().then(setRecurrences);
-    }, [loadTransactions, loadCategories, loadAccounts, loadDebts, loadTxGroupMap])
+    }, [loadTransactions, loadCategories, loadAccounts, loadDebts, loadGroups, loadTxGroupMap])
   );
 
   const filteredList = useMemo(() => {
@@ -278,9 +283,10 @@ export default function TransactionsScreen({ route, navigation }) {
         onSplit={() => handleEdit(item, true)}
         hasSplit={hasSplit}
         txGroupMap={txGroupMap}
+        groupColorMap={groupColorMap}
       />
     );
-  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList, txGroupMap]);
+  }, [activeTheme, categoryList, accountList, styles, handleEdit, handleDelete, handleAccept, debtsList, txGroupMap, groupColorMap]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.card }]}>

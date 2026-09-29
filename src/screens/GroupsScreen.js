@@ -44,7 +44,7 @@ export default function GroupsScreen({ navigation }) {
           </View>
           <Text style={[styles.total, { color: stats.total >= 0 ? activeTheme.expense : activeTheme.income }]}>R$ {CurrencyUtils.formatDisplay(Math.abs(stats.total))}</Text>
         </View>
-        <Text style={styles.count}>{stats.count} transação{stats.count === 1 ? '' : 'ções'}</Text>
+        <Text style={styles.count}>{stats.count} {stats.count === 1 ? 'transação' : 'transações'}</Text>
         {group.kind === 'event' && group.budget > 0 && (
           <View style={{ marginTop: 10 * z }}>
             <View style={styles.progressTrack}><View style={[styles.progressBar, { width: `${Math.min(100, Math.max(0, stats.budgetUsedPct || 0))}%`, backgroundColor: color }]} /></View>

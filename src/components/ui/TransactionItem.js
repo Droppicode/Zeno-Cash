@@ -18,7 +18,8 @@ const TransactionItem = React.memo(({
   onSplit, 
   hasSplit,
   deleteText = 'Apagar',
-  txGroupMap
+  txGroupMap,
+  groupColorMap
 }) => {
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   
@@ -76,7 +77,7 @@ const TransactionItem = React.memo(({
                   </View>
                 )}
                 {txGroupMap?.[item.id]?.slice(0, 2).map((groupId, groupIndex) => (
-                  <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: ['#4CAF50', '#FF9800', '#2196F3', '#E91E63'][groupIndex] }} />
+                  <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: groupColorMap?.[groupId] || activeTheme.accent }} />
                 ))}
               </View>
               <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {accountName}</Text>
@@ -102,7 +103,8 @@ const TransactionItem = React.memo(({
          prevProps.sectionLength === nextProps.sectionLength &&
          prevProps.index === nextProps.index &&
          prevProps.hasSplit === nextProps.hasSplit &&
-         prevProps.txGroupMap === nextProps.txGroupMap;
+         prevProps.txGroupMap === nextProps.txGroupMap &&
+         prevProps.groupColorMap === nextProps.groupColorMap;
 });
 
 export default TransactionItem;

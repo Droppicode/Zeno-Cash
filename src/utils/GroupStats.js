@@ -6,8 +6,9 @@ const monthIndex = (timestamp) => {
 };
 
 export function calculateGroupStats(transactions = [], group = {}, now = Date.now()) {
-  const sorted = [...transactions].filter(tx => tx?.date != null).sort((a, b) => a.date - b.date);
-  const total = transactions.reduce((sum, tx) => sum + (tx.type === 'income' ? -Math.abs(tx.amount || 0) : Math.abs(tx.amount || 0)), 0);
+  const validTransactions = transactions.filter(tx => tx?.date != null && tx.isIgnored !== 1 && tx.isPending !== 1);
+  const sorted = [...validTransactions].sort((a, b) => a.date - b.date);
+  const total = validTransactions.reduce((sum, tx) => sum + (tx.type === 'income' ? -Math.abs(tx.amount || 0) : Math.abs(tx.amount || 0)), 0);
   const firstDate = sorted[0]?.date || null;
   const lastDate = sorted[sorted.length - 1]?.date || null;
   const start = group.startDate || firstDate || now;
@@ -16,7 +17,7 @@ export function calculateGroupStats(transactions = [], group = {}, now = Date.no
   const monthlyAverage = total / monthsSpan;
   const result = {
     total,
-    count: transactions.length,
+    count: validTransactions.length,
     firstDate,
     lastDate,
     monthsSpan,
