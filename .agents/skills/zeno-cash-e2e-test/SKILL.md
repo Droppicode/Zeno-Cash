@@ -27,6 +27,9 @@ npx expo start --web --port 8081     # open http://localhost:8081
   without it re-seed on reload. Restart Metro and reload after switching branches.
 - A "🧪 Ambiente de Teste (Web)" panel (`src/components/WebMockPanel.js`) is rendered next
   to the app: simulate notifications, reset DB (re-seed) and "Avançar 30 Dias (Time Travel)".
+- In web/dev, reset followed by reload re-seeds the two demo groups (`Viagem Alagoas 2026`
+  and `Carro Fiesta`); assert disposable QA records disappeared rather than expecting every
+  table to be empty.
 - `Alert.alert` is a no-op in react-native-web unless the app polyfills it with browser
   `confirm()`/`alert()`. Verify each confirmation path (e.g. deleting an account) actually
   opens a dialog and completes.
@@ -53,7 +56,8 @@ npx expo run:android      # needs emulator running; dev build, not Expo Go
 - A `ForegroundServiceDidNotStartInTimeException` crash from
   `react-native-android-notification-listener` can happen on some emulators; it is not
   reproducible on real devices. Save the crash log, reopen and continue, and do not report
-  it as an app bug.
+  it as an app bug. If `adb` is not on PATH, use the full SDK path from
+  `$ANDROID_HOME/platform-tools/adb`.
 - Google Sign-In needs `EXPO_PUBLIC_WEB_CLIENT_ID` in the build environment; without it
   login fails.
 
@@ -89,6 +93,8 @@ Stack screens: Debts (Controle de Dívidas), CreditCard, RecurrenceDetails, Extr
 - [ ] Cards list: tap a card → CreditCard screen for that card.
 - [ ] Pendências (HomePendingTx): swipe right = accept (becomes confirmed, balance moves),
       swipe left = delete (disappears, balance unchanged).
+- [ ] After saving a transaction with groups from the Home modal, the Home Grupos card and
+      transaction dots refresh immediately without navigating away or reloading.
 - [ ] Últimas transações (global list, not filtered by the selected month): no pending, no ignored, no future items; notes never show
       `[invoice:…]` or `[debt:…]` tags.
 - [ ] Dívidas card: "Me devem" / "Eu devo" totals equal the open (unpaid) totals in the
@@ -229,7 +235,17 @@ verify everything returns to the baseline.
 - [ ] Arquivar grupo; apagar grupo mantém todas as transações.
 - [ ] Grupos de recorrência propagam para ocorrências materializadas.
 - [ ] Exportação JSON inclui grupos; importação restaura grupos antigos e novos.
-- [ ] Reset do banco limpa grupos e vínculos.
+- [ ] Pending occurrences remain listed in GroupDetails, but contribute 0 to KPI counts,
+      totals and charts; ignored ("Excluído") occurrences disappear from the KPI, charts
+      and transaction list.
+- [ ] Reset on web/dev leaves only the two seeded demo groups and their seeded links;
+      disposable groups and links are gone.
+- [ ] Native replace restore: export JSON, open Config → Dispositivo → Restaurar Backup,
+      choose the unmodified export in the system picker (copy it to emulator Downloads if
+      needed), select replace restore, then fully relaunch and verify group names,
+      transaction links, recurrence links and totals.
+- [ ] Merge import and web restore have no visible UI path; mark untested rather than
+      invoking repository helpers.
 - [ ] Persistência verificada após reload web e reabertura Android.
 
 ## 13. Cross-screen consistency (final check)
