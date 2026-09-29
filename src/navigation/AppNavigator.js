@@ -21,6 +21,7 @@ import GroupsScreen from '../screens/GroupsScreen';
 import GroupDetailsScreen from '../screens/GroupDetailsScreen';
 import GroupRulesScreen from '../screens/GroupRulesScreen';
 import GroupCompareScreen from '../screens/GroupCompareScreen';
+import AssistantScreen from '../screens/AssistantScreen';
 
 const Tab = createMaterialTopTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -101,6 +102,7 @@ export default function AppNavigator() {
     <View style={{ flex: 1 }}>
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: activeTheme.background } }}>
         <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="Assistant" component={AssistantScreen} options={{ presentation: 'modal', animation: 'none' }} />
         <Stack.Screen name="RecurrenceDetails" component={RecurrenceDetailsScreen} options={{ presentation: 'modal', animation: 'none' }} />
         <Stack.Screen name="Debts" component={DebtsScreen} options={{ animation: 'none' }} />
         <Stack.Screen name="Groups" component={GroupsScreen} options={{ animation: 'none' }} />
