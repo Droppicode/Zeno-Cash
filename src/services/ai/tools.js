@@ -5,6 +5,21 @@ import { normalizeText } from '../../utils/GroupRules.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
+const asArray = value => value == null ? [] : (Array.isArray(value) ? value : [value]);
+
+const normalizeFilters = (args = {}) => ({
+  text: asArray(args.text),
+  from: args.from ?? args.dateFrom ?? args.startDate,
+  to: args.to ?? args.dateTo ?? args.endDate,
+  categoryIds: asArray(args.categoryIds ?? args.categoryId ?? args.category_ids),
+  accountId: args.accountId ?? args.account_id,
+  groupId: args.groupId ?? args.group_id,
+  minAmount: args.minAmount,
+  maxAmount: args.maxAmount,
+  type: args.type,
+  includeIgnored: args.includeIgnored
+});
+
 const dateStart = value => {
   if (!value) return null;
   const [year, month, day] = value.split('-').map(Number);
@@ -31,18 +46,9 @@ const isHidden = tx => String(tx?.note || '').includes('[debt:');
 
 const filteredTransactions = (args = {}, ctx = {}) => {
   const {
-    text,
-    from,
-    to,
-    categoryIds,
-    accountId,
-    groupId,
-    minAmount,
-    maxAmount,
-    type,
-    includeIgnored = false
-  } = args;
-  const query = normalizeText(text);
+    text, from, to, categoryIds, accountId, groupId, minAmount, maxAmount, type, includeIgnored = false
+  } = normalizeFilters(args);
+  const queries = text.map(normalizeText).filter(Boolean);
   const fromMs = dateStart(from);
   const toMs = dateEnd(to);
   const groups = ctx.txGroupMap || {};
@@ -50,7 +56,7 @@ const filteredTransactions = (args = {}, ctx = {}) => {
     if (!includeIgnored && (tx.isIgnored === 1 || isHidden(tx))) return false;
     if (fromMs != null && tx.date < fromMs) return false;
     if (toMs != null && tx.date > toMs) return false;
-    if (query && !normalizeText(`${tx.description || ''} ${tx.note || ''}`).includes(query)) return false;
+    if (queries.length && !queries.some(query => normalizeText(`${tx.description || ''} ${tx.note || ''}`).includes(query))) return false;
     if (Array.isArray(categoryIds) && categoryIds.length && !categoryIds.map(String).includes(String(tx.categoryId))) return false;
     if (accountId != null && String(tx.accountId) !== String(accountId)) return false;
     if (groupId != null && !(groups[tx.id] || []).map(String).includes(String(groupId))) return false;
@@ -95,14 +101,19 @@ const groupStats = async group => {
 export const TOOL_SPECS = [
   {
     name: 'search_transactions',
-    description: 'Busca transações por texto, período, categoria, conta, grupo, valor ou tipo.',
+    description: 'Busca transações por texto, período, categoria, conta, grupo, valor ou tipo. text pode ser uma lista de termos (OU). Prefira UMA busca ampla (por categoria, período ou lista de termos) a várias buscas de uma palavra.',
     parameters: {
       type: 'object',
       properties: {
-        text: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' },
-        categoryIds: { type: 'array', items: { type: 'integer' } }, accountId: { type: 'integer' },
-        groupId: { type: 'integer' }, minAmount: { type: 'number' }, maxAmount: { type: 'number' },
-        type: { type: 'string', enum: ['income', 'expense'] }, limit: { type: 'integer' }, offset: { type: 'integer' }
+        text: { oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] },
+        from: { type: 'string' }, to: { type: 'string' }, dateFrom: { type: 'string' }, dateTo: { type: 'string' },
+        startDate: { type: 'string' }, endDate: { type: 'string' },
+        categoryIds: { type: 'array', items: { type: 'integer' } }, categoryId: { type: 'integer' },
+        category_ids: { type: 'array', items: { type: 'integer' } }, accountId: { type: 'integer' },
+        account_id: { type: 'integer' }, groupId: { type: 'integer' }, group_id: { type: 'integer' },
+        minAmount: { type: 'number' }, maxAmount: { type: 'number' },
+        type: { type: 'string', enum: ['income', 'expense'] }, limit: { type: 'integer' }, offset: { type: 'integer' },
+        includeIgnored: { type: 'boolean' }
       }
     }
   },
@@ -113,8 +124,12 @@ export const TOOL_SPECS = [
       type: 'object',
       properties: {
         groupBy: { type: 'string', enum: ['month', 'category', 'account', 'group', 'type'] },
-        from: { type: 'string' }, to: { type: 'string' }, categoryIds: { type: 'array', items: { type: 'integer' } },
-        accountId: { type: 'integer' }, groupId: { type: 'integer' }, text: { type: 'string' }
+        from: { type: 'string' }, to: { type: 'string' }, dateFrom: { type: 'string' }, dateTo: { type: 'string' },
+        startDate: { type: 'string' }, endDate: { type: 'string' },
+        categoryIds: { type: 'array', items: { type: 'integer' } }, categoryId: { type: 'integer' },
+        category_ids: { type: 'array', items: { type: 'integer' } }, accountId: { type: 'integer' },
+        account_id: { type: 'integer' }, groupId: { type: 'integer' }, group_id: { type: 'integer' },
+        text: { oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] }
       },
       required: ['groupBy']
     }
@@ -148,7 +163,16 @@ export const TOOL_SPECS = [
         name: { type: 'string' }, kind: { type: 'string', enum: ['event', 'ongoing'] }, description: { type: 'string' },
         startDate: { type: 'string' }, endDate: { type: 'string' }, budget: { type: 'number' },
         transactionIds: { type: 'array', items: { type: 'integer' } },
-        rule: { type: 'object' }
+        rule: {
+          type: 'object',
+          properties: {
+            keywords: { type: 'array', items: { type: 'string' } },
+            categoryIds: { type: 'array', items: { type: 'integer' } },
+            accountId: { type: 'integer' },
+            minAmount: { type: 'number' },
+            maxAmount: { type: 'number' }
+          }
+        }
       },
       required: ['name', 'kind']
     }
@@ -194,11 +218,17 @@ export async function executeTool(name, args = {}, ctx = {}) {
     const all = filteredTransactions(args, ctx);
     const limit = Math.min(200, Math.max(1, Number(args.limit) || 50));
     const offset = Math.max(0, Number(args.offset) || 0);
-    return { total: all.length, items: all.slice(offset, offset + limit).map(tx => transactionItem(tx, ctx)) };
+    const items = all.slice(offset, offset + limit).map(tx => transactionItem(tx, ctx));
+    return {
+      total: all.length,
+      items,
+      ...(all.length > offset + items.length ? { hint: 'Há mais resultados; use offset para ver mais.' } : {})
+    };
   }
   if (name === 'summarize_transactions') {
     const rows = new Map();
     const all = filteredTransactions(args, ctx);
+    const filters = normalizeFilters(args);
     const groupBy = args.groupBy || 'month';
     all.forEach(tx => {
       const category = (ctx.categoryList || []).find(item => String(item.id) === String(tx.categoryId));
@@ -220,8 +250,8 @@ export async function executeTool(name, args = {}, ctx = {}) {
     });
     const resultRows = [...rows.values()].sort((a, b) => a.label.localeCompare(b.label));
     return {
-      from: args.from || null,
-      to: args.to || null,
+      from: filters.from || null,
+      to: filters.to || null,
       rows: resultRows,
       totals: {
         income: resultRows.reduce((sum, row) => sum + row.income, 0),
@@ -230,7 +260,6 @@ export async function executeTool(name, args = {}, ctx = {}) {
     };
   }
   if (name === 'list_groups') {
-    const { GroupsRepository } = await import('../GroupsRepository.js');
     const groups = await GroupsRepository.getAll({ includeArchived: true });
     const items = [];
     for (const group of groups) {
@@ -252,7 +281,13 @@ export async function executeTool(name, args = {}, ctx = {}) {
   if (name === 'get_settings') {
     return { currency: 'BRL', ...(ctx.settings || {}), hideSettlements: ctx.settings?.hideSettlements !== false };
   }
-  if (name === 'propose_group') return proposal(ctx, 'group', {
+  if (name === 'propose_group') {
+    const rule = args.rule ? {
+      ...args.rule,
+      categoryIds: asArray(args.rule.categoryIds ?? args.rule.categoryId ?? args.rule.category_ids),
+      accountId: args.rule.accountId ?? args.rule.account_id
+    } : null;
+    return proposal(ctx, 'group', {
     name: args.name,
     kind: args.kind,
     description: args.description || '',
@@ -261,8 +296,9 @@ export async function executeTool(name, args = {}, ctx = {}) {
     budget: parseNumber(args.budget),
     transactionIds: (args.transactionIds || []).map(Number),
     transactionPreview: (args.transactionIds || []).map(Number).map(id => ctx.txList?.find(tx => Number(tx.id) === id)?.description).filter(Boolean).slice(0, 5),
-    rule: args.rule || null
-  });
+      rule
+    });
+  }
   if (name === 'propose_assign') return proposal(ctx, 'assign', {
     groupId: Number(args.groupId),
     transactionIds: (args.transactionIds || []).map(Number),

@@ -155,17 +155,22 @@ export default function AssistantScreen({ navigation }) {
     markProposal(messageId, item.proposalId, 'applied');
   };
 
-  const addRule = async (groupId, rule) => GroupRulesRepository.add({
-    groupId,
-    keywords: JSON.stringify(rule.keywords || []),
-    categoryIds: JSON.stringify(rule.categoryIds || []),
-    accountId: rule.accountId ?? null,
-    minAmount: rule.minAmount ?? null,
-    maxAmount: rule.maxAmount ?? null,
-    dateFrom: rule.dateFrom ? new Date(rule.dateFrom).getTime() : null,
-    dateTo: rule.dateTo ? new Date(rule.dateTo).getTime() : null,
-    isActive: 1
-  });
+  const addRule = async (groupId, rule) => {
+    const categoryIds = Array.isArray(rule.categoryIds)
+      ? rule.categoryIds
+      : rule.categoryIds == null ? [] : [rule.categoryIds];
+    return GroupRulesRepository.add({
+      groupId,
+      keywords: JSON.stringify(rule.keywords || []),
+      categoryIds: JSON.stringify(categoryIds),
+      accountId: rule.accountId ?? null,
+      minAmount: rule.minAmount ?? null,
+      maxAmount: rule.maxAmount ?? null,
+      dateFrom: rule.dateFrom ? new Date(rule.dateFrom).getTime() : null,
+      dateTo: rule.dateTo ? new Date(rule.dateTo).getTime() : null,
+      isActive: 1
+    });
+  };
 
   const renderProposal = (messageId, item) => (
     <View key={item.proposalId} style={styles.proposal}>

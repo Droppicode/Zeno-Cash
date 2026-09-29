@@ -24,6 +24,7 @@ Grupos: ${groups}
 Transações disponíveis: ${transactions.length}; período ${formatDate(dates[0])} a ${formatDate(dates[dates.length - 1])}.
 
 Use ferramentas para consultar dados; nunca adivinhe valores ou IDs. Quando pedirem criar ou organizar grupos, primeiro pesquise transações e leia descrições para escolher semanticamente, sem depender apenas de palavras-chave. Para qualquer alteração use propose_* e explique ao usuário que ele deve revisar o cartão de proposta antes da aplicação.
+Estratégia: faça no máximo 2–3 chamadas de ferramenta antes de responder. Para montar um grupo, faça UMA busca ampla (search_transactions com type:'expense' e limit:200, ou por categoria/lista de termos) e escolha as transações lendo as descrições. Se já existir um grupo adequado (veja a lista de Grupos acima), use propose_assign em vez de propose_group. Depois de chamar uma ferramenta propose_*, responda ao usuário imediatamente.
 Responda concisamente em pt-BR, usando valores como R$ 1.234,56. Não exponha chaves secretas nem invente dados.`;
 };
 
@@ -32,7 +33,8 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
   let messages = [...history, { role: 'user', text: userText }];
   let finalText = null;
 
-  for (let round = 0; round < 8; round += 1) {
+  let reachedRoundLimit = true;
+  for (let round = 0; round < 12; round += 1) {
     const response = await chatWithTools({
       provider,
       model,
@@ -44,6 +46,7 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
     if (!response.toolCalls?.length) {
       finalText = response.text || 'Não consegui formular uma resposta.';
       messages = [...messages, { role: 'assistant', text: response.text, toolCalls: [], raw: response.raw }];
+      reachedRoundLimit = false;
       break;
     }
     const results = [];
@@ -57,8 +60,30 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
       }
     }
     messages = appendToolResults(messages, response, results);
+    if (response.toolCalls.some(call => call.name?.startsWith('propose_'))) {
+      finalText = response.text || 'Preparei uma proposta para você revisar.';
+      reachedRoundLimit = false;
+      break;
+    }
   }
 
-  if (!finalText) finalText = 'A consulta excedeu o limite de etapas. Tente reformular a pergunta.';
+  if (reachedRoundLimit) {
+    try {
+      const finalMessages = [...messages, { role: 'user', text: 'Responda agora com o que já tem, sem chamar ferramentas.' }];
+      const response = await chatWithTools({
+        provider,
+        model,
+        apiKey,
+        system: systemPrompt(workingCtx),
+        messages: finalMessages,
+        tools: []
+      });
+      finalText = response.text || 'A consulta excedeu o limite de etapas. Tente reformular a pergunta.';
+      messages = [...finalMessages, { role: 'assistant', text: response.text, toolCalls: [], raw: response.raw }];
+    } catch (error) {
+      finalText = 'A consulta excedeu o limite de etapas. Tente reformular a pergunta.';
+    }
+  }
+  if (!finalText) finalText = 'Não consegui formular uma resposta.';
   return { text: finalText, proposals: workingCtx.proposals, history: messages };
 }
