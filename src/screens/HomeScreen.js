@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image, DeviceEventEmitter, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image, DeviceEventEmitter, Platform, Alert } from 'react-native';
 import SwipeableCard from '../components/ui/SwipeableCard';
 import MonthSelector from '../components/ui/MonthSelector';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,8 @@ import HomeCreditCardsList from '../components/home/HomeCreditCardsList';
 import HomePendingTx from '../components/home/HomePendingTx';
 import HomeRecentTx from '../components/home/HomeRecentTx';
 import HomeDebts from '../components/home/HomeDebts';
+import HomeGroups from '../components/home/HomeGroups';
+import { useGroups } from '../hooks/useGroups';
 
 export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
@@ -55,8 +57,13 @@ export default function HomeScreen({ route, navigation }) {
   const { accountList, loadAccounts } = useAccounts();
   const { categoryList, loadCategories } = useCategories();
   const { debtsList, loadDebts } = useDebts();
+  const { groupList, loadGroups, txGroupMap, loadTxGroupMap } = useGroups();
 
   const styles = React.useMemo(() => getStyles(activeTheme), [activeTheme]);
+  const groupColorMap = useMemo(
+    () => Object.fromEntries(groupList.map(group => [group.id, group.color || activeTheme.accent])),
+    [groupList, activeTheme.accent]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -64,7 +71,9 @@ export default function HomeScreen({ route, navigation }) {
       loadAccounts();
       loadCategories();
       loadDebts();
-    }, [])
+      loadGroups();
+      loadTxGroupMap();
+    }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadGroups, loadTxGroupMap])
   );
 
   useEffect(() => {
@@ -74,10 +83,12 @@ export default function HomeScreen({ route, navigation }) {
         loadAccounts();
         loadCategories();
         loadDebts();
+        loadGroups();
+        loadTxGroupMap();
       });
       return () => subscription.remove();
     }
-  }, [loadTransactions, loadAccounts, loadCategories, loadDebts]);
+  }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadGroups, loadTxGroupMap]);
 
   const accountBalances = useMemo(() => {
     return accountList.map(acc => {
@@ -103,8 +114,11 @@ export default function HomeScreen({ route, navigation }) {
         && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
   }, [txList, hideSettlements]);
+  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
-  let homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
+  if (!homeOrder.includes('debts')) homeOrder.push('debts');
+  if (!homeOrder.includes('groups')) homeOrder.push('groups');
   if (!homeOrder.includes('creditCards')) {
     const idx = homeOrder.indexOf('accounts');
     if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
@@ -116,6 +130,7 @@ export default function HomeScreen({ route, navigation }) {
     await saveTx(data.id, data);
     await loadAccounts(); // Recarrega os saldos do DB
     await loadDebts(); // Recarrega dívidas caso a transação envolva divisão
+    await loadTxGroupMap();
     setModalVisible(false);
     setEditingTx(null);
   };
@@ -202,6 +217,8 @@ export default function HomeScreen({ route, navigation }) {
                 loadDebts={loadDebts}
                 setEditingTx={setEditingTx}
                 setModalVisible={setModalVisible}
+                txGroupMap={txGroupMap}
+                groupColorMap={groupColorMap}
               />
             );
           }
@@ -209,12 +226,19 @@ export default function HomeScreen({ route, navigation }) {
           if (modKey === 'debts' && uiConfig.homeShowDebts !== false) {
             return <HomeDebts key="debts" debtsList={debtsList} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
+
+          if (modKey === 'groups' && uiConfig.homeShowGroups !== false) {
+            return <HomeGroups key="groups" activeTheme={activeTheme} styles={styles} navigation={navigation} refreshKey={txList} />;
+          }
           
           return null;
         })}
       </ScrollView>
 
       {/* FAB */}
+      <TouchableOpacity style={[styles.assistantFab, { backgroundColor: activeTheme.card }]} onPress={() => Alert.alert('Assistente IA', 'Em breve.')}>
+        <Ionicons name="sparkles-outline" size={22} color={activeTheme.accent} />
+      </TouchableOpacity>
       <TouchableOpacity style={[styles.fab, { backgroundColor: activeTheme.accent }]} onPress={() => { setEditingTx(null); setModalVisible(true); }}>
         <Ionicons name="add" size={32} color="#121212" />
       </TouchableOpacity>
@@ -268,6 +292,7 @@ const getStyles = (theme) => {
     groupedAmount: { fontSize: 16 * z, fontWeight: 'bold', fontFamily: f },
     
     fab: { position: 'absolute', right: 20 * z, bottom: 20 * z, width: 60 * z, height: 60 * z, borderRadius: 6 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+    assistantFab: { position: 'absolute', right: 20 * z, bottom: 92 * z, width: 44 * z, height: 44 * z, borderRadius: 6 * z, justifyContent: 'center', alignItems: 'center', elevation: 5 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     modalContent: { borderTopLeftRadius: 6 * z, borderTopRightRadius: 6 * z, padding: 24 * z, minHeight: 300 * z },
     modalTitle: { fontSize: 20 * z, fontWeight: 'bold', marginBottom: 16 * z, fontFamily: f },

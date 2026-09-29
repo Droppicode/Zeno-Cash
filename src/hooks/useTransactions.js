@@ -5,6 +5,7 @@ import { DateUtils } from '../utils/dateUtils';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
+import { GroupsRepository } from '../services/GroupsRepository';
 
 export const useTransactions = () => {
   const [txList, setTxList] = useState([]);
@@ -33,7 +34,7 @@ export const useTransactions = () => {
   }, []);
 
   const addTransaction = useCallback(async (data) => {
-    const { recurrenceType, recurrenceData, splitDebts, ...txParams } = data;
+    const { recurrenceType, recurrenceData, splitDebts, groupIds, ...txParams } = data;
     
     let newTxId = null;
     if (recurrenceType && recurrenceType !== 'single' && recurrenceData) {
@@ -46,6 +47,7 @@ export const useTransactions = () => {
         startDate: txParams.date || Date.now(),
         ...recurrenceData
       });
+      await GroupsRepository.setRecurrenceGroups(newTxId, groupIds || []);
 
       await materializeRecurrencesUpToToday();
     } else {
@@ -53,6 +55,7 @@ export const useTransactions = () => {
         ...txParams,
         date: txParams.date || Date.now()
       });
+      await GroupsRepository.setTransactionGroups(newTxId, groupIds || []);
     }
     
     const isRecurrence = recurrenceType && recurrenceType !== 'single' && recurrenceData;
@@ -80,8 +83,12 @@ export const useTransactions = () => {
   }, [loadTransactions]);
 
   const updateTransaction = useCallback(async (id, data) => {
-    const { splitDebts, ...txParams } = data;
+    const { splitDebts, groupIds, ...txParams } = data;
     await TransactionRepository.update(id, txParams);
+
+    if (groupIds) {
+      await GroupsRepository.setTransactionGroups(id, groupIds);
+    }
     
     if (splitDebts) {
       const { DebtsRepository } = require('../services/DebtsRepository');

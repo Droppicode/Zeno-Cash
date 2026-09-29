@@ -4,12 +4,14 @@ import { TransactionRepository } from '../services/TransactionRepository';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export const resetDatabase = async () => {
-  if (Platform.OS === 'web') return true;
   try {
     expoDb.execSync(`
       DELETE FROM transactions;
       DELETE FROM debts;
       DELETE FROM recurrences;
+      DELETE FROM transaction_groups;
+      DELETE FROM recurrence_groups;
+      DELETE FROM groups;
       DELETE FROM monthly_balances;
       DELETE FROM accounts;
       DELETE FROM categories;
@@ -51,6 +53,9 @@ export const seedDatabase = async (force = false) => {
       DELETE FROM transactions;
       DELETE FROM debts;
       DELETE FROM recurrences;
+      DELETE FROM transaction_groups;
+      DELETE FROM recurrence_groups;
+      DELETE FROM groups;
       DELETE FROM monthly_balances;
       DELETE FROM accounts;
       DELETE FROM categories;
@@ -438,7 +443,53 @@ export const seedDatabase = async (force = false) => {
       );
     }
 
-    // 8. Recalcular Todos os Balanços Mensais
+    // 8. Grupos de transações
+    const groupStart = new Date(now.getFullYear(), now.getMonth() - 2, 1).getTime();
+    const groupEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999).getTime();
+    const eventGroup = await expoDb.runAsync(
+      `INSERT INTO groups (name, description, icon, color, kind, start_date, end_date, budget, is_archived, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      ['Viagem Alagoas 2026', 'Despesas planejadas para a viagem', 'airplane', '#00BCD4', 'event', groupStart, groupEnd, 5000, Date.now()]
+    );
+    const ongoingGroup = await expoDb.runAsync(
+      `INSERT INTO groups (name, description, icon, color, kind, start_date, end_date, budget, is_archived, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+      ['Carro Fiesta', 'Custos recorrentes e manutenção do carro', 'car', '#FF9800', 'ongoing', null, null, null, Date.now()]
+    );
+
+    const eventTxs = await expoDb.getAllAsync(
+      `SELECT id FROM transactions
+       WHERE description LIKE '%Uber%' OR description LIKE '%Cinema%' OR description = 'Churrasco de Aniversário'
+       ORDER BY date DESC LIMIT 5`
+    );
+    const carTxs = await expoDb.getAllAsync(
+      `SELECT id FROM transactions
+       WHERE description LIKE '%Posto%' OR description LIKE '%Uber%'
+       ORDER BY date DESC LIMIT 5`
+    );
+    for (const tx of eventTxs) {
+      await expoDb.runAsync(
+        'INSERT OR IGNORE INTO transaction_groups (transaction_id, group_id) VALUES (?, ?)',
+        [tx.id, eventGroup.lastInsertRowId]
+      );
+    }
+    for (const tx of carTxs) {
+      await expoDb.runAsync(
+        'INSERT OR IGNORE INTO transaction_groups (transaction_id, group_id) VALUES (?, ?)',
+        [tx.id, ongoingGroup.lastInsertRowId]
+      );
+    }
+    const carRecurrence = await expoDb.getAllAsync(
+      `SELECT id FROM recurrences WHERE description = 'Geladeira Frost Free Inox' LIMIT 1`
+    );
+    if (carRecurrence[0]) {
+      await expoDb.runAsync(
+        'INSERT OR IGNORE INTO recurrence_groups (recurrence_id, group_id) VALUES (?, ?)',
+        [carRecurrence[0].id, ongoingGroup.lastInsertRowId]
+      );
+    }
+
+    // 9. Recalcular Todos os Balanços Mensais
     await TransactionRepository.initMonthlyBalances();
 
     console.log('Seed completo gerado com sucesso!');
