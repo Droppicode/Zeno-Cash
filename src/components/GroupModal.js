@@ -155,13 +155,13 @@ export default function GroupModal({ visible, onClose, onSave, onDelete, onRules
             <Ionicons name={isArchived ? 'checkbox' : 'square-outline'} size={20} color={isArchived ? theme.accent : theme.textSecondary} />
             <Text style={{ color: isArchived ? theme.accent : theme.textSecondary, fontFamily: theme.fontFamily || 'monospace' }}>Arquivar grupo</Text>
           </TouchableOpacity>
+          </>
         )}
         {initialGroup && onDelete && (
           <TouchableOpacity style={styles.deleteRow} onPress={handleDelete}>
             <Ionicons name="trash-outline" size={18} color={theme.expense} />
             <Text style={{ color: theme.expense, fontFamily: theme.fontFamily || 'monospace' }}>Apagar grupo (mantém transações)</Text>
           </TouchableOpacity>
-          </>
         )}
       </ScrollView>
     </BaseModalBottom>
