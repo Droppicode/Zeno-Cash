@@ -1,3 +1,5 @@
+import { GroupsRepository } from '../GroupsRepository.js';
+import { GroupRulesRepository } from '../GroupRulesRepository.js';
 import { calculateGroupStats } from '../../utils/GroupStats.js';
 import { normalizeText } from '../../utils/GroupRules.js';
 
@@ -14,7 +16,14 @@ const dateEnd = value => {
   return start == null ? null : start + DAY - 1;
 };
 
-const dateText = value => value == null ? null : new Date(value).toISOString().slice(0, 10);
+const dateText = value => {
+  if (value == null) return null;
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const parseNumber = value => value == null || value === '' ? null : Number(value);
 
@@ -79,7 +88,6 @@ const proposal = (ctx, type, payload) => {
 };
 
 const groupStats = async group => {
-  const { GroupsRepository } = await import('../GroupsRepository.js');
   const transactions = await GroupsRepository.getTransactionsForGroup(group.id);
   return { transactions, stats: calculateGroupStats(transactions, group) };
 };
@@ -232,14 +240,12 @@ export async function executeTool(name, args = {}, ctx = {}) {
     return { items };
   }
   if (name === 'get_group') {
-    const { GroupsRepository } = await import('../GroupsRepository.js');
     const group = await GroupsRepository.getById(args.id);
     if (!group) return { error: 'Grupo não encontrado.' };
     const { transactions, stats } = await groupStats(group);
     return { ...group, stats, transactions: transactions.slice(0, 30).map(tx => transactionItem(tx, ctx)) };
   }
   if (name === 'list_rules') {
-    const { GroupRulesRepository } = await import('../GroupRulesRepository.js');
     const rules = args.groupId == null ? await GroupRulesRepository.getAll() : await GroupRulesRepository.getForGroup(args.groupId);
     return { items: rules };
   }

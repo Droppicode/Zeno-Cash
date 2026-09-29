@@ -25,9 +25,15 @@ const providerError = (provider, status) => {
 };
 
 const requestJson = async (url, options, provider) => {
-  const response = await fetch(url, options);
-  if (!response.ok) throw new Error(providerError(provider, response.status));
-  return response.json();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await fetch(url, options);
+    if (response.ok) return response.json();
+    if ((response.status !== 429 && response.status !== 503) || attempt === 1) {
+      throw new Error(providerError(provider, response.status));
+    }
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+  throw new Error('Falha ao consultar o provedor.');
 };
 
 const geminiContents = messages => messages.flatMap(message => {
