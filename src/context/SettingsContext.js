@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { DEFAULT_ASSISTANT_PERMISSIONS, resolvePermissions } from '../services/ai/permissions';
+import { DEFAULT_MODEL_PRICES } from '../services/ai/usage';
 
 export const SettingsContext = createContext();
 
@@ -154,6 +156,9 @@ export const SettingsProvider = ({ children }) => {
   const [customThemes, setCustomThemes] = useState([defaultTheme, defaultLightTheme, ...EXTRA_PRESETS]);
   const [defaultPeriod, setDefaultPeriod] = useState('30d');
   const [assistantMemory, setAssistantMemory] = useState([]);
+  const [assistantPermissions, setAssistantPermissions] = useState(DEFAULT_ASSISTANT_PERMISSIONS);
+  const [assistantUsage, setAssistantUsage] = useState({});
+  const [assistantPrices, setAssistantPrices] = useState(DEFAULT_MODEL_PRICES);
   const [llmProvider, setLlmProvider] = useState('openai');
   const [llmModel, setLlmModel] = useState('');
   const [llmKey, setLlmKey] = useState('');
@@ -208,6 +213,9 @@ export const SettingsProvider = ({ children }) => {
           }
           if (item.key === 'defaultPeriod') setDefaultPeriod(item.value);
           if (item.key === 'assistantMemory') setAssistantMemory(JSON.parse(item.value));
+          if (item.key === 'assistantPermissions') setAssistantPermissions(resolvePermissions(JSON.parse(item.value)));
+          if (item.key === 'assistantUsage') setAssistantUsage(JSON.parse(item.value));
+          if (item.key === 'assistantPrices') setAssistantPrices({ ...DEFAULT_MODEL_PRICES, ...JSON.parse(item.value) });
           if (item.key === 'llmProvider') setLlmProvider(item.value);
           if (item.key === 'llmModel') setLlmModel(item.value);
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
@@ -275,6 +283,9 @@ export const SettingsProvider = ({ children }) => {
     if (key === 'customThemes') setCustomThemes(value);
     if (key === 'defaultPeriod') setDefaultPeriod(value);
     if (key === 'assistantMemory') setAssistantMemory(Array.isArray(value) ? value.slice(-10) : []);
+    if (key === 'assistantPermissions') setAssistantPermissions(resolvePermissions(value));
+    if (key === 'assistantUsage') setAssistantUsage(value || {});
+    if (key === 'assistantPrices') setAssistantPrices({ ...DEFAULT_MODEL_PRICES, ...(value || {}) });
     if (key === 'llmProvider') {
       setLlmProvider(value);
       getSecureKey(value).then(k => setLlmKey(k));
@@ -322,7 +333,8 @@ export const SettingsProvider = ({ children }) => {
   };
 
   const contextValue = useMemo(() => ({
-    activeTheme, customThemes, defaultPeriod, assistantMemory, llmProvider, llmModel, llmKey, uiConfig,
+    activeTheme, customThemes, defaultPeriod, assistantMemory, assistantPermissions, assistantUsage, assistantPrices,
+    llmProvider, llmModel, llmKey, uiConfig,
     macroTargets, macroOptions, macroMapping, backupLimit, backupFrequency,
     autoBackupEnabled, autoBackupDestination,
     isLoaded,
@@ -330,7 +342,8 @@ export const SettingsProvider = ({ children }) => {
     getSecureKey,
     saveSecureKey
   }), [
-    activeTheme, customThemes, defaultPeriod, assistantMemory, llmProvider, llmModel, llmKey, uiConfig, macroTargets,
+    activeTheme, customThemes, defaultPeriod, assistantMemory, assistantPermissions, assistantUsage, assistantPrices,
+    llmProvider, llmModel, llmKey, uiConfig, macroTargets,
     macroOptions, macroMapping, backupLimit, backupFrequency, autoBackupEnabled, autoBackupDestination, isLoaded,
     saveSetting, getSecureKey, saveSecureKey
   ]);

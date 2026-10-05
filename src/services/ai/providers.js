@@ -27,13 +27,28 @@ const providerError = (provider, status) => {
 const requestJson = async (url, options, provider) => {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await fetch(url, options);
-    if (response.ok) return response.json();
+    if (response.ok) return { data: await response.json(), headers: response.headers };
     if ((response.status !== 429 && response.status !== 503) || attempt === 1) {
       throw new Error(providerError(provider, response.status));
     }
     await new Promise(resolve => setTimeout(resolve, 1500));
   }
   throw new Error('Falha ao consultar o provedor.');
+};
+
+const headerNumber = (headers, name) => {
+  const value = headers?.get?.(name);
+  return value == null || value === '' ? null : Number(value);
+};
+
+const rateLimitFrom = (headers, names) => {
+  const values = {
+    requestsRemaining: headerNumber(headers, names.requestsRemaining),
+    requestsLimit: headerNumber(headers, names.requestsLimit),
+    tokensRemaining: headerNumber(headers, names.tokensRemaining),
+    tokensLimit: headerNumber(headers, names.tokensLimit)
+  };
+  return Object.values(values).some(value => value != null) ? values : null;
 };
 
 const geminiContents = messages => messages.flatMap(message => {
@@ -154,7 +169,7 @@ const claudeMessages = messages => messages.flatMap(message => {
 
 const gemini = async ({ model, apiKey, system, messages, tools }) => {
   const modelName = model || 'gemini-3.5-flash';
-  const data = await requestJson(
+  const { data } = await requestJson(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
@@ -176,12 +191,17 @@ const gemini = async ({ model, apiKey, system, messages, tools }) => {
       name: part.functionCall.name,
       args: part.functionCall.args || {}
     })),
-    raw: raw
+    raw: raw,
+    usage: {
+      input: data.usageMetadata?.promptTokenCount || 0,
+      output: (data.usageMetadata?.candidatesTokenCount || 0) + (data.usageMetadata?.thoughtsTokenCount || 0)
+    },
+    rateLimit: null
   };
 };
 
 const openai = async ({ model, apiKey, system, messages, tools }) => {
-  const data = await requestJson('https://api.openai.com/v1/chat/completions', {
+  const { data, headers } = await requestJson('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
@@ -198,12 +218,19 @@ const openai = async ({ model, apiKey, system, messages, tools }) => {
       name: call.function?.name,
       args: parseArgs(call.function?.arguments)
     })),
-    raw: message
+    raw: message,
+    usage: { input: data.usage?.prompt_tokens || 0, output: data.usage?.completion_tokens || 0 },
+    rateLimit: rateLimitFrom(headers, {
+      requestsRemaining: 'x-ratelimit-remaining-requests',
+      requestsLimit: 'x-ratelimit-limit-requests',
+      tokensRemaining: 'x-ratelimit-remaining-tokens',
+      tokensLimit: 'x-ratelimit-limit-tokens'
+    })
   };
 };
 
 const claude = async ({ model, apiKey, system, messages, tools }) => {
-  const data = await requestJson('https://api.anthropic.com/v1/messages', {
+  const { data, headers } = await requestJson('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -227,7 +254,14 @@ const claude = async ({ model, apiKey, system, messages, tools }) => {
       name: block.name,
       args: block.input || {}
     })),
-    raw: content
+    raw: content,
+    usage: { input: data.usage?.input_tokens || 0, output: data.usage?.output_tokens || 0 },
+    rateLimit: rateLimitFrom(headers, {
+      requestsRemaining: 'anthropic-ratelimit-requests-remaining',
+      requestsLimit: 'anthropic-ratelimit-requests-limit',
+      tokensRemaining: 'anthropic-ratelimit-tokens-remaining',
+      tokensLimit: 'anthropic-ratelimit-tokens-limit'
+    })
   };
 };
 

@@ -1,10 +1,12 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import BaseModalCenter from '../components/ui/BaseModalCenter';
+import { PERMISSION_OPTIONS } from '../services/ai/permissions';
+import { formatTokens, formatUsd, monthTotals, estimateCost } from '../services/ai/usage';
 
 const PROVIDER_MODELS = {
   openai: [
@@ -26,8 +28,11 @@ const PROVIDER_MODELS = {
   ]
 };
 
-export default function ExtractionConfigScreen({ onBack }) {
-  const { activeTheme, llmKey, llmProvider, llmModel, assistantMemory, saveSetting, getSecureKey, saveSecureKey } = useContext(SettingsContext);
+export default function AssistantConfigScreen({ onBack }) {
+  const {
+    activeTheme, llmKey, llmProvider, llmModel, assistantMemory, assistantPermissions, assistantUsage, assistantPrices,
+    saveSetting, getSecureKey, saveSecureKey
+  } = useContext(SettingsContext);
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
   const [providerLocal, setProviderLocal] = useState(llmProvider || 'openai');
   const [modelLocal, setModelLocal] = useState(llmModel || PROVIDER_MODELS[providerLocal || 'openai'][0].id);
@@ -44,6 +49,22 @@ export default function ExtractionConfigScreen({ onBack }) {
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
+  const totals = useMemo(() => monthTotals(assistantUsage, assistantPrices), [assistantUsage, assistantPrices]);
+  const providerRateLimit = assistantUsage?.rateLimits?.[providerLocal];
+  const currentPrice = assistantPrices?.[modelLocal] || {};
+  const [priceDraft, setPriceDraft] = useState({ input: '', output: '' });
+  useEffect(() => {
+    setPriceDraft({
+      input: currentPrice.input != null ? String(currentPrice.input).replace('.', ',') : '',
+      output: currentPrice.output != null ? String(currentPrice.output).replace('.', ',') : ''
+    });
+  }, [modelLocal, currentPrice.input, currentPrice.output]);
+  const savePrice = field => {
+    const value = priceDraft[field].replace(',', '.').trim();
+    const parsed = value === '' ? null : Number(value);
+    if (parsed !== null && Number.isNaN(parsed)) return;
+    saveSetting('assistantPrices', { ...assistantPrices, [modelLocal]: { ...currentPrice, [field]: parsed } });
+  };
 
   return (
     <View style={styles.container}>
@@ -51,7 +72,7 @@ export default function ExtractionConfigScreen({ onBack }) {
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: activeTheme.text }]}>Extratos</Text>
+        <Text style={[styles.title, { color: activeTheme.text }]}>Assistente IA</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -59,10 +80,10 @@ export default function ExtractionConfigScreen({ onBack }) {
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 * z }}>
             <Ionicons name="sparkles" size={20} color={activeTheme.accent} style={{ marginRight: 8 * z }} />
-            <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Extração Inteligente</Text>
+            <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Provedor e chave</Text>
           </View>
           <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>
-            O Zeno Cash utiliza Inteligência Artificial para ler seus extratos bancários em PDF e notas fiscais (imagens), categorizando automaticamente suas transações. Selecione seu provedor e insira sua chave da API.
+            Usado pelo assistente e pela leitura de extratos em PDF e notas fiscais. A chave fica só neste aparelho e as chamadas vão direto ao provedor escolhido.
           </Text>
           
           <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Provedor de IA</Text>
@@ -134,6 +155,79 @@ export default function ExtractionConfigScreen({ onBack }) {
           />
         </View>
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>O que o assistente pode fazer</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>
+            Consultas são sempre permitidas. Toda alteração aparece como um cartão para você aplicar ou descartar.
+          </Text>
+          {PERMISSION_OPTIONS.map(option => (
+            <View key={option.key} style={styles.permissionRow}>
+              <View style={{ flex: 1, marginRight: 12 * z }}>
+                <Text style={[styles.permissionTitle, { color: activeTheme.text }]}>{option.label}</Text>
+                <Text style={[styles.permissionDesc, { color: activeTheme.textSecondary }]}>{option.desc}</Text>
+              </View>
+              <Switch
+                testID={`perm-${option.key}`}
+                value={assistantPermissions[option.key] === true}
+                onValueChange={value => saveSetting('assistantPermissions', { ...assistantPermissions, [option.key]: value })}
+                trackColor={{ false: activeTheme.cardSecondary, true: activeTheme.accent }}
+                thumbColor={activeTheme.text}
+              />
+            </View>
+          ))}
+        </View>
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
+          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Consumo deste mês</Text>
+          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>
+            Tokens informados pelo provedor em cada resposta. O custo é uma estimativa pela tabela de preços abaixo.
+          </Text>
+          <Text style={[styles.usageLine, { color: activeTheme.text }]}>{formatTokens(totals.input)} tokens de entrada · {formatTokens(totals.output)} de saída</Text>
+          <Text style={[styles.usageLine, { color: activeTheme.text }]}>{totals.requests} chamadas · custo estimado {formatUsd(totals.cost)}</Text>
+          {totals.models.map(([model, item]) => (
+            <Text key={model} style={[styles.usageModel, { color: activeTheme.textSecondary }]}>
+              • {model}: {formatTokens(item.input + item.output)} tokens · {formatUsd(estimateCost(assistantPrices, model, item))}
+            </Text>
+          ))}
+          {providerRateLimit ? (
+            <Text style={[styles.usageModel, { color: activeTheme.textSecondary, marginTop: 8 * z }]}>
+              Limite da API (última resposta): {providerRateLimit.requestsRemaining ?? '—'}/{providerRateLimit.requestsLimit ?? '—'} chamadas · {formatTokens(providerRateLimit.tokensRemaining)}/{formatTokens(providerRateLimit.tokensLimit)} tokens restantes
+            </Text>
+          ) : (
+            <Text style={[styles.usageModel, { color: activeTheme.textSecondary, marginTop: 8 * z }]}>
+              {providerLocal === 'gemini' ? 'O Gemini não informa o limite restante nas respostas; acompanhe em aistudio.google.com.' : 'O limite restante aparece depois da primeira resposta do provedor.'}
+            </Text>
+          )}
+          {totals.requests ? (
+            <TouchableOpacity style={[styles.clearMemory, { borderColor: activeTheme.textSecondary }]} onPress={() => saveSetting('assistantUsage', {})}>
+              <Text style={{ color: activeTheme.textSecondary, fontFamily: f, fontWeight: 'bold' }}>Zerar contador</Text>
+            </TouchableOpacity>
+          ) : null}
+          <Text style={[styles.label, { color: activeTheme.textSecondary, marginTop: 16 * z }]}>Preço do modelo selecionado (US$ por 1 milhão de tokens)</Text>
+          <View style={{ flexDirection: 'row', gap: 8 * z }}>
+            <TextInput
+              testID="price-input"
+              style={[styles.input, { flex: 1, backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+              placeholder="Entrada"
+              placeholderTextColor={activeTheme.textSecondary}
+              keyboardType="decimal-pad"
+              value={priceDraft.input}
+              onChangeText={text => setPriceDraft(current => ({ ...current, input: text }))}
+              onBlur={() => savePrice('input')}
+              onSubmitEditing={() => savePrice('input')}
+            />
+            <TextInput
+              testID="price-output"
+              style={[styles.input, { flex: 1, backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
+              placeholder="Saída"
+              placeholderTextColor={activeTheme.textSecondary}
+              keyboardType="decimal-pad"
+              value={priceDraft.output}
+              onChangeText={text => setPriceDraft(current => ({ ...current, output: text }))}
+              onBlur={() => savePrice('output')}
+              onSubmitEditing={() => savePrice('output')}
+            />
+          </View>
+        </View>
+        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Memória do assistente</Text>
           <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>
             Preferências duráveis que o assistente pode usar nas próximas conversas.
@@ -193,6 +287,11 @@ const getLocalStyles = (theme) => {
     modelDesc: { fontSize: 12 * z, fontFamily: f },
 
     input: { padding: 12 * z, borderRadius: 4 * z, fontFamily: f, fontSize: 16 * z },
+    permissionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 * z, borderTopWidth: 1, borderTopColor: theme.cardSecondary },
+    permissionTitle: { fontSize: 14 * z, fontWeight: 'bold', fontFamily: f },
+    permissionDesc: { fontSize: 12 * z, fontFamily: f, marginTop: 2 * z },
+    usageLine: { fontSize: 14 * z, fontFamily: f, marginBottom: 4 * z },
+    usageModel: { fontSize: 12 * z, fontFamily: f, marginTop: 2 * z },
     memoryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 * z },
     memoryText: { flex: 1, fontFamily: f, marginRight: 8 * z },
     clearMemory: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 4 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, marginTop: 8 * z }

@@ -2,6 +2,8 @@ import { GroupsRepository } from '../GroupsRepository.js';
 import { GroupRulesRepository } from '../GroupRulesRepository.js';
 import { calculateGroupStats } from '../../utils/GroupStats.js';
 import { normalizeText } from '../../utils/GroupRules.js';
+import { InvoiceUtils } from '../../utils/InvoiceUtils.js';
+import { isToolAllowed } from './permissions.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -136,7 +138,7 @@ const transactionItem = (tx, ctx) => {
 const proposal = (ctx, type, payload) => {
   const proposalId = `proposal_${Date.now()}_${(ctx.proposals || []).length + 1}`;
   if (!ctx.proposals) ctx.proposals = [];
-  ctx.proposals.push({ proposalId, type, ...payload, status: 'pending' });
+  ctx.proposals.push({ ...payload, proposalId, type, status: 'pending' });
   return { ok: true, proposalId };
 };
 
@@ -298,6 +300,124 @@ export const TOOL_SPECS = [
     }
   },
   {
+    name: 'list_accounts',
+    description: 'Lista contas e cartões com saldo atual. Para cartões, traz a fatura atual (total, mês de vencimento) e o limite.',
+    parameters: { type: 'object', properties: {} }
+  },
+  {
+    name: 'list_debts',
+    description: 'Lista dívidas (quem me deve e quem eu devo), com status pago e totais em aberto.',
+    parameters: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['open', 'paid', 'all'] },
+        personName: { type: 'string' }
+      }
+    }
+  },
+  {
+    name: 'list_recurrences',
+    description: 'Lista recorrências (assinaturas e parcelamentos) com valor, frequência e parcelas.',
+    parameters: { type: 'object', properties: { activeOnly: { type: 'boolean' } } }
+  },
+  {
+    name: 'propose_update_transactions',
+    description: 'Propõe editar transações existentes. Cada item tem o id e só os campos que mudam.',
+    parameters: {
+      type: 'object',
+      properties: {
+        updates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              description: { type: 'string' },
+              amount: { type: 'number', description: 'valor positivo' },
+              type: { type: 'string', enum: ['expense', 'income'] },
+              date: { type: 'string', description: 'YYYY-MM-DD' },
+              categoryId: { type: 'integer' },
+              accountId: { type: 'integer' },
+              note: { type: 'string' },
+              isIgnored: { type: 'boolean' }
+            },
+            required: ['id']
+          }
+        }
+      },
+      required: ['updates']
+    }
+  },
+  {
+    name: 'propose_delete_transactions',
+    description: 'Propõe apagar transações existentes. O usuário confirma antes.',
+    parameters: {
+      type: 'object',
+      properties: { transactionIds: { type: 'array', items: { type: 'integer' } }, reason: { type: 'string' } },
+      required: ['transactionIds']
+    }
+  },
+  {
+    name: 'propose_category',
+    description: 'Propõe criar uma categoria.',
+    parameters: {
+      type: 'object',
+      properties: { name: { type: 'string' }, icon: { type: 'string', description: 'nome de ícone Ionicons' }, color: { type: 'string', description: '#RRGGBB' } },
+      required: ['name']
+    }
+  },
+  {
+    name: 'propose_account',
+    description: 'Propõe criar uma conta (checking, cash) ou cartão de crédito (credit, com closingDay, dueDay e creditLimit).',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' }, type: { type: 'string', enum: ['checking', 'cash', 'credit'] },
+        balance: { type: 'number', description: 'saldo inicial' }, closingDay: { type: 'integer' }, dueDay: { type: 'integer' },
+        creditLimit: { type: 'number' }, color: { type: 'string' }
+      },
+      required: ['name', 'type']
+    }
+  },
+  {
+    name: 'propose_debt',
+    description: 'Propõe registrar uma dívida avulsa. type "owed" = a pessoa me deve; "owe" = eu devo.',
+    parameters: {
+      type: 'object',
+      properties: {
+        personName: { type: 'string' }, type: { type: 'string', enum: ['owed', 'owe'] }, amount: { type: 'number' },
+        description: { type: 'string' }, accountId: { type: 'integer' }, date: { type: 'string', description: 'YYYY-MM-DD' }
+      },
+      required: ['personName', 'type', 'amount']
+    }
+  },
+  {
+    name: 'propose_settle_debts',
+    description: 'Propõe marcar dívidas como pagas (paid true) ou não pagas (paid false). Pagar cria o Acerto na conta da dívida.',
+    parameters: {
+      type: 'object',
+      properties: {
+        debtIds: { type: 'array', items: { type: 'integer' } }, paid: { type: 'boolean' },
+        accountId: { type: 'integer', description: 'conta do acerto para dívidas avulsas sem conta' }
+      },
+      required: ['debtIds', 'paid']
+    }
+  },
+  {
+    name: 'propose_recurrence',
+    description: 'Propõe criar uma assinatura (sem installments) ou parcelamento (com installments).',
+    parameters: {
+      type: 'object',
+      properties: {
+        description: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string', enum: ['expense', 'income'] },
+        categoryId: { type: 'integer' }, accountId: { type: 'integer' }, startDate: { type: 'string', description: 'YYYY-MM-DD' },
+        frequencyType: { type: 'string', enum: ['monthly', 'yearly', 'custom_days'] }, frequencyInterval: { type: 'integer' },
+        installments: { type: 'integer' }
+      },
+      required: ['description', 'amount', 'type', 'frequencyType']
+    }
+  },
+  {
     name: 'remember_preference',
     description: 'Guarda uma preferência durável e curta do usuário.',
     parameters: {
@@ -309,6 +429,7 @@ export const TOOL_SPECS = [
 ];
 
 export async function executeTool(name, args = {}, ctx = {}) {
+  if (!isToolAllowed(name, ctx.permissions)) return { error: 'Permissão desligada em Config → Assistente IA.' };
   if (name === 'search_transactions') {
     const all = filteredTransactions(args, ctx);
     const limit = Math.min(200, Math.max(1, Number(args.limit) || 50));
@@ -502,6 +623,121 @@ export async function executeTool(name, args = {}, ctx = {}) {
       uiConfig,
       defaultPeriod: defaultPeriod || null,
       summary
+    });
+  }
+  if (name === 'list_accounts') {
+    const transactions = ctx.txList || [];
+    return {
+      items: (ctx.accountList || []).map(account => {
+        const base = { id: account.id, name: account.name, type: account.type, currentBalance: Number(account.currentBalance ?? account.balance ?? 0) };
+        if (account.type !== 'credit' || !account.closingDay) return base;
+        const currentInvoiceKey = InvoiceUtils.getInvoiceMonthForTransaction(Date.now(), account.closingDay, account.dueDay);
+        const invoiceTotal = transactions
+          .filter(tx => String(tx.accountId) === String(account.id) && !tx.isIgnored)
+          .filter(tx => InvoiceUtils.getInvoiceMonthForTransaction(tx, account.closingDay, account.dueDay) === currentInvoiceKey)
+          .reduce((sum, tx) => sum + (tx.type === 'income' ? -1 : 1) * Math.abs(Number(tx.amount || 0)), 0);
+        return { ...base, closingDay: account.closingDay, dueDay: account.dueDay, creditLimit: account.creditLimit ?? null, currentInvoice: { dueMonth: currentInvoiceKey, total: invoiceTotal } };
+      })
+    };
+  }
+  if (name === 'list_debts') {
+    const status = args.status || 'open';
+    const person = args.personName ? normalizeText(args.personName) : null;
+    const items = (ctx.debtList || [])
+      .filter(debt => !(debt.transactionId == null && debt.recurrenceId != null))
+      .filter(debt => status === 'all' || (status === 'paid' ? debt.isPaid === 1 : debt.isPaid !== 1))
+      .filter(debt => !person || normalizeText(debt.personName).includes(person))
+      .map(debt => ({
+        id: debt.id, personName: debt.personName, type: debt.type, amount: Number(debt.amount || 0),
+        description: debt.description || null, date: dateText(debt.date), accountId: debt.accountId ?? null,
+        transactionId: debt.transactionId ?? null, isPaid: debt.isPaid === 1
+      }));
+    const open = items.filter(item => !item.isPaid);
+    return {
+      items,
+      openOwedToMe: open.filter(item => item.type === 'owed').reduce((sum, item) => sum + item.amount, 0),
+      openIOwe: open.filter(item => item.type === 'owe').reduce((sum, item) => sum + item.amount, 0)
+    };
+  }
+  if (name === 'list_recurrences') {
+    return {
+      items: (ctx.recurrenceList || [])
+        .filter(item => !args.activeOnly || item.isActive !== 0)
+        .map(item => ({
+          id: item.id, description: item.description, amount: Number(item.amount || 0), type: item.type,
+          categoryId: item.categoryId ?? null, accountId: item.accountId ?? null, startDate: dateText(item.startDate),
+          frequencyType: item.frequencyType, frequencyInterval: item.frequencyInterval, installments: item.installments ?? null,
+          isActive: item.isActive !== 0
+        }))
+    };
+  }
+  if (name === 'propose_update_transactions') {
+    const fields = ['description', 'amount', 'type', 'date', 'categoryId', 'accountId', 'note', 'isIgnored'];
+    const updates = (args.updates || []).map(update => {
+      const tx = (ctx.txList || []).find(item => Number(item.id) === Number(update.id));
+      if (!tx) return null;
+      const changes = Object.fromEntries(fields.filter(field => update[field] !== undefined).map(field => [field, field === 'amount' ? Math.abs(Number(update[field])) : update[field]]));
+      return Object.keys(changes).length ? { id: tx.id, before: transactionItem(tx, ctx), changes } : null;
+    }).filter(Boolean);
+    if (!updates.length) return { error: 'Nenhuma transação válida para editar.' };
+    return proposal(ctx, 'update_transactions', { updates, count: updates.length });
+  }
+  if (name === 'propose_delete_transactions') {
+    const items = (args.transactionIds || [])
+      .map(id => (ctx.txList || []).find(tx => Number(tx.id) === Number(id)))
+      .filter(Boolean)
+      .map(tx => transactionItem(tx, ctx));
+    if (!items.length) return { error: 'Nenhuma transação encontrada para apagar.' };
+    return proposal(ctx, 'delete_transactions', {
+      transactionIds: items.map(item => item.id),
+      items,
+      count: items.length,
+      total: items.reduce((sum, item) => sum + item.amount, 0),
+      reason: args.reason || ''
+    });
+  }
+  if (name === 'propose_category') {
+    if (!String(args.name || '').trim()) return { error: 'Nome obrigatório.' };
+    return proposal(ctx, 'category', { name: String(args.name).trim(), icon: args.icon || 'pricetag-outline', color: args.color || '#888888' });
+  }
+  if (name === 'propose_account') {
+    if (!String(args.name || '').trim()) return { error: 'Nome obrigatório.' };
+    const type = ['checking', 'cash', 'credit'].includes(args.type) ? args.type : 'checking';
+    return proposal(ctx, 'account', {
+      name: String(args.name).trim(), accountType: type, balance: Number(args.balance || 0), color: args.color || null,
+      closingDay: type === 'credit' ? parseNumber(args.closingDay) : null,
+      dueDay: type === 'credit' ? parseNumber(args.dueDay) : null,
+      creditLimit: type === 'credit' ? parseNumber(args.creditLimit) : null
+    });
+  }
+  if (name === 'propose_debt') {
+    const accounts = ctx.accountList || [];
+    const account = accounts.find(item => String(item.id) === String(args.accountId));
+    return proposal(ctx, 'debt', {
+      personName: String(args.personName || '').trim(), debtType: args.type === 'owe' ? 'owe' : 'owed',
+      amount: Math.abs(Number(args.amount || 0)), description: args.description || '',
+      accountId: account?.id ?? null, accountName: account?.name || null, date: args.date || dateText(Date.now())
+    });
+  }
+  if (name === 'propose_settle_debts') {
+    const accounts = ctx.accountList || [];
+    const fallbackAccount = accounts.find(item => String(item.id) === String(args.accountId));
+    const items = (args.debtIds || [])
+      .map(id => (ctx.debtList || []).find(debt => Number(debt.id) === Number(id)))
+      .filter(Boolean)
+      .map(debt => ({ id: debt.id, personName: debt.personName, debtType: debt.type, amount: Number(debt.amount || 0), description: debt.description || '', accountId: debt.accountId ?? fallbackAccount?.id ?? null }));
+    if (!items.length) return { error: 'Nenhuma dívida encontrada.' };
+    if (args.paid !== false && items.some(item => item.accountId == null)) return { error: 'Informe accountId para as dívidas sem conta.' };
+    return proposal(ctx, 'settle_debts', { items, paid: args.paid !== false, count: items.length, total: items.reduce((sum, item) => sum + item.amount, 0) });
+  }
+  if (name === 'propose_recurrence') {
+    const item = normalizeTransactionItem({ ...args, groupIds: [] }, ctx);
+    return proposal(ctx, 'recurrence', {
+      description: args.description, amount: item.amount, recurrenceTxType: args.type === 'income' ? 'income' : 'expense',
+      categoryId: item.categoryId, accountId: item.accountId, startDate: args.startDate || dateText(Date.now()),
+      frequencyType: ['monthly', 'yearly', 'custom_days'].includes(args.frequencyType) ? args.frequencyType : 'monthly',
+      frequencyInterval: Math.max(1, Number(args.frequencyInterval) || 1),
+      installments: args.installments ? Math.max(1, Number(args.installments)) : null
     });
   }
   if (name === 'remember_preference') {

@@ -144,7 +144,7 @@ verify everything returns to the baseline.
 - [ ] Tap item → modal opens pre-filled; edit persists.
 - [ ] Acertos hidden when Config → Módulos → "[Geral] Esconder Acertos de Dívidas nas
       Transações" is ON (default); visible when OFF. Same for Home recent list.
-- [ ] Extraction (Extratos) button without API key → "Chave API Ausente" alert.
+- [ ] Extraction button (Transactions tab) without API key → "Chave API Ausente" alert.
 
 ## 5. Debts (Controle de Dívidas)
 - [ ] Totals "Eu Devo" / "Me Devem" match Home and include only unpaid debts.
@@ -211,7 +211,7 @@ verify everything returns to the baseline.
 - [ ] Automações: notification listener toggle (Android only; web simulate via panel:
       Pix Nubank, Compra Itaú, Salário, Netflix cartão → transactions created and
       categorised).
-- [ ] Extratos: enable, provider, model, API key saved (don't use real keys unless given).
+- [ ] Assistente IA: provider, model, API key saved (don't use real keys unless given).
 - [ ] Comportamento Padrão: 30d / 90d / all → applied after restart.
 - [ ] Backup: frequency, limit, Exportar JSON, Exportar CSV, Google Drive backup/restore
       (Android + credentials only), Zona de Perigo wipe → app returns to empty state.
@@ -265,7 +265,7 @@ verify everything returns to the baseline.
 - [ ] Persistência verificada após reload web e reabertura Android.
 
 ## Fase 3 — Assistente IA
-- Preconditions: configure uma chave em Config → Extração de Dados, selecione Google Gemini
+- Preconditions: configure uma chave em Config → Assistente IA, selecione Google Gemini
   e o modelo `gemini-3.5-flash`; nunca registre a chave em screenshots ou logs. Use o secret
   `GEMINI_API_KEY` por binding/substituição; não assuma formato/tamanho da chave.
 - O free tier do `gemini-3.5-flash` é 20 req/min e os loops de tools estouram a cota
@@ -319,6 +319,21 @@ Notas da Fase 4:
   reabra o app antes da remoção e depois do limpar para checar os dois estados.
 - Câmera no emulador só valida permissão/captura/recorte/anexo/remoção (cena sintética).
   Não declare reconhecimento de recibo via câmera sem um recibo real.
+
+## Fase 5 — Permissões, novas ferramentas, Markdown e consumo
+- Preconditions: Config → Assistente IA (card "Assistente IA · Chave, permissões e consumo") com a chave Gemini e `gemini-3.5-flash-lite`. Reset do banco antes.
+- [ ] Config → Assistente IA mostra: Provedor e chave, "O que o assistente pode fazer" (9 interruptores), "Consumo deste mês", preço do modelo, Memória.
+- [ ] Padrões: Criar transações, Grupos e regras, Tema e configurações, Memória ligados; Editar, Apagar, Contas e categorias, Dívidas, Recorrências desligados. Persistem após reload/reabrir.
+- [ ] Sem permissão: com "Apagar transações" desligado, pedir "Apague a transação X" → nenhum cartão; resposta cita Config → Assistente IA.
+- [ ] Editar: ligar "Editar transações"; "Mude a categoria da transação X para Y" → cartão "Editar transações" com `#id desc: categoria → Y`; Aplicar → transação alterada na lista, saldos coerentes.
+- [ ] Apagar: ligar "Apagar transações"; pedir para apagar uma transação → cartão vermelho "Apagar"; tocar → confirmação; Cancelar mantém; Apagar remove e atualiza saldo da Home.
+- [ ] Contas e categorias: "Crie a categoria Pets" e "Crie um cartão Inter fecha dia 3 vence dia 10" → cartões; Aplicar → aparecem em Config.
+- [ ] Dívidas: "Quanto me devem?" bate com Controle de Dívidas; "Marque a dívida de <nome> como paga" → cartão; Aplicar → dívida paga e Acerto criado na conta (igual ao fluxo manual). "Registre que o João me deve 30" → nova dívida avulsa.
+- [ ] Recorrências: "Crie uma assinatura Netflix de 39,90 mensal" → cartão; Aplicar → recorrência e ocorrência aparecem.
+- [ ] Saldos/faturas: "Qual o saldo das minhas contas e a fatura atual dos cartões?" → valores batem com Home/tela do cartão.
+- [ ] Markdown: "Liste meus saldos em uma tabela markdown com negrito" → tabela e negrito renderizados (sem `**`, `|`, `###` literais), cores do tema; mensagens de erro continuam texto simples.
+- [ ] Consumo: cada resposta mostra "N tokens"; cabeçalho mostra "Conversa: N tokens". Config → Consumo deste mês soma tokens e chamadas por modelo; Gemini mostra aviso de que não informa limite restante. Preencher preço (ex.: 0,1 / 0,4) → custo estimado aparece em Config e nas mensagens. "Zerar contador" zera.
+- Not testable without keys: limites de rate limit de OpenAI/Claude (cabeçalhos) — registrar como não testado.
 
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its

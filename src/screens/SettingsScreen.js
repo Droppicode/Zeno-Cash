@@ -11,7 +11,7 @@ import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
 import GroupsConfigScreen from './GroupsConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
-import ExtractionConfigScreen from './ExtractionConfigScreen';
+import AssistantConfigScreen from './AssistantConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import { useDataManagement } from '../hooks/useDataManagement';
@@ -92,7 +92,7 @@ export default function SettingsScreen({ navigation }) {
   if (currentScreen === 'extraction') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
-        <ExtractionConfigScreen onBack={() => setCurrentScreen('hub')} />
+        <AssistantConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
   }
@@ -177,9 +177,9 @@ export default function SettingsScreen({ navigation }) {
 
         <View style={styles.menuGrid}>
           <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('extraction')}>
-            <Ionicons name="document-text" size={32} color={activeTheme.accent} />
-            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Extratos</Text>
-            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Leitura Inteligente</Text>
+            <Ionicons name="sparkles" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Assistente IA</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Chave, permissões e consumo</Text>
           </TouchableOpacity>
         </View>
 

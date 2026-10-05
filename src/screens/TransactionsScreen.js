@@ -49,7 +49,7 @@ export default function TransactionsScreen({ route, navigation }) {
 
   const handleImportData = async () => {
     if (!llmKey) {
-      Alert.alert('Chave API Ausente', 'Configure sua chave API em Configurações > Extratos primeiro.');
+      Alert.alert('Chave API Ausente', 'Configure sua chave API em Configurações > Assistente IA primeiro.');
       return;
     }
 
