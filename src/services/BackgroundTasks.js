@@ -13,6 +13,7 @@ import { DebtsRepository } from './DebtsRepository';
 import { GroupsRepository } from './GroupsRepository';
 import { GroupRulesRepository } from './GroupRulesRepository';
 import { matchGroupIdsForTransaction } from '../utils/GroupRules';
+import { TransactionRepository } from './TransactionRepository';
 
 const BACKGROUND_FETCH_TASK = 'background-recurrence-fetch';
 
@@ -32,6 +33,7 @@ export const materializeRecurrencesUpToToday = async () => {
     );
 
     let insertedCount = 0;
+    const touchedMonths = new Map();
 
     for (const vtx of virtualTxs) {
       if (vtx.date <= todayEnd.getTime()) {
@@ -41,6 +43,8 @@ export const materializeRecurrencesUpToToday = async () => {
           isPending: 1, // force pending
         }).returning();
         insertedCount++;
+        const monthDate = new Date(txData.date);
+        touchedMonths.set(`${monthDate.getFullYear()}-${monthDate.getMonth()}`, txData.date);
 
         const newTxId = res[0]?.id;
         if (newTxId && txData.recurrenceId) {
@@ -95,6 +99,8 @@ export const materializeRecurrencesUpToToday = async () => {
         });
       }
     }
+
+    for (const date of touchedMonths.values()) await TransactionRepository.recalculateMonth(date);
 
     return insertedCount;
   } catch (error) {
