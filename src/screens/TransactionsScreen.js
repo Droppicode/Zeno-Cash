@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomDatePicker from '../components/ui/CustomDatePicker';
@@ -129,17 +129,22 @@ export default function TransactionsScreen({ route, navigation }) {
     setVisibleCount(50);
   }, [filter, accountFilter, period, search, startDateObj, endDateObj, selectedCats, forecastPeriod, groupFilter]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadTransactions();
-      loadCategories();
-      loadAccounts();
-      loadDebts();
-      loadGroups();
-      loadTxGroupMap();
-      RecurrenceRepository.getActive().then(setRecurrences);
-    }, [loadTransactions, loadCategories, loadAccounts, loadDebts, loadGroups, loadTxGroupMap])
-  );
+  const reloadAll = useCallback(() => {
+    loadTransactions();
+    loadCategories();
+    loadAccounts();
+    loadDebts();
+    loadGroups();
+    loadTxGroupMap();
+    RecurrenceRepository.getActive().then(setRecurrences);
+  }, [loadTransactions, loadCategories, loadAccounts, loadDebts, loadGroups, loadTxGroupMap]);
+
+  useFocusEffect(reloadAll);
+
+  React.useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('assistantDataChanged', reloadAll);
+    return () => subscription.remove();
+  }, [reloadAll]);
 
   const filteredList = useMemo(() => {
     let result = txList.filter(item => {

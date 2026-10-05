@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, DeviceEventEmitter, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SettingsContext } from '../context/SettingsContext';
@@ -220,6 +220,7 @@ export default function AssistantScreen({ navigation }) {
     ]);
     setDebtList(debts);
     setRecurrenceList(recurrences);
+    DeviceEventEmitter.emit('assistantDataChanged');
   };
 
   const markProposal = (messageId, proposalId, status) => {
