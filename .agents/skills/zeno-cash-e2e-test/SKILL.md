@@ -334,6 +334,14 @@ Notas da Fase 4:
 - [ ] Markdown: "Liste meus saldos em uma tabela markdown com negrito" → tabela e negrito renderizados (sem `**`, `|`, `###` literais), cores do tema; mensagens de erro continuam texto simples.
 - [ ] Consumo: cada resposta mostra "N tokens"; cabeçalho mostra "Conversa: N tokens". Config → Consumo deste mês soma tokens e chamadas por modelo; Gemini mostra aviso de que não informa limite restante. Preencher preço (ex.: 0,1 / 0,4) → custo estimado aparece em Config e nas mensagens. "Zerar contador" zera.
 - Not testable without keys: limites de rate limit de OpenAI/Claude (cabeçalhos) — registrar como não testado.
+- Assertions extras:
+  - Visite a aba Transações antes de aplicar mudanças no Assistente e volte sem reload: a aba já montada deve atualizar na hora.
+  - Fatura do cartão via assistente deve bater com "Total da Fatura" da tela do cartão (inclui saldo anterior).
+  - Compare Home e "Resumo do mês" antes e depois de criar uma recorrência pendente para hoje (Home inclui pendentes).
+  - Markdown: teste tópicos, resposta curta e tabela de várias colunas; texto dentro do balão e rodapé de tokens abaixo, também com teclado aberto.
+  - Preços: saia do campo antes de conferir o custo; vírgula decimal é aceita. "Zerar contador" mantém preços e memória.
+  - O cartão de edição mostra só "campo → novo valor" (não mostra o valor antigo).
+- Android: dependência nativa nova exige novo `npx expo run:android`. Feche o teclado antes de tocar em Aplicar (o primeiro toque pode só fechar o teclado). Se o Reload perder o bundle, refaça `adb reverse tcp:8081 tcp:8081` e abra o deep link do expo-development-client apontando para http://127.0.0.1:8081.
 
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
