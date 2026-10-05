@@ -301,7 +301,7 @@ export const TOOL_SPECS = [
   },
   {
     name: 'list_accounts',
-    description: 'Lista contas e cartões com saldo atual. Para cartões, traz a fatura atual (total, mês de vencimento) e o limite.',
+    description: 'Lista contas e cartões com saldo atual. Para cartões, traz a fatura atual igual à tela do cartão: total (inclui saldo anterior), previousBalance, gastos e pagamentos do ciclo, mês de vencimento e limite.',
     parameters: { type: 'object', properties: {} }
   },
   {
@@ -632,11 +632,17 @@ export async function executeTool(name, args = {}, ctx = {}) {
         const base = { id: account.id, name: account.name, type: account.type, currentBalance: Number(account.currentBalance ?? account.balance ?? 0) };
         if (account.type !== 'credit' || !account.closingDay) return base;
         const currentInvoiceKey = InvoiceUtils.getInvoiceMonthForTransaction(Date.now(), account.closingDay, account.dueDay);
-        const invoiceTotal = transactions
-          .filter(tx => String(tx.accountId) === String(account.id) && !tx.isIgnored)
-          .filter(tx => InvoiceUtils.getInvoiceMonthForTransaction(tx, account.closingDay, account.dueDay) === currentInvoiceKey)
-          .reduce((sum, tx) => sum + (tx.type === 'income' ? -1 : 1) * Math.abs(Number(tx.amount || 0)), 0);
-        return { ...base, closingDay: account.closingDay, dueDay: account.dueDay, creditLimit: account.creditLimit ?? null, currentInvoice: { dueMonth: currentInvoiceKey, total: invoiceTotal } };
+        const cardTransactions = transactions.filter(tx => String(tx.accountId) === String(account.id) && tx.isPending !== 1 && tx.isIgnored !== 1);
+        const invoice = InvoiceUtils.groupTransactionsByInvoice(cardTransactions, account.closingDay, account.dueDay)
+          .find(item => item.monthKey === currentInvoiceKey);
+        const currentInvoice = {
+          dueMonth: currentInvoiceKey,
+          total: invoice?.closingBalance || 0,
+          previousBalance: invoice?.previousBalance || 0,
+          cycleExpenses: invoice?.cycleExpenses || 0,
+          cyclePayments: invoice?.cyclePayments || 0
+        };
+        return { ...base, closingDay: account.closingDay, dueDay: account.dueDay, creditLimit: account.creditLimit ?? null, currentInvoice };
       })
     };
   }
