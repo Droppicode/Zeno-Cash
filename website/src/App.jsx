@@ -11,60 +11,30 @@ import transactionsShot from './assets/screens/transactions.webp';
 import settingsShot from './assets/screens/settings.webp';
 import assistantShot from './assets/screens/assistant-proposal.webp';
 import logoUrl from './assets/logo.png';
+import { COPY, initialLang } from './i18n';
 import './index.css';
 
 const LATEST_RELEASE_URL = 'https://github.com/Droppicode/Zeno-Cash/releases/latest';
 const DEMO_URL = 'https://zeno-cash.vercel.app/';
 const REPO_URL = 'https://github.com/Droppicode/Zeno-Cash';
 
-const STEPS = [
-  {
-    tag: 'Home',
-    title: 'Tudo o que importa, em uma tela',
-    text: 'Saldo, contas, cartões, pendências e grupos lado a lado. Receitas e despesas do mês batem com cada tela do app.',
-    shot: homeShot,
-  },
-  {
-    tag: 'Dívidas',
-    title: 'Dívidas que se resolvem sozinhas',
-    text: 'Marque como paga e o Acerto entra na conta ou na fatura certa. Desmarcou? O acerto some. Sem números fantasmas na Home.',
-    shot: debtsShot,
-  },
-  {
-    tag: 'Grupos',
-    title: 'Grupos para viagens, carro, projetos',
-    text: 'Junte transações em “Viagem Alagoas 2026” ou “Carro Fiesta” e veja total, orçamento, média mensal e anual. Regras automáticas fazem o resto.',
-    shot: groupShot,
-  },
-  {
-    tag: 'Análise',
-    title: 'Análises sem excesso de filtros',
-    text: 'Evolução mensal, composição por categoria e mapa de gastos. Cada grupo tem a própria tela de análise.',
-    shot: analyticsShot,
-  },
-  {
-    tag: 'Assistente',
-    title: 'Uma IA que propõe, você decide',
-    text: 'Pergunte, mande um recibo ou peça um grupo. O assistente consulta seus dados por ferramentas e toda alteração vira um cartão para aplicar ou descartar.',
-    shot: assistantShot,
-  },
+const STEP_SHOTS = [homeShot, debtsShot, groupShot, analyticsShot, assistantShot];
+
+const FEATURE_META = [
+  { icon: HandCoins, size: 'wide' },
+  { icon: Layers },
+  { icon: Receipt },
+  { icon: Brain, size: 'tall' },
+  { icon: BarChart3 },
+  { icon: Palette },
+  { icon: ShieldCheck, size: 'wider' },
 ];
 
-const FEATURES = [
-  { icon: HandCoins, title: 'Dívidas e Acertos', text: 'Quem te deve, quem você deve, e o saldo real de cada conta depois de pagar.', size: 'wide' },
-  { icon: Layers, title: 'Grupos N:N', text: 'Uma transação pode estar em vários grupos ao mesmo tempo.' },
-  { icon: Receipt, title: 'Cartões e faturas', text: 'Faturas por ciclo, saldo anterior e pagamento de fatura.' },
-  { icon: Brain, title: 'Gemini, OpenAI ou Claude', text: 'Escolha o provedor, o modelo e o que a IA pode fazer. Tokens e custo estimado à vista.', size: 'tall' },
-  { icon: BarChart3, title: 'Recorrências', text: 'Assinaturas e salários lançados automaticamente.' },
-  { icon: Palette, title: 'Temas e módulos', text: 'Crie temas, ajuste o zoom e esconda o que você não usa.' },
-  { icon: ShieldCheck, title: 'Backup e exportação', text: 'JSON, CSV e backup automático no Google Drive ou no aparelho.', size: 'wider' },
-];
-
-const STATS = [
-  { value: 100, suffix: '%', label: 'offline-first' },
-  { value: 3, suffix: '', label: 'provedores de IA' },
-  { value: 0, suffix: '', label: 'servidores no meio' },
-  { value: 20, suffix: '+', label: 'ferramentas do assistente' },
+const STAT_VALUES = [
+  { value: 100, suffix: '%' },
+  { value: 3, suffix: '' },
+  { value: 0, suffix: '' },
+  { value: 20, suffix: '+' },
 ];
 
 function useReveal() {
@@ -138,7 +108,8 @@ function Phone({ src, alt, className = '' }) {
   );
 }
 
-function Showcase() {
+function Showcase({ t }) {
+  const steps = t.steps.map(([tag, title, text], index) => ({ tag, title, text, shot: STEP_SHOTS[index] }));
   const [active, setActive] = useState(0);
   const refs = useRef([]);
   useEffect(() => {
@@ -154,12 +125,12 @@ function Showcase() {
   return (
     <section id="showcase" className="showcase">
       <div className="container section-head reveal">
-        <span className="eyebrow">Como funciona</span>
-        <h2>Role devagar. <em>O app acompanha.</em></h2>
+        <span className="eyebrow">{t.eyebrow}</span>
+        <h2>{t.title[0]} <em>{t.title[1]}</em></h2>
       </div>
       <div className="container showcase-grid">
         <div className="showcase-steps">
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <article
               key={step.tag}
               ref={node => { refs.current[index] = node; }}
@@ -177,7 +148,7 @@ function Showcase() {
           <div className="stage-sticky">
             <div className="stage-halo" />
             <div className="phone stage-phone">
-                      {STEPS.map((step, index) => (
+                      {steps.map((step, index) => (
                 <img
                   key={step.tag}
                   src={step.shot}
@@ -187,7 +158,7 @@ function Showcase() {
               ))}
             </div>
             <div className="stage-dots">
-              {STEPS.map((step, index) => (
+              {steps.map((step, index) => (
                 <button
                   key={step.tag}
                   type="button"
@@ -206,6 +177,14 @@ function Showcase() {
 
 export default function App() {
   const [navHidden, setNavHidden] = useState(false);
+  const [lang, setLang] = useState(initialLang);
+  const t = COPY[lang];
+
+  useEffect(() => {
+    document.documentElement.lang = t.htmlLang;
+    document.title = t.title;
+    try { localStorage.setItem('zeno-lang', lang); } catch { /* storage unavailable */ }
+  }, [lang, t]);
   useReveal();
   useScrollVars();
 
@@ -236,37 +215,45 @@ export default function App() {
             Zeno Cash
           </a>
           <div className="nav-links">
-            <a href="#showcase">Como funciona</a>
-            <a href="#features">Funções</a>
-            <a href="#ai">Assistente</a>
-            <a href="#privacy">Privacidade</a>
+            <a href="#showcase">{t.nav.showcase}</a>
+            <a href="#features">{t.nav.features}</a>
+            <a href="#ai">{t.nav.ai}</a>
+            <a href="#privacy">{t.nav.privacy}</a>
           </div>
-          <a href={LATEST_RELEASE_URL} className="btn btn-primary btn-sm">
-            <Download size={16} /> Baixar
-          </a>
+          <div className="nav-actions">
+            <div className="lang-switch" role="group" aria-label="Language">
+              {Object.keys(COPY).map(code => (
+                <button key={code} type="button" className={lang === code ? 'on' : ''} onClick={() => setLang(code)}>
+                  {code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <a href={LATEST_RELEASE_URL} className="btn btn-primary btn-sm">
+              <Download size={16} /> {t.nav.download}
+            </a>
+          </div>
         </div>
       </nav>
 
       <main id="top">
         <section className="hero container">
           <div className="hero-copy">
-            <span className="eyebrow reveal">Finanças pessoais · offline-first</span>
+            <span className="eyebrow reveal">{t.hero.eyebrow}</span>
             <h1 className="reveal" style={{ '--d': '80ms' }}>
-              Seu dinheiro,<br /><em>em paz.</em>
+              {t.hero.title[0]}<br /><em>{t.hero.title[1]}</em>
             </h1>
             <p className="lead reveal" style={{ '--d': '160ms' }}>
-              Contas, cartões, dívidas e grupos em um app leve, que guarda tudo no seu aparelho
-              e tem um assistente de IA que só mexe no que você aprovar.
+              {t.hero.lead}
             </p>
             <div className="hero-actions reveal" style={{ '--d': '240ms' }}>
               <a href={LATEST_RELEASE_URL} className="btn btn-primary">
-                <Download size={18} /> Baixar APK
+                <Download size={18} /> {t.hero.apk}
               </a>
               <a href={DEMO_URL} target="_blank" rel="noreferrer" className="btn btn-ghost">
-                <Globe size={18} /> Testar na web
+                <Globe size={18} /> {t.hero.web}
               </a>
               <a href={REPO_URL} target="_blank" rel="noreferrer" className="btn btn-link">
-                <Code size={18} /> Código no GitHub <ArrowRight size={16} />
+                <Code size={18} /> {t.hero.code} <ArrowRight size={16} />
               </a>
             </div>
           </div>
@@ -275,65 +262,61 @@ export default function App() {
             <Phone src={debtsShot} alt="" className="hero-phone side left" />
             <Phone src={analyticsShot} alt="" className="hero-phone side right" />
             <Phone src={homeShot} alt="" className="hero-phone main" />
-            <div className="float-chip chip-a"><HandCoins size={16} /> Dívida quitada</div>
-            <div className="float-chip chip-b"><Sparkles size={16} /> Proposta da IA</div>
+            <div className="float-chip chip-a"><HandCoins size={16} /> {t.hero.chipDebt}</div>
+            <div className="float-chip chip-b"><Sparkles size={16} /> {t.hero.chipAi}</div>
           </div>
         </section>
 
         <div className="marquee" aria-hidden="true">
           <div className="marquee-track">
             {[0, 1].map(copy => (
-              <span key={copy}>
-                Dívidas e Acertos · Grupos · Faturas · Recorrências · Assistente IA · Recibos por foto · Temas · Backup ·{' '}
-              </span>
+              <span key={copy}>{t.marquee}</span>
             ))}
           </div>
         </div>
 
         <section className="container stats">
-          {STATS.map((stat, index) => (
-            <div key={stat.label} className="stat reveal" style={{ '--d': `${index * 90}ms` }}>
+          {STAT_VALUES.map((stat, index) => (
+            <div key={t.stats[index]} className="stat reveal" style={{ '--d': `${index * 90}ms` }}>
               <strong><CountUp value={stat.value} suffix={stat.suffix} /></strong>
-              <span>{stat.label}</span>
+              <span>{t.stats[index]}</span>
             </div>
           ))}
         </section>
 
-        <Showcase />
+        <Showcase t={t.showcase} />
 
         <section id="features" className="container features">
           <div className="section-head reveal">
-            <span className="eyebrow">Funções</span>
-            <h2>Tudo no lugar, <em>nada sobrando.</em></h2>
+            <span className="eyebrow">{t.features.eyebrow}</span>
+            <h2>{t.features.title[0]} <em>{t.features.title[1]}</em></h2>
           </div>
           <div className="bento">
-            {FEATURES.map(({ icon: Icon, title, text, size }, index) => (
+            {FEATURE_META.map(({ icon: Icon, size }, index) => {
+              const [title, text] = t.features.items[index];
+              return (
               <div key={title} className={`card reveal ${size || ''}`} style={{ '--d': `${(index % 4) * 80}ms` }}>
                 <span className="card-icon"><Icon size={22} /></span>
                 <h3>{title}</h3>
                 <p>{text}</p>
-                {size === 'tall' && <img src={settingsShot} alt="Configurações" className="card-shot" loading="lazy" />}
+                {size === 'tall' && <img src={settingsShot} alt={t.features.settingsAlt} className="card-shot" loading="lazy" />}
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         <section id="ai" className="ai">
           <div className="container ai-grid">
             <div className="ai-visual reveal">
-              <Phone src={assistantShot} alt="Assistente" className="ai-phone" />
-              <Phone src={transactionsShot} alt="Transações" className="ai-phone back" />
+              <Phone src={assistantShot} alt={t.ai.alt[0]} className="ai-phone" />
+              <Phone src={transactionsShot} alt={t.ai.alt[1]} className="ai-phone back" />
             </div>
             <div className="ai-copy">
-              <span className="eyebrow reveal">Assistente IA</span>
-              <h2 className="reveal" style={{ '--d': '80ms' }}>Pergunte. <em>Revise.</em> Aplique.</h2>
+              <span className="eyebrow reveal">{t.ai.eyebrow}</span>
+              <h2 className="reveal" style={{ '--d': '80ms' }}>{t.ai.title[0]} <em>{t.ai.title[1]}</em> {t.ai.title[2]}</h2>
               <ul className="ai-list">
-                {[
-                  ['Consulta por ferramentas', 'Busca e resume transações sob demanda, sem mandar o histórico inteiro a cada pergunta.'],
-                  ['Recibos e PDFs', 'Mande uma foto ou um extrato e receba as transações prontas para revisar.'],
-                  ['Permissões por área', 'Você liga o que a IA pode criar, editar ou apagar. Apagar sempre pede confirmação.'],
-                  ['Consumo visível', 'Tokens por mensagem, total do mês e custo estimado por modelo.'],
-                ].map(([title, text], index) => (
+                {t.ai.items.map(([title, text], index) => (
                   <li key={title} className="reveal" style={{ '--d': `${160 + index * 80}ms` }}>
                     <Sparkles size={18} />
                     <div><strong>{title}</strong><span>{text}</span></div>
@@ -346,15 +329,11 @@ export default function App() {
 
         <section id="privacy" className="container privacy">
           <div className="section-head reveal">
-            <span className="eyebrow">Privacidade</span>
-            <h2>Seus dados ficam <em>com você.</em></h2>
+            <span className="eyebrow">{t.privacy.eyebrow}</span>
+            <h2>{t.privacy.title[0]} <em>{t.privacy.title[1]}</em></h2>
           </div>
           <div className="privacy-grid">
-            {[
-              [WifiOff, 'Funciona offline', 'Banco SQLite local. Sem conta, sem login, sem nuvem obrigatória.'],
-              [Lock, 'Chave no aparelho', 'A chave da IA fica no armazenamento seguro do celular e as chamadas vão direto ao provedor.'],
-              [ShieldCheck, 'Backup quando quiser', 'Exporte JSON ou CSV, ou ative o backup automático no Drive.'],
-            ].map(([Icon, title, text], index) => (
+            {[WifiOff, Lock, ShieldCheck].map((Icon, index) => [Icon, ...t.privacy.items[index]]).map(([Icon, title, text], index) => (
               <div key={title} className="privacy-item reveal" style={{ '--d': `${index * 100}ms` }}>
                 <Icon size={26} />
                 <h3>{title}</h3>
@@ -367,11 +346,11 @@ export default function App() {
         <section className="container cta reveal">
           <div className="cta-card">
             <img src={logoUrl} alt="" className="cta-logo" />
-            <h2>Respire. <em>Está tudo em ordem.</em></h2>
-            <p>Grátis e de código aberto. Android ou direto no navegador.</p>
+            <h2>{t.cta.title[0]} <em>{t.cta.title[1]}</em></h2>
+            <p>{t.cta.text}</p>
             <div className="hero-actions center">
-              <a href={LATEST_RELEASE_URL} className="btn btn-primary"><Download size={18} /> Baixar APK</a>
-              <a href={DEMO_URL} target="_blank" rel="noreferrer" className="btn btn-ghost"><Globe size={18} /> Abrir demo</a>
+              <a href={LATEST_RELEASE_URL} className="btn btn-primary"><Download size={18} /> {t.cta.apk}</a>
+              <a href={DEMO_URL} target="_blank" rel="noreferrer" className="btn btn-ghost"><Globe size={18} /> {t.cta.demo}</a>
             </div>
           </div>
         </section>
@@ -383,9 +362,9 @@ export default function App() {
           <div className="footer-links">
             <a href={REPO_URL}>GitHub</a>
             <a href={`${REPO_URL}/releases`}>Releases</a>
-            <a href={DEMO_URL}>Demo web</a>
+            <a href={DEMO_URL}>{t.footer.demo}</a>
           </div>
-          <span className="footer-note">Feito com calma. React Native + Expo.</span>
+          <span className="footer-note">{t.footer.note}</span>
         </div>
       </footer>
     </>
