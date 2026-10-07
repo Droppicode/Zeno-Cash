@@ -186,7 +186,9 @@ h3 { font-size: 1.45rem; margin-bottom: 8px; }
   .hero-visual { height: 520px; }
   .hero-phone { width: 220px; }
   .hero-phone.side { width: 180px; }
-  .hero-ring { width: 380px; height: 380px; }
+  .hero-visual { overflow-x: clip; }
+  .hero-ring { width: min(380px, 86vw); height: min(380px, 86vw); }
+  .hero-ring::after { inset: -20px; }
   .stats { grid-template-columns: repeat(2, 1fr); row-gap: 50px; padding-block: 70px; }
   .showcase-grid { grid-template-columns: 1fr; }
   .showcase-stage { display: none; }
