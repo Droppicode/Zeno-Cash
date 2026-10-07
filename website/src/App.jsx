@@ -26,7 +26,7 @@ const FEATURE_META = [
   { icon: Receipt },
   { icon: Brain, size: 'tall' },
   { icon: BarChart3 },
-  { icon: Palette },
+  { icon: Palette, size: 'wide' },
   { icon: ShieldCheck, size: 'wider' },
 ];
 
@@ -37,20 +37,26 @@ const STAT_VALUES = [
   { value: 20, suffix: '+' },
 ];
 
-function useReveal() {
+function useReveal(lang) {
   useEffect(() => {
-    const nodes = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in');
-          observer.unobserve(entry.target);
-        }
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      const limit = window.innerHeight * 0.92;
+      document.querySelectorAll('.reveal:not(.in)').forEach(node => {
+        if (node.getBoundingClientRect().top < limit) node.classList.add('in');
       });
-    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-    nodes.forEach(node => observer.observe(node));
-    return () => observer.disconnect();
-  }, []);
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(check); };
+    check();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [lang]);
 }
 
 function useScrollVars() {
@@ -113,13 +119,25 @@ function Showcase({ t }) {
   const [active, setActive] = useState(0);
   const refs = useRef([]);
   useEffect(() => {
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) setActive(Number(entry.target.dataset.index));
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const mid = window.innerHeight / 2;
+      let next = 0;
+      refs.current.forEach((node, index) => {
+        if (node && node.getBoundingClientRect().top < mid) next = index;
       });
-    }, { rootMargin: '-45% 0px -45% 0px' });
-    refs.current.forEach(node => node && observer.observe(node));
-    return () => observer.disconnect();
+      setActive(next);
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
@@ -185,7 +203,7 @@ export default function App() {
     document.title = t.title;
     try { localStorage.setItem('zeno-lang', lang); } catch { /* storage unavailable */ }
   }, [lang, t]);
-  useReveal();
+  useReveal(lang);
   useScrollVars();
 
   useEffect(() => {
