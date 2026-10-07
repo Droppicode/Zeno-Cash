@@ -16,7 +16,13 @@ const TransactionItem = React.memo(({
   onDelete, 
   onAccept, 
   onSplit, 
-  hasSplit 
+  hasSplit,
+  deleteText = 'Apagar',
+  txGroupMap,
+  groupColorMap,
+  onLongPress,
+  selectable = false,
+  selected = false
 }) => {
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   
@@ -26,19 +32,31 @@ const TransactionItem = React.memo(({
   return (
     <SwipeableCard 
       onDelete={onDelete}
+      deleteText={deleteText}
       onAccept={onAccept}
+      enabled={!selectable}
       containerStyle={[
         isFirst && { borderTopLeftRadius: 6, borderTopRightRadius: 6 },
         isLast && { borderBottomLeftRadius: 6, borderBottomRightRadius: 6 }
       ]}
     >
       {(isSwiping) => (
-        <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
+        <TouchableOpacity onPress={selectable ? onLongPress : onEdit} onLongPress={onLongPress} activeOpacity={0.7}>
           <View style={[
             styles.card, 
             { backgroundColor: activeTheme.card },
+            selected && { backgroundColor: activeTheme.accent + '18' },
             !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background, marginBottom: 0 }
           ]}>
+          {selectable && (
+            <View style={{ width: 28, alignItems: 'flex-start' }}>
+              <Ionicons
+                name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                size={22}
+                color={selected ? activeTheme.accent : activeTheme.textSecondary}
+              />
+            </View>
+          )}
           <View style={styles.cardLeft}>
             <View style={[styles.iconBox, { backgroundColor: item.isPending ? activeTheme.expense + '20' : catInfo.color + '20' }]}>
               {item.isPending ? (
@@ -72,6 +90,9 @@ const TransactionItem = React.memo(({
                     <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} />
                   </View>
                 )}
+                {txGroupMap?.[item.id]?.slice(0, 2).map((groupId, groupIndex) => (
+                  <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: groupColorMap?.[groupId] || activeTheme.accent }} />
+                ))}
               </View>
               <Text style={[styles.date, { color: activeTheme.textSecondary }]}>{dateStr} • {accountName}</Text>
             </View>
@@ -95,7 +116,12 @@ const TransactionItem = React.memo(({
          prevProps.accountName === nextProps.accountName &&
          prevProps.sectionLength === nextProps.sectionLength &&
          prevProps.index === nextProps.index &&
-         prevProps.hasSplit === nextProps.hasSplit;
+         prevProps.hasSplit === nextProps.hasSplit &&
+         prevProps.txGroupMap === nextProps.txGroupMap &&
+         prevProps.groupColorMap === nextProps.groupColorMap &&
+         prevProps.selectable === nextProps.selectable &&
+         prevProps.selected === nextProps.selected &&
+         prevProps.onLongPress === nextProps.onLongPress;
 });
 
 export default TransactionItem;

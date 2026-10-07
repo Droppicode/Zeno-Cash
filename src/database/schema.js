@@ -78,3 +78,40 @@ export const monthlyBalances = sqliteTable('monthly_balances', {
   total: real('total').default(0),
 });
 
+export const groups = sqliteTable('groups', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  description: text('description'),
+  icon: text('icon'),
+  color: text('color'),
+  kind: text('kind').default('ongoing'),
+  startDate: integer('start_date'),
+  endDate: integer('end_date'),
+  budget: real('budget'),
+  isArchived: integer('is_archived').default(0),
+  createdAt: integer('created_at').notNull(),
+});
+
+export const transactionGroups = sqliteTable('transaction_groups', {
+  transactionId: integer('transaction_id').notNull(),
+  groupId: integer('group_id').notNull(),
+});
+
+export const recurrenceGroups = sqliteTable('recurrence_groups', {
+  recurrenceId: integer('recurrence_id').notNull(),
+  groupId: integer('group_id').notNull(),
+});
+
+export const groupRules = sqliteTable('group_rules', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  groupId: integer('group_id').notNull(),
+  keywords: text('keywords'),
+  categoryIds: text('category_ids'),
+  accountId: integer('account_id'),
+  minAmount: real('min_amount'),
+  maxAmount: real('max_amount'),
+  dateFrom: integer('date_from'),
+  dateTo: integer('date_to'),
+  isActive: integer('is_active').default(1),
+  createdAt: integer('created_at').notNull(),
+});

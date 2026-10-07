@@ -78,6 +78,46 @@ expoDb.execSync(`
     total REAL DEFAULT 0
   );
 
+  CREATE TABLE IF NOT EXISTS groups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    icon TEXT,
+    color TEXT,
+    kind TEXT DEFAULT 'ongoing',
+    start_date INTEGER,
+    end_date INTEGER,
+    budget REAL,
+    is_archived INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS transaction_groups (
+    transaction_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+    PRIMARY KEY (transaction_id, group_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS recurrence_groups (
+    recurrence_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+    PRIMARY KEY (recurrence_id, group_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS group_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    keywords TEXT,
+    category_ids TEXT,
+    account_id INTEGER,
+    min_amount REAL,
+    max_amount REAL,
+    date_from INTEGER,
+    date_to INTEGER,
+    is_active INTEGER DEFAULT 1,
+    created_at INTEGER NOT NULL
+  );
+
   -- Insert a default account if the table is completely empty
   INSERT INTO accounts (name, type, balance, icon, color)
   SELECT 'Dinheiro', 'cash', 0, 'wallet-outline', '#4CAF50'
@@ -105,6 +145,8 @@ try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON trans
 try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);'); } catch (e) {}
 try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);'); } catch (e) {}
 try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_debts_transaction ON debts(transaction_id);'); } catch (e) {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transaction_groups_group ON transaction_groups(group_id);'); } catch (e) {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_group_rules_group ON group_rules(group_id);'); } catch (e) {}
 
 expoDb.execSync(`
   INSERT INTO categories (name, icon, color, macro)

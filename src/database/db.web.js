@@ -1,9 +1,51 @@
 import initSqlJs from 'sql.js';
 import { drizzle } from 'drizzle-orm/sql-js';
 
-// No web, o banco será em memória e instanciado assincronamente.
+// No web, o banco roda em memória (sql.js) e é persistido no localStorage.
 export let expoDb = null;
 export let db = null;
+
+const STORAGE_KEY = 'zenocash_web_db';
+const PERSIST_INTERVAL_MS = 2000;
+
+const loadStoredDb = () => {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    const binary = atob(stored);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } catch (e) {
+    console.warn('Falha ao carregar banco salvo no navegador:', e);
+    return null;
+  }
+};
+
+const setupPersistence = (sqlite) => {
+  let lastSavedChanges = -1;
+  const persist = () => {
+    try {
+      const changes = sqlite.exec('SELECT total_changes()')[0]?.values[0]?.[0] ?? 0;
+      if (changes === lastSavedChanges) return;
+      const bytes = sqlite.export();
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      window.localStorage.setItem(STORAGE_KEY, btoa(binary));
+      lastSavedChanges = changes;
+    } catch (e) {
+      console.warn('Falha ao salvar banco no navegador:', e);
+    }
+  };
+  setInterval(persist, PERSIST_INTERVAL_MS);
+  window.addEventListener('beforeunload', persist);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') persist();
+  });
+};
 
 export const initWebDb = async () => {
   if (db) return db;
@@ -12,7 +54,7 @@ export const initWebDb = async () => {
     locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.wasm`
   });
   
-  const sqlite = new SQL.Database();
+  const sqlite = new SQL.Database(loadStoredDb() || undefined);
   
   // Criação das tabelas
   sqlite.run(`
@@ -93,10 +135,54 @@ export const initWebDb = async () => {
       expense REAL DEFAULT 0,
       total REAL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      icon TEXT,
+      color TEXT,
+      kind TEXT DEFAULT 'ongoing',
+      start_date INTEGER,
+      end_date INTEGER,
+      budget REAL,
+      is_archived INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS transaction_groups (
+      transaction_id INTEGER NOT NULL,
+      group_id INTEGER NOT NULL,
+      PRIMARY KEY (transaction_id, group_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS recurrence_groups (
+      recurrence_id INTEGER NOT NULL,
+      group_id INTEGER NOT NULL,
+      PRIMARY KEY (recurrence_id, group_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS group_rules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_id INTEGER NOT NULL,
+      keywords TEXT,
+      category_ids TEXT,
+      account_id INTEGER,
+      min_amount REAL,
+      max_amount REAL,
+      date_from INTEGER,
+      date_to INTEGER,
+      is_active INTEGER DEFAULT 1,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_transaction_groups_group ON transaction_groups(group_id);
+    CREATE INDEX IF NOT EXISTS idx_group_rules_group ON group_rules(group_id);
   `);
 
   // A estrutura e o seed das tabelas serão feitos na chamada seedDatabase() de seed.js
   db = drizzle(sqlite);
+  setupPersistence(sqlite);
 
   // Criar o mock do expoDb para compatibilidade com partes nativas do código
   expoDb = {
@@ -105,6 +191,13 @@ export const initWebDb = async () => {
       sqlite.run(q, params || []);
       const res = sqlite.exec('SELECT last_insert_rowid()');
       return { lastInsertRowId: res[0]?.values[0]?.[0] || 0 };
+    },
+    getFirstSync: (q, params) => {
+      const stmt = sqlite.prepare(q);
+      if (params) stmt.bind(params);
+      const row = stmt.step() ? stmt.getAsObject() : null;
+      stmt.free();
+      return row;
     },
     getAllAsync: async (q, params) => {
       const stmt = sqlite.prepare(q);

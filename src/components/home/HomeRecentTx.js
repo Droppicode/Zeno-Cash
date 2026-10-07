@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 import SwipeableCard from '../ui/SwipeableCard';
 import { resolveCategory } from '../../services/categorizer';
+import { InvoiceUtils } from '../../utils/InvoiceUtils';
 
 export default function HomeRecentTx({
   recentTxList,
@@ -16,7 +17,9 @@ export default function HomeRecentTx({
   loadAccounts,
   loadDebts,
   setEditingTx,
-  setModalVisible
+  setModalVisible,
+  txGroupMap,
+  groupColorMap
 }) {
   return (
     <View style={styles.section}>
@@ -57,8 +60,11 @@ export default function HomeRecentTx({
                           {item.recurrenceId && (
                             <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
                           )}
+                          {txGroupMap?.[item.id]?.slice(0, 2).map((groupId, groupIndex) => (
+                            <View key={groupId} style={{ width: 7, height: 7, borderRadius: 4, marginLeft: 4, backgroundColor: groupColorMap?.[groupId] || activeTheme.accent }} />
+                          ))}
                         </View>
-                        {item.note && item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim() ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()}</Text> : null}
+                        {InvoiceUtils.formatDisplayNote(item.note) ? <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>{InvoiceUtils.formatDisplayNote(item.note)}</Text> : null}
                       </View>
                     </View>
                     <Text style={[styles.groupedAmount, { color: item.type === 'income' ? activeTheme.income : activeTheme.expense }]}>

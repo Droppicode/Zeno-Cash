@@ -155,12 +155,12 @@ export default function AccountsConfigScreen({ onBack }) {
                   <Ionicons name={acc.icon || 'wallet-outline'} size={20} color={acc.color || activeTheme.text} />
                 )}
               </View>
-              <View style={{ marginLeft: 12 }}>
-                <Text style={[styles.accName, { color: activeTheme.text }]}>{acc.name}</Text>
+              <View style={{ marginLeft: 12, flex: 1, marginRight: 8 }}>
+                <Text numberOfLines={1} style={[styles.accName, { color: activeTheme.text }]}>{acc.name}</Text>
                 {acc.type === 'credit' ? (
-                  <Text style={[styles.accBalance, { color: activeTheme.textSecondary }]}>Cartão de Crédito • Limite: R$ {CurrencyUtils.formatDisplay(acc.creditLimit)}</Text>
+                  <Text numberOfLines={1} style={[styles.accBalance, { color: activeTheme.textSecondary }]}>Cartão de Crédito • Limite: R$ {CurrencyUtils.formatDisplay(acc.creditLimit)}</Text>
                 ) : (
-                  <Text style={[styles.accBalance, { color: activeTheme.textSecondary }]}>{acc.type === 'cash' ? 'Dinheiro' : 'Conta Corrente'} • Saldo Inic: R$ {CurrencyUtils.formatDisplay(acc.balance)}</Text>
+                  <Text numberOfLines={1} style={[styles.accBalance, { color: activeTheme.textSecondary }]}>{acc.type === 'cash' ? 'Dinheiro' : 'Conta Corrente'} • Saldo Inic: R$ {CurrencyUtils.formatDisplay(acc.balance)}</Text>
                 )}
               </View>
             </View>

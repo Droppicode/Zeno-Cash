@@ -73,7 +73,7 @@ export default function BaseModalBottom({
               showActions && (
                 <View style={styles.modalActions}>
                   {onClose && (
-                    <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={onClose}>
+                    <TouchableOpacity style={[styles.btnCancel, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => onClose()}>
                       <Text style={[styles.btnText, { color: activeTheme.text }]}>{cancelText}</Text>
                     </TouchableOpacity>
                   )}

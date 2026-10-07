@@ -5,6 +5,9 @@ import { DateUtils } from '../utils/dateUtils';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
+import { GroupsRepository } from '../services/GroupsRepository';
+import { GroupRulesRepository } from '../services/GroupRulesRepository';
+import { matchGroupIdsForTransaction } from '../utils/GroupRules';
 
 export const useTransactions = () => {
   const [txList, setTxList] = useState([]);
@@ -33,7 +36,7 @@ export const useTransactions = () => {
   }, []);
 
   const addTransaction = useCallback(async (data) => {
-    const { recurrenceType, recurrenceData, splitDebts, ...txParams } = data;
+    const { recurrenceType, recurrenceData, splitDebts, groupIds, ...txParams } = data;
     
     let newTxId = null;
     if (recurrenceType && recurrenceType !== 'single' && recurrenceData) {
@@ -46,6 +49,7 @@ export const useTransactions = () => {
         startDate: txParams.date || Date.now(),
         ...recurrenceData
       });
+      await GroupsRepository.setRecurrenceGroups(newTxId, groupIds || []);
 
       await materializeRecurrencesUpToToday();
     } else {
@@ -53,6 +57,14 @@ export const useTransactions = () => {
         ...txParams,
         date: txParams.date || Date.now()
       });
+      const newTx = {
+        ...txParams,
+        id: newTxId,
+        date: txParams.date || Date.now()
+      };
+      const rules = await GroupRulesRepository.getAll();
+      const matchedGroupIds = matchGroupIdsForTransaction(rules, newTx);
+      await GroupsRepository.setTransactionGroups(newTxId, [...new Set([...(groupIds || []), ...matchedGroupIds])]);
     }
     
     const isRecurrence = recurrenceType && recurrenceType !== 'single' && recurrenceData;
@@ -77,20 +89,27 @@ export const useTransactions = () => {
     }
 
     await loadTransactions();
+    return newTxId;
   }, [loadTransactions]);
 
   const updateTransaction = useCallback(async (id, data) => {
-    const { splitDebts, ...txParams } = data;
+    const { splitDebts, groupIds, ...txParams } = data;
     await TransactionRepository.update(id, txParams);
+
+    if (groupIds) {
+      await GroupsRepository.setTransactionGroups(id, groupIds);
+    }
     
     if (splitDebts) {
       const { DebtsRepository } = require('../services/DebtsRepository');
-      // Recalculate percentage debts if transaction amount changed
-      // But it's easier to just remove old and insert new ones
-      await DebtsRepository.removeByTransactionId(id);
-      
+      const existing = await DebtsRepository.getByTransactionId(id);
+      const keptIds = splitDebts.filter(d => d.id).map(d => d.id);
+      for (const old of existing) {
+        if (!keptIds.includes(old.id)) await DebtsRepository.remove(old.id);
+      }
+
       for (const debt of splitDebts) {
-        await DebtsRepository.add({
+        const debtData = {
           personName: debt.personName,
           type: debt.type || 'owed',
           amount: debt.amount,
@@ -101,7 +120,12 @@ export const useTransactions = () => {
           isPercentage: debt.isPercentage ? 1 : 0,
           ignoresInterest: debt.ignoresInterest ? 1 : 0,
           description: debt.description || txParams.description
-        });
+        };
+        if (debt.id && existing.some(e => e.id === debt.id)) {
+          await DebtsRepository.update(debt.id, debtData);
+        } else {
+          await DebtsRepository.add(debtData);
+        }
       }
     }
     
@@ -110,15 +134,16 @@ export const useTransactions = () => {
 
   const saveTransaction = useCallback(async (id, data) => {
     if (id) {
-      await updateTransaction(id, data);
+      return updateTransaction(id, data);
     } else {
-      await addTransaction(data);
+      return addTransaction(data);
     }
   }, [updateTransaction, addTransaction]);
 
   const removeTransaction = useCallback(async (id) => {
-    await TransactionRepository.remove(id);
     const { DebtsRepository } = require('../services/DebtsRepository');
+    await DebtsRepository.unmarkPaidBySettlementTx(id);
+    await TransactionRepository.remove(id);
     await DebtsRepository.removeByTransactionId(id);
     await loadTransactions();
   }, [loadTransactions]);

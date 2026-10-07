@@ -16,12 +16,13 @@ export default function TransactionsFilterBar({
 
   const {
     accountFilter, showAdvanced, filter, period, forecastPeriod,
-    startDateObj, endDateObj, selectedCats, uniqueCategories
+    startDateObj, endDateObj, selectedCats, uniqueCategories, groupFilter,
+    groupList, selectionMode
   } = filterState;
 
   const {
     setAccountFilter, setShowAdvanced, setFilter, setPeriod, setForecastPeriod,
-    setStartDateObj, setEndDateObj, toggleCategory
+    setStartDateObj, setEndDateObj, toggleCategory, setGroupFilter, onStartSelection
   } = filterActions;
 
   return (
@@ -40,9 +41,16 @@ export default function TransactionsFilterBar({
           </View>
         </ScrollView>
 
-        <TouchableOpacity style={[styles.advancedToggleBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setShowAdvanced(!showAdvanced)}>
-          <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.accent} />
-        </TouchableOpacity>
+        {!selectionMode && (
+          <>
+            <TouchableOpacity style={[styles.advancedToggleBtn, { backgroundColor: activeTheme.cardSecondary, marginRight: 8 }]} onPress={onStartSelection}>
+              <Ionicons name="checkbox-outline" size={20} color={activeTheme.accent} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.advancedToggleBtn, { backgroundColor: activeTheme.cardSecondary }]} onPress={() => setShowAdvanced(!showAdvanced)}>
+              <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={activeTheme.accent} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {showAdvanced && (
@@ -124,6 +132,29 @@ export default function TransactionsFilterBar({
                 </Text>
               </TouchableOpacity>
             ))}
+          </ScrollView>
+
+          <Text style={[styles.dateLabel, { color: activeTheme.textSecondary, marginTop: 16 }]}>Grupos</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScrollContent}>
+            <TouchableOpacity
+              style={[styles.catBtn, { backgroundColor: activeTheme.cardSecondary }, groupFilter === 'all' && { backgroundColor: activeTheme.accent }]}
+              onPress={() => setGroupFilter('all')}
+            >
+              <Text style={[styles.catText, { color: activeTheme.textSecondary }, groupFilter === 'all' && { color: '#121212' }]}>Todos</Text>
+            </TouchableOpacity>
+            {(groupList || []).map(group => {
+              const selected = String(groupFilter) === String(group.id);
+              const color = group.color || activeTheme.accent;
+              return (
+                <TouchableOpacity
+                  key={group.id}
+                  style={[styles.catBtn, { backgroundColor: selected ? color : `${color}25` }]}
+                  onPress={() => setGroupFilter(group.id)}
+                >
+                  <Text style={[styles.catText, { color: selected ? '#121212' : color }]}>{group.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
       )}

@@ -94,8 +94,11 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', { ...uiConfig, analyticsDisabledModules: newDisabled });
   };
 
+  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
-  let homeOrder = homeOrderRaw.includes('debts') ? homeOrderRaw : [...homeOrderRaw, 'debts'];
+  let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
+  if (!homeOrder.includes('debts')) homeOrder.push('debts');
+  if (!homeOrder.includes('groups')) homeOrder.push('groups');
   if (!homeOrder.includes('creditCards')) {
     const idx = homeOrder.indexOf('accounts');
     if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
@@ -127,6 +130,7 @@ export default function ModuleConfigScreen({ onBack }) {
     if (key === 'pending') return 'Transações Pendentes';
     if (key === 'recent') return 'Últimas Transações';
     if (key === 'debts') return 'Controle de Dívidas';
+    if (key === 'groups') return 'Grupos';
     return key;
   };
 
@@ -248,6 +252,10 @@ export default function ModuleConfigScreen({ onBack }) {
             <Switch value={uiConfig.showInvestmentsTab} onValueChange={() => handleToggleUi('showInvestmentsTab')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Geral] Esconder Acertos de Dívidas nas Transações</Text>
+            <Switch value={uiConfig.hideDebtSettlements !== false} onValueChange={(value) => saveSetting('uiConfig', { ...uiConfig, hideDebtSettlements: value })} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Pendências</Text>
             <Switch value={uiConfig.homeShowPending !== false} onValueChange={() => handleToggleUi('homeShowPending')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
@@ -266,6 +274,10 @@ export default function ModuleConfigScreen({ onBack }) {
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Dívidas</Text>
             <Switch value={uiConfig.homeShowDebts !== false} onValueChange={() => handleToggleUi('homeShowDebts')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Grupos</Text>
+            <Switch value={uiConfig.homeShowGroups !== false} onValueChange={() => handleToggleUi('homeShowGroups')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
 
           <Text style={[styles.sectionTitle, { color: activeTheme.text, marginTop: 24 * z }]}>Ordem na Tela Inicial</Text>

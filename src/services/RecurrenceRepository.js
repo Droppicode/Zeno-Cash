@@ -44,6 +44,7 @@ export const RecurrenceRepository = {
 
   remove: async (id) => {
     try {
+      await expoDb.runAsync('DELETE FROM recurrence_groups WHERE recurrence_id = ?', [id]);
       await db.delete(recurrences).where(eq(recurrences.id, id));
       return true;
     } catch (err) {

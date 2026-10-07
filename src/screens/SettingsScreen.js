@@ -9,8 +9,9 @@ import ThemeConfigScreen from './ThemeConfigScreen';
 import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
+import GroupsConfigScreen from './GroupsConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
-import ExtractionConfigScreen from './ExtractionConfigScreen';
+import AssistantConfigScreen from './AssistantConfigScreen';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import { useDataManagement } from '../hooks/useDataManagement';
@@ -19,7 +20,7 @@ import { CloudBackupButtons, DangerZoneButtons } from '../components/settings/Se
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
   
-  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'automations', 'extraction'
+  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'groups', 'automations', 'extraction'
 
   useFocusEffect(
     useCallback(() => {
@@ -72,6 +73,14 @@ export default function SettingsScreen({ navigation }) {
     );
   }
 
+  if (currentScreen === 'groups') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
+        <GroupsConfigScreen onBack={() => setCurrentScreen('hub')} navigation={navigation} />
+      </SafeAreaView>
+    );
+  }
+
   if (currentScreen === 'automations') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
@@ -83,7 +92,7 @@ export default function SettingsScreen({ navigation }) {
   if (currentScreen === 'extraction') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
-        <ExtractionConfigScreen onBack={() => setCurrentScreen('hub')} />
+        <AssistantConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
   }
@@ -116,6 +125,12 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="pricetags" size={32} color={activeTheme.accent} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Categorias</Text>
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Regras e cores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('groups')}>
+            <Ionicons name="albums" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Grupos</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Viagens, carro, projetos</Text>
           </TouchableOpacity>
         </View>
 
@@ -162,9 +177,9 @@ export default function SettingsScreen({ navigation }) {
 
         <View style={styles.menuGrid}>
           <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('extraction')}>
-            <Ionicons name="document-text" size={32} color={activeTheme.accent} />
-            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Extratos</Text>
-            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Leitura Inteligente</Text>
+            <Ionicons name="sparkles" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Assistente IA</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Chave, permissões e consumo</Text>
           </TouchableOpacity>
         </View>
 

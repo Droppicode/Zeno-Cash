@@ -16,7 +16,9 @@ import { resolveCategory } from '../services/categorizer';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
 import TransactionModal from '../components/TransactionModal';
+import { GroupsRepository } from '../services/GroupsRepository';
 import { DebtsRepository } from '../services/DebtsRepository';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export default function RecurrenceDetailsScreen({ route, navigation }) {
   const { id } = route.params;
@@ -57,7 +59,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
   };
 
   const handleSaveContract = async (data) => {
-    const { recurrenceType, recurrenceData, date, splitDebts, ...txParams } = data;
+    const { recurrenceType, recurrenceData, date, splitDebts, groupIds, ...txParams } = data;
     
     // We only update if it is still a recurrence. If they set it to "single", we could technically
     // cancel the contract and leave it as a single transaction, but for simplicity we assume they just update it.
@@ -71,6 +73,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
         startDate: date,
         ...recurrenceData
       });
+      if (groupIds) await GroupsRepository.setRecurrenceGroups(id, groupIds);
 
       if (splitDebts) {
         await DebtsRepository.removeByRecurrenceId(id);
@@ -173,6 +176,8 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
     const newTxId = res[0]?.id;
     
     if (newTxId && txData.recurrenceId) {
+      const recurrenceGroupIds = await GroupsRepository.getGroupIdsForRecurrence(txData.recurrenceId);
+      await GroupsRepository.setTransactionGroups(newTxId, recurrenceGroupIds);
       const parentAmount = recurrence.amount;
       const splitDebts = debtsList.filter(d => d.recurrenceId === recurrence.id && !d.transactionId);
 
@@ -431,7 +436,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
               <TouchableOpacity key={item.id} onPress={() => handleTxPress(item)} style={[styles.txCard, { backgroundColor: activeTheme.card, opacity: isIgnored ? 0.6 : 1 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: activeTheme.text, fontSize: 16 * z, fontWeight: 'bold', textDecorationLine: isIgnored ? 'line-through' : 'none' }}>
-                    {(item.note && item.note.replace(/\[invoice:\d{4}-\d{2}\]/g, '').trim()) || `Ocorrência ${index + 1}`}
+                    {InvoiceUtils.formatDisplayNote(item.note) || `Ocorrência ${index + 1}`}
                   </Text>
                   <Text style={{ color: activeTheme.textSecondary, fontSize: 14 * z, marginTop: 4 * z }}>
                     {new Date(item.date).toLocaleDateString('pt-BR')}
