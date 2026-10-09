@@ -107,7 +107,7 @@ npm run web      # web version in the browser
 
 To try the app with realistic data, open **Config** and use *Popular Dados Mock (Seed Dev)*.
 
-**AI assistant:** add your own API key in **Config → Assistente IA**. The key is stored only on the device (SecureStore on Android, `localStorage` on web) and requests go straight to the provider, with no backend in between.
+**AI assistant:** add your own API key in **Config → Assistente IA**. The key is stored only on the device (SecureStore on Android; on web it lasts only for the tab session unless you enable *Lembrar chave neste navegador*) and requests go straight to the provider, with no backend in between.
 
 ## 📦 Android release
 
