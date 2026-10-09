@@ -29,9 +29,25 @@ export const useCategories = () => {
     await loadCategories();
   }, [loadCategories]);
 
+  const reorderCategories = useCallback(async (ids) => {
+    const orderedIds = new Set(ids.map(String));
+    setCategoryList(current => {
+      const byId = new Map(current.map(category => [String(category.id), category]));
+      return [
+        ...ids.map(id => byId.get(String(id))).filter(Boolean),
+        ...current.filter(category => !orderedIds.has(String(category.id)))
+      ];
+    });
+    try {
+      await CategoryRepository.reorder(ids);
+    } finally {
+      await loadCategories();
+    }
+  }, [loadCategories]);
+
   const hookValue = useMemo(() => ({
-    categoryList, loading, loadCategories, saveCategory, deleteCategory
-  }), [categoryList, loading, loadCategories, saveCategory, deleteCategory]);
+    categoryList, loading, loadCategories, saveCategory, deleteCategory, reorderCategories
+  }), [categoryList, loading, loadCategories, saveCategory, deleteCategory, reorderCategories]);
 
   return hookValue;
 };

@@ -139,6 +139,8 @@ try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN associated_account_id INT
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN closing_day INTEGER;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN due_day INTEGER;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN credit_limit REAL;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch (e) {}
 
 // Índices para otimização de performance
 try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);'); } catch (e) {}

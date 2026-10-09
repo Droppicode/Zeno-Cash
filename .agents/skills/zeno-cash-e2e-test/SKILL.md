@@ -205,6 +205,14 @@ verify everything returns to the baseline.
       without any checking account shows the warning. Long names don't push actions off.
 - [ ] Categorias: create (name, macro group, icon, colour), edit, delete (transactions lose
       category, no crash).
+- [ ] Contas: long-press a card for 200–300 ms and drag it; open a new transaction and
+      verify the first account is selected by default.
+- [ ] Categorias: drag a card to a new position, open TransactionModal and verify the
+      category chips follow the saved order.
+- [ ] Reload web or cold-start Android and verify both orders persist; export a backup,
+      restore it, and verify the account and category order again.
+- [ ] Android drag: use `adb shell input draganddrop x1 y1 x2 y2 1500`, or a long-duration
+      `swipe` if `draganddrop` is unavailable.
 - [ ] Módulos: toggle every switch ([Geral] Investimentos tab, hide Acertos, [Home]
       Pendências/Contas/Cartões/Últimas/Dívidas) and verify effect; reorder Home and
       Análise modules; macro groups + category→macro mapping + targets.

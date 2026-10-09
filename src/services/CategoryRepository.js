@@ -1,12 +1,15 @@
-import { db } from '../database/db';
+import { db, expoDb } from '../database/db';
 import { categories } from '../database/schema';
-import { eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
 
 export const CategoryRepository = {
   getAll: async () => {
     try {
-      return await db.select().from(categories);
+      return await db.select().from(categories).orderBy(
+        asc(sql`COALESCE(${categories.sortOrder}, ${categories.id})`),
+        asc(categories.id)
+      );
     } catch (err) {
       Logger.error('CategoryRepository.getAll', err);
       return [];
@@ -15,7 +18,11 @@ export const CategoryRepository = {
 
   add: async (catData) => {
     try {
-      const result = await db.insert(categories).values(catData).returning();
+      const values = { ...catData };
+      if (values.sortOrder == null) {
+        values.sortOrder = sql`(SELECT COALESCE(MAX(COALESCE(sort_order, id)), 0) + 1 FROM categories)`;
+      }
+      const result = await db.insert(categories).values(values).returning();
       return result[0].id;
     } catch (err) {
       Logger.error('CategoryRepository.add', err);
@@ -39,6 +46,25 @@ export const CategoryRepository = {
       return true;
     } catch (err) {
       Logger.error('CategoryRepository.remove', err);
+      throw err;
+    }
+  },
+
+  reorder: async (ids) => {
+    try {
+      const updateOrder = async () => {
+        for (const [index, id] of ids.entries()) {
+          await expoDb.runAsync('UPDATE categories SET sort_order = ? WHERE id = ?', [index + 1, id]);
+        }
+      };
+      if (typeof expoDb.withTransactionAsync === 'function') {
+        await expoDb.withTransactionAsync(updateOrder);
+      } else {
+        await updateOrder();
+      }
+      return true;
+    } catch (err) {
+      Logger.error('CategoryRepository.reorder', err);
       throw err;
     }
   }

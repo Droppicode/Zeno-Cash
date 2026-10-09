@@ -11,6 +11,7 @@ export const accounts = sqliteTable('accounts', {
   closingDay: integer('closing_day'),
   dueDay: integer('due_day'),
   creditLimit: real('credit_limit'),
+  sortOrder: integer('sort_order'),
 });
 
 export const transactions = sqliteTable('transactions', {
@@ -33,6 +34,7 @@ export const categories = sqliteTable('categories', {
   icon: text('icon'),
   color: text('color'),
   macro: text('macro'),
+  sortOrder: integer('sort_order'),
 });
 
 export const settings = sqliteTable('settings', {
