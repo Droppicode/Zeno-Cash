@@ -157,7 +157,7 @@ export default function AccountsConfigScreen({ onBack }) {
           keyExtractor={acc => String(acc.id)}
           scrollableRef={scrollableRef}
           activeItemScale={1.04}
-          dragActivationDelay={250}
+          dragActivationDelay={150}
           onDragEnd={({ data }) => reorderAccounts(data.map(acc => acc.id))}
           renderItem={({ item: acc, index }) => (
             <ListCard index={index} total={accountList.length}>

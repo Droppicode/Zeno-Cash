@@ -92,6 +92,7 @@ export const groups = sqliteTable('groups', {
   budget: real('budget'),
   isArchived: integer('is_archived').default(0),
   createdAt: integer('created_at').notNull(),
+  sortOrder: integer('sort_order'),
 });
 
 export const transactionGroups = sqliteTable('transaction_groups', {

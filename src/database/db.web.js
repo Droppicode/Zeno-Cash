@@ -149,7 +149,8 @@ export const initWebDb = async () => {
       end_date INTEGER,
       budget REAL,
       is_archived INTEGER DEFAULT 0,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      sort_order INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS transaction_groups (
@@ -184,6 +185,7 @@ export const initWebDb = async () => {
 
   try { sqlite.run('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch (e) {}
   try { sqlite.run('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+  try { sqlite.run('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch (e) {}
 
   // A estrutura e o seed das tabelas serão feitos na chamada seedDatabase() de seed.js
   db = drizzle(sqlite);

@@ -132,9 +132,13 @@ export default function SettingsScreen({ navigation }) {
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Grupos</Text>
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Viagens, carro, projetos</Text>
           </TouchableOpacity>
-        </View>
 
-        <View style={styles.menuGrid}>
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => navigation.navigate('Debts')}>
+            <Ionicons name="people" size={32} color={activeTheme.expense} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Dívidas</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Quem me deve</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('module')}>
             <Ionicons name="construct" size={32} color={activeTheme.accent} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Módulos</Text>
@@ -145,12 +149,6 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="flash" size={32} color={activeTheme.income} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Automações</Text>
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Pix e Notificações</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => navigation.navigate('Debts')}>
-            <Ionicons name="people" size={32} color={activeTheme.expense} />
-            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Dívidas</Text>
-            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Quem me deve</Text>
           </TouchableOpacity>
         </View>
 
@@ -243,8 +241,8 @@ const getLocalStyles = (theme) => {
   const f = theme.fontFamily || 'monospace';
 
   return StyleSheet.create({
-    menuGrid: { flexDirection: 'row', gap: 12 * z, marginBottom: 20 * z },
-    menuCard: { flex: 1, padding: 16 * z, borderRadius: 6 * z, alignItems: 'flex-start' },
+    menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 * z, marginBottom: 20 * z },
+    menuCard: { flexBasis: '30%', flexGrow: 1, minWidth: 0, padding: 16 * z, borderRadius: 6 * z, alignItems: 'flex-start' },
     menuTitle: { fontSize: 16 * z, fontWeight: 'bold', marginTop: 12 * z, marginBottom: 4 * z, fontFamily: f },
     menuDesc: { fontSize: 12 * z, fontFamily: f },
 

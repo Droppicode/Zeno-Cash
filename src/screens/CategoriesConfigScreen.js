@@ -102,7 +102,7 @@ export default function CategoriesConfigScreen({ onBack }) {
           keyExtractor={cat => String(cat.id)}
           scrollableRef={scrollableRef}
           activeItemScale={1.04}
-          dragActivationDelay={250}
+          dragActivationDelay={150}
           onDragEnd={({ data }) => reorderCategories(data.map(cat => cat.id))}
           renderItem={({ item: cat, index }) => (
             <ListCard index={index} total={categoryList.length}>
