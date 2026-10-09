@@ -26,7 +26,7 @@ describe('RecurrenceGenerator', () => {
       frequencyType: 'monthly',
       frequencyInterval: 1
     }];
-    const existingTransactions = [{ recurrenceId: 4, iteration: 1, date: timestamp(2026, 2, 15) }];
+    const existingTransactions = [{ recurrenceId: 4, date: timestamp(2026, 2, 15) }];
 
     expect(RecurrenceGenerator.generateVirtualTransactions(
       recurrences,
@@ -80,6 +80,70 @@ describe('RecurrenceGenerator', () => {
     ], timestamp(2025, 3, 31));
 
     expect(virtuals.map(({ date }) => date)).toEqual([timestamp(2025, 3, 31)]);
+  });
+
+  it('matches a legacy drifted monthly occurrence by calendar month', () => {
+    const virtuals = RecurrenceGenerator.generateVirtualTransactions([{
+      id: 8,
+      isActive: true,
+      startDate: timestamp(2025, 1, 31),
+      amount: 100,
+      frequencyType: 'monthly',
+      frequencyInterval: 1
+    }], [
+      { recurrenceId: 8, date: timestamp(2025, 3, 28) }
+    ], timestamp(2025, 3, 31));
+
+    expect(virtuals.map(({ date }) => date)).toEqual([
+      timestamp(2025, 1, 31),
+      timestamp(2025, 2, 28)
+    ]);
+  });
+
+  it('matches yearly occurrences by month and year, not month alone', () => {
+    const recurrence = {
+      id: 9,
+      isActive: true,
+      startDate: timestamp(2024, 2, 29),
+      amount: 100,
+      frequencyType: 'yearly',
+      frequencyInterval: 1
+    };
+    const throughFebruary2025 = timestamp(2025, 2, 28);
+    const only2024Materialized = RecurrenceGenerator.generateVirtualTransactions(
+      [recurrence],
+      [{ recurrenceId: 9, date: timestamp(2024, 2, 29) }],
+      throughFebruary2025
+    );
+    const drifted2025Materialized = RecurrenceGenerator.generateVirtualTransactions(
+      [recurrence],
+      [
+        { recurrenceId: 9, date: timestamp(2024, 2, 29) },
+        { recurrenceId: 9, date: timestamp(2025, 2, 27) }
+      ],
+      throughFebruary2025
+    );
+
+    expect(only2024Materialized.map(({ date }) => date)).toEqual([throughFebruary2025]);
+    expect(drifted2025Materialized).toEqual([]);
+  });
+
+  it('keeps exact-date matching for custom-day recurrences', () => {
+    const virtuals = RecurrenceGenerator.generateVirtualTransactions([{
+      id: 10,
+      isActive: true,
+      startDate: timestamp(2025, 5, 1),
+      amount: 100,
+      frequencyType: 'custom_days',
+      frequencyInterval: 7
+    }], [
+      { recurrenceId: 10, date: timestamp(2025, 5, 10) }
+    ], timestamp(2025, 5, 8));
+
+    expect(virtuals.map(({ date }) => date)).toEqual([
+      timestamp(2025, 5, 1),
+      timestamp(2025, 5, 8)
+    ]);
   });
 
   it('keeps yearly February 29 recurrences anchored through leap years', () => {

@@ -16,12 +16,15 @@ export class RecurrenceGenerator {
       while (currentDate <= maxDate) {
         if (rec.installments && iteration >= rec.installments) break;
 
-        // Check if there's already a real transaction for this iteration
-        // A simple match: for monthly, same month/year. For others, exact match or within a small window.
-        // To be safe, we can match by checking if any real tx is within a 15-day window of the expected date
-        // or just rely on 'iteration' if we add an 'iteration' column to transactions later.
-        // For MVP: check if any real tx has the exact same date (since it was materialized from virtual)
-        const isPaid = txs.some(t => t.iteration === iteration || t.date === currentDate);
+        const occurrenceDate = new Date(currentDate);
+        const matchesCalendarMonth = rec.frequencyType === 'monthly' || rec.frequencyType === 'yearly';
+        const isPaid = txs.some(t => {
+          if (!matchesCalendarMonth) return t.date === currentDate;
+
+          const existingDate = new Date(t.date);
+          return existingDate.getFullYear() === occurrenceDate.getFullYear()
+            && existingDate.getMonth() === occurrenceDate.getMonth();
+        });
 
         if (!isPaid) {
           // Calculate interest if applicable
