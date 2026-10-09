@@ -122,6 +122,9 @@ verify everything returns to the baseline.
 - [ ] T13 Apagar asks for confirmation; recurrence delete behaves per contract.
 - [ ] T14 Change type expense↔income and account on edit → both old and new balances fix.
 
+### TransactionModal regression
+- [ ] Run `/home/ubuntu/r8/transaction-modal-golden.cjs` on original and refactored code with a fresh web context; compare exported transaction, recurrence, debt, and group-link data. Cover expense, income, subscription, installment with interest, mixed split, edit, validation, and title auto-categorization; compare the four modal screenshots at the same viewport.
+
 ### Split (Dividir / Pessoas na divisão)
 - [ ] S1 Add 2 people with fixed amounts → debts created in Debts screen, linked icon (people).
 - [ ] S2 Percentage split (isPercentage) → amounts computed correctly.
