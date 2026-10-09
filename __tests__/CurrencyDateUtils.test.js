@@ -36,6 +36,7 @@ describe('DateUtils', () => {
   it('returns period start boundaries based on the current day', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-05-10T12:00:00Z'));
 
+    expect(DateUtils.getLimitDateForPeriod('7d')).toBe(Date.UTC(2026, 4, 3));
     expect(DateUtils.getLimitDateForPeriod('30d')).toBe(Date.UTC(2026, 3, 10));
     expect(DateUtils.getLimitDateForPeriod('90d')).toBe(Date.UTC(2026, 1, 9));
     expect(DateUtils.getLimitDateForPeriod('all')).toBe(0);
