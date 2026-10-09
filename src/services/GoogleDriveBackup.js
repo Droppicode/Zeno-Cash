@@ -3,15 +3,20 @@ import { File, Paths } from 'expo-file-system';
 import * as LegacyFileSystem from 'expo-file-system/legacy';
 import { NativeModules } from 'react-native';
 import { expoDb } from '../database/db';
-import { DataExportService } from './DataExportService';
+import { DataExportService, rebuildRestoredDatabaseMonthlyBalances } from './DataExportService';
+
+let configured = false;
 
 export const configureGoogleAuth = () => {
+  if (configured) return;
+
   try {
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
       scopes: ['https://www.googleapis.com/auth/drive.file'],
       offlineAccess: true,
     });
+    configured = true;
   } catch (e) {
     console.error("Google Auth Configure Error:", e);
   }
@@ -197,6 +202,8 @@ export const downloadBackupById = async (token, fileId) => {
       const shmFile = new File(Paths.document, 'SQLite', 'zenocash.db-shm');
       if (shmFile.exists) await shmFile.delete();
     } catch(e) {}
+
+    await rebuildRestoredDatabaseMonthlyBalances();
     
     if (__DEV__ && NativeModules.DevSettings) {
       NativeModules.DevSettings.reload();
@@ -238,6 +245,8 @@ export const downloadLatestBackup = async (token) => {
       const shmFile = new File(Paths.document, 'SQLite', 'zenocash.db-shm');
       if (shmFile.exists) await shmFile.delete();
     } catch(e) {}
+
+    await rebuildRestoredDatabaseMonthlyBalances();
     
     if (__DEV__ && NativeModules.DevSettings) {
       NativeModules.DevSettings.reload();
@@ -276,13 +285,13 @@ export const performSilentDailyBackup = async () => {
         if (destination === 'local') {
             await DataExportService.createSilentLocalBackup();
         } else {
+            configureGoogleAuth();
             const hasPlayServices = await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: false });
             if (!hasPlayServices) return;
 
             const isSignedIn = GoogleSignin.hasPreviousSignIn();
             if (!isSignedIn) return;
 
-            configureGoogleAuth();
             await GoogleSignin.signInSilently();
             const tokens = await GoogleSignin.getTokens();
             

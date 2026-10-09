@@ -1,4 +1,6 @@
 const HIDDEN_TAGS_RE = /\[(?:invoice:\d{4}-\d{2}|debt:\d+)\]/g;
+const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+const effectiveDay = (year, month, day) => Math.min(day, daysInMonth(year, month));
 
 export const InvoiceUtils = {
   /**
@@ -50,7 +52,7 @@ export const InvoiceUtils = {
     let invoiceYear = date.getFullYear();
 
     // Se a transação ocorreu no dia de fechamento ou depois, ela cai no próximo fechamento
-    if (txDay >= closingDay) {
+    if (txDay >= effectiveDay(date.getFullYear(), date.getMonth(), closingDay)) {
       invoiceMonth += 1;
     }
 
@@ -157,6 +159,13 @@ export const InvoiceUtils = {
     return InvoiceUtils.getInvoiceCycleDates(currentInvoiceKey, closingDay, dueDay);
   },
 
+  getInvoiceDueDate: (monthKey, dueDay) => {
+    if (monthKey === 'N/A' || !dueDay) return null;
+
+    const [year, month] = monthKey.split('-').map(Number);
+    return new Date(year, month - 1, effectiveDay(year, month - 1, dueDay)).getTime();
+  },
+
   /**
    * Retorna as datas de início e fim de ciclo de uma fatura específica.
    * Útil para injetar transações dentro de um ciclo exato (ex: taxas e juros).
@@ -184,8 +193,9 @@ export const InvoiceUtils = {
       prevYear -= 1;
     }
     
-    const cycleStart = new Date(prevYear, prevMonth, closingDay);
-    const cycleEnd = new Date(targetYear, targetMonth, closingDay - 1, 23, 59, 59, 999);
+    const cycleStart = new Date(prevYear, prevMonth, effectiveDay(prevYear, prevMonth, closingDay));
+    const effectiveClosingDay = effectiveDay(targetYear, targetMonth, closingDay);
+    const cycleEnd = new Date(targetYear, targetMonth, effectiveClosingDay - 1, 23, 59, 59, 999);
     
     return {
       cycleStart: cycleStart.getTime(),

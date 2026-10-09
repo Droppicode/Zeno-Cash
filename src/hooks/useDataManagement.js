@@ -22,6 +22,7 @@ export function useDataManagement() {
 
   const checkGoogleLogin = async () => {
     try {
+      configureGoogleAuth();
       const signedIn = GoogleSignin.hasPreviousSignIn();
       setIsGoogleSignedIn(signedIn);
     } catch (e) {
@@ -31,6 +32,7 @@ export function useDataManagement() {
 
   const forceGoogleLogin = async () => {
     try {
+      configureGoogleAuth();
       await GoogleSignin.hasPlayServices();
       await GoogleSignin.signIn();
       setIsGoogleSignedIn(true);
@@ -103,6 +105,7 @@ export function useDataManagement() {
   const handleBackup = async () => {
     try {
       setIsBackingUp(true);
+      configureGoogleAuth();
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       setIsGoogleSignedIn(true);
@@ -123,6 +126,7 @@ export function useDataManagement() {
   const handleRestore = async () => {
     try {
       setIsFetchingBackups(true);
+      configureGoogleAuth();
       await GoogleSignin.hasPlayServices();
       await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();

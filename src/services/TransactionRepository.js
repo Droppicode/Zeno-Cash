@@ -3,6 +3,8 @@ import { transactions, monthlyBalances } from '../database/schema';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
 
+export const MONTHLY_BALANCES_VERSION = 2;
+
 export const TransactionRepository = {
   getAll: async () => {
     try {
@@ -13,7 +15,7 @@ export const TransactionRepository = {
     }
   },
 
-  recalculateMonth: async (dateMs) => {
+  recalculateMonth: async (dateMs, database = expoDb) => {
     try {
       const d = new Date(dateMs);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -29,12 +31,12 @@ export const TransactionRepository = {
         WHERE date >= ? AND date <= ?
       `;
       
-      const result = await expoDb.getAllAsync(query, [startOfMonth, endOfMonth]);
+      const result = await database.getAllAsync(query, [startOfMonth, endOfMonth]);
       const income = result[0]?.income || 0;
       const expense = result[0]?.expense || 0;
       const total = income - expense;
 
-      await expoDb.runAsync(`
+      await database.runAsync(`
         INSERT INTO monthly_balances (month_key, income, expense, total)
         VALUES (?, ?, ?, ?)
         ON CONFLICT(month_key) DO UPDATE SET
@@ -46,6 +48,29 @@ export const TransactionRepository = {
     } catch (err) {
       Logger.error('TransactionRepository.recalculateMonth', err);
     }
+  },
+
+  rebuildAllMonthlyBalances: async (database = expoDb) => {
+    const txs = await database.getAllAsync('SELECT date FROM transactions');
+    const months = new Set();
+    txs.forEach(tx => {
+      const date = new Date(tx.date);
+      if (Number.isNaN(date.getTime())) return;
+      months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+    });
+
+    await database.runAsync('DELETE FROM monthly_balances');
+
+    for (const monthKey of months) {
+      const [year, month] = monthKey.split('-');
+      const monthStart = new Date(Number(year), Number(month) - 1, 1).getTime();
+      await TransactionRepository.recalculateMonth(monthStart, database);
+    }
+
+    await database.runAsync(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+      ['monthly_balances_version', String(MONTHLY_BALANCES_VERSION)]
+    );
   },
 
   getMonthlyBalances: async (monthKeys) => {
@@ -60,20 +85,14 @@ export const TransactionRepository = {
 
   initMonthlyBalances: async () => {
     try {
+      const versionRes = await expoDb.getAllAsync(
+        'SELECT value FROM settings WHERE key = ?',
+        ['monthly_balances_version']
+      );
+      const storedVersion = Number.parseInt(versionRes[0]?.value || '0', 10) || 0;
       const countRes = await expoDb.getAllAsync(`SELECT COUNT(*) as c FROM monthly_balances`);
-      if (countRes[0].c === 0) {
-        const txs = await expoDb.getAllAsync(`SELECT date FROM transactions`);
-        const months = new Set();
-        txs.forEach(t => {
-          const d = new Date(t.date);
-          months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-        });
-        
-        for (const monthKey of months) {
-          const [yyyy, mm] = monthKey.split('-');
-          const startMs = new Date(parseInt(yyyy), parseInt(mm) - 1, 1).getTime();
-          await TransactionRepository.recalculateMonth(startMs);
-        }
+      if (storedVersion < MONTHLY_BALANCES_VERSION || countRes[0]?.c === 0) {
+        await TransactionRepository.rebuildAllMonthlyBalances();
       }
     } catch (err) {
       Logger.error('TransactionRepository.initMonthlyBalances', err);

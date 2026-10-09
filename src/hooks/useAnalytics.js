@@ -95,7 +95,6 @@ export const useAnalytics = ({
       dailyAverage,
       savingsRate,
       biggestExpense,
-      biggestExpense,
       txCount: kpiFilteredData.length
     };
 

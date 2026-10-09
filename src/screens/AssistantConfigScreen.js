@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
@@ -7,6 +7,7 @@ import { getSharedStyles } from '../utils/StyleHub';
 import BaseModalCenter from '../components/ui/BaseModalCenter';
 import { PERMISSION_OPTIONS } from '../services/ai/permissions';
 import { formatTokens, formatUsd, monthTotals, estimateCost } from '../services/ai/usage';
+import webKeyStore from '../services/ai/webKeyStore';
 
 const PROVIDER_MODELS = {
   openai: [
@@ -35,6 +36,9 @@ export default function AssistantConfigScreen({ onBack }) {
   } = useContext(SettingsContext);
   const [llmKeyLocal, setLlmKeyLocal] = useState(llmKey || '');
   const [providerLocal, setProviderLocal] = useState(llmProvider || 'openai');
+  const [rememberKey, setRememberKey] = useState(
+    () => Platform.OS === 'web' && webKeyStore.isRemembered(providerLocal)
+  );
   const [modelLocal, setModelLocal] = useState(llmModel || PROVIDER_MODELS[providerLocal || 'openai'][0].id);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
@@ -42,6 +46,7 @@ export default function AssistantConfigScreen({ onBack }) {
     const loadKey = async () => {
       const key = await getSecureKey(providerLocal);
       setLlmKeyLocal(key);
+      if (Platform.OS === 'web') setRememberKey(webKeyStore.isRemembered(providerLocal));
     };
     loadKey();
   }, [providerLocal]);
@@ -149,10 +154,30 @@ export default function AssistantConfigScreen({ onBack }) {
             value={llmKeyLocal}
             onChangeText={(text) => {
               setLlmKeyLocal(text);
-              saveSecureKey(providerLocal, text);
+              saveSecureKey(providerLocal, text, rememberKey);
             }}
-            onBlur={() => saveSecureKey(providerLocal, llmKeyLocal)}
+            onBlur={() => saveSecureKey(providerLocal, llmKeyLocal, rememberKey)}
           />
+          {Platform.OS === 'web' ? (
+            <View style={{ marginTop: 10 * z }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.label, { color: activeTheme.textSecondary, marginVertical: 0 }]}>
+                  Lembrar chave neste navegador
+                </Text>
+                <Switch
+                  value={rememberKey}
+                  onValueChange={value => {
+                    setRememberKey(value);
+                    saveSecureKey(providerLocal, llmKeyLocal, value);
+                  }}
+                  trackColor={{ false: activeTheme.cardSecondary, true: activeTheme.accent }}
+                />
+              </View>
+              <Text style={{ color: activeTheme.textSecondary, fontSize: 12, marginTop: 4 }}>
+                A chave fica salva sem criptografia neste navegador. Desligado: some ao fechar a aba.
+              </Text>
+            </View>
+          ) : null}
         </View>
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>O que o assistente pode fazer</Text>

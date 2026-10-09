@@ -214,6 +214,11 @@ verify everything returns to the baseline.
 - [ ] Assistente IA: provider, model, API key saved (don't use real keys unless given).
 - [ ] Comportamento Padrão: 30d / 90d / all → applied after restart.
 - [ ] Backup: frequency, limit, Exportar JSON, Exportar CSV, Google Drive backup/restore
+- [ ] Web backup: exportar JSON, anotar totais da Home e quantidade de transações,
+      adicionar duas transações, restaurar o arquivo exportado e confirmar a substituição;
+      após reload e novo reload, conferir totais e contagem. Restaurar também o fixture JSON.
+- [ ] Web rejeita arquivos `.db`/`.sqlite` com aviso claro; Google Drive e arquivos `.db`
+      permanecem disponíveis apenas no app Android.
       (Android + credentials only), Zona de Perigo wipe → app returns to empty state.
 
 ## 11. Persistence
@@ -333,6 +338,10 @@ Notas da Fase 4:
 - [ ] Saldos/faturas: "Qual o saldo das minhas contas e a fatura atual dos cartões?" → valores batem com Home/tela do cartão.
 - [ ] Markdown: "Liste meus saldos em uma tabela markdown com negrito" → tabela e negrito renderizados (sem `**`, `|`, `###` literais), cores do tema; mensagens de erro continuam texto simples.
 - [ ] Consumo: cada resposta mostra "N tokens"; cabeçalho mostra "Conversa: N tokens". Config → Consumo deste mês soma tokens e chamadas por modelo; Gemini mostra aviso de que não informa limite restante. Preencher preço (ex.: 0,1 / 0,4) → custo estimado aparece em Config e nas mensagens. "Zerar contador" zera.
+- [ ] Web: com "Lembrar chave neste navegador" desligado, a chave permanece após reload
+      na aba atual, não aparece em `localStorage` e não existe em uma nova aba. Ao ligar,
+      a chave passa para `localStorage` e fica disponível em uma nova aba. Limpar as chaves
+      usadas no teste ao final; nunca registrar valores em capturas ou logs.
 - Not testable without keys: limites de rate limit de OpenAI/Claude (cabeçalhos) — registrar como não testado.
 - Assertions extras:
   - Visite a aba Transações antes de aplicar mudanças no Assistente e volte sem reload: a aba já montada deve atualizar na hora.
