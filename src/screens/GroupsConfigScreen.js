@@ -32,36 +32,38 @@ export default function GroupsConfigScreen({ onBack, navigation }) {
         <Text style={{ color: activeTheme.textSecondary, fontSize: 12 * z, marginBottom: 12 * z }}>
           Segure e arraste para reordenar
         </Text>
-        <Sortable.Grid
-          columns={1}
-          data={groupList}
-          keyExtractor={group => String(group.id)}
-          scrollableRef={scrollableRef}
-          activeItemScale={1.04}
-          dragActivationDelay={150}
-          onDragEnd={({ data }) => reorderGroups(data.map(group => group.id))}
-          renderItem={({ item: group, index }) => (
-            <ListCard
-              index={index}
-              total={groupList.length}
-              style={group.isArchived === 1 && { opacity: 0.55 }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={[styles.iconBox, { backgroundColor: `${group.color || activeTheme.accent}25` }]}>
-                  <Ionicons name={group.icon || 'albums'} size={20} color={group.color || activeTheme.accent} />
+        {groupList.length > 0 && (
+          <Sortable.Grid
+            columns={1}
+            data={groupList}
+            keyExtractor={group => String(group.id)}
+            scrollableRef={scrollableRef}
+            activeItemScale={1.04}
+            dragActivationDelay={150}
+            onDragEnd={({ data }) => reorderGroups(data.map(group => group.id))}
+            renderItem={({ item: group, index }) => (
+              <ListCard
+                index={index}
+                total={groupList.length}
+                style={group.isArchived === 1 && { opacity: 0.55 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={[styles.iconBox, { backgroundColor: `${group.color || activeTheme.accent}25` }]}>
+                    <Ionicons name={group.icon || 'albums'} size={20} color={group.color || activeTheme.accent} />
+                  </View>
+                  <View style={{ marginLeft: 12 }}>
+                    <Text style={[styles.groupName, { color: activeTheme.text }]}>{group.name}</Text>
+                    <Text style={[styles.groupMeta, { color: activeTheme.textSecondary }]}>{group.kind === 'event' ? 'Evento' : 'Contínuo'}{group.isArchived === 1 ? ' • Arquivado' : ''}</Text>
+                  </View>
                 </View>
-                <View style={{ marginLeft: 12 }}>
-                  <Text style={[styles.groupName, { color: activeTheme.text }]}>{group.name}</Text>
-                  <Text style={[styles.groupMeta, { color: activeTheme.textSecondary }]}>{group.kind === 'event' ? 'Evento' : 'Contínuo'}{group.isArchived === 1 ? ' • Arquivado' : ''}</Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => { setEditingGroup(group); setShowEditor(true); }}><Ionicons name="pencil" size={20} color={activeTheme.textSecondary} /></TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Apagar grupo', 'As transações serão mantidas.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Apagar', style: 'destructive', onPress: () => deleteGroup(group.id) }])}><Ionicons name="trash" size={20} color={activeTheme.expense} /></TouchableOpacity>
                 </View>
-              </View>
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => { setEditingGroup(group); setShowEditor(true); }}><Ionicons name="pencil" size={20} color={activeTheme.textSecondary} /></TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Apagar grupo', 'As transações serão mantidas.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Apagar', style: 'destructive', onPress: () => deleteGroup(group.id) }])}><Ionicons name="trash" size={20} color={activeTheme.expense} /></TouchableOpacity>
-              </View>
-            </ListCard>
-          )}
-        />
+              </ListCard>
+            )}
+          />
+        )}
         <TouchableOpacity style={[styles.addBtn, { borderColor: activeTheme.accent }]} onPress={() => { setEditingGroup(null); setShowEditor(true); }}>
           <Ionicons name="add" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
           <Text style={[styles.addBtnText, { color: activeTheme.accent }]}>Novo Grupo</Text>

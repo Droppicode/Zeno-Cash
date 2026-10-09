@@ -151,44 +151,46 @@ export default function AccountsConfigScreen({ onBack }) {
         <Text style={{ color: activeTheme.textSecondary, fontSize: 12 * z, marginBottom: 12 * z }}>
           Segure e arraste para reordenar
         </Text>
-        <Sortable.Grid
-          columns={1}
-          data={accountList}
-          keyExtractor={acc => String(acc.id)}
-          scrollableRef={scrollableRef}
-          activeItemScale={1.04}
-          dragActivationDelay={150}
-          onDragEnd={({ data }) => reorderAccounts(data.map(acc => acc.id))}
-          renderItem={({ item: acc, index }) => (
-            <ListCard index={index} total={accountList.length}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={[styles.iconBox, { backgroundColor: acc.color + '20' }]}>
-                  {acc.icon && acc.icon.startsWith('http') ? (
-                    <Image source={{ uri: acc.icon }} style={{ width: 20, height: 20, borderRadius: 4 }} />
-                  ) : (
-                    <Ionicons name={acc.icon || 'wallet-outline'} size={20} color={acc.color || activeTheme.text} />
-                  )}
+        {accountList.length > 0 && (
+          <Sortable.Grid
+            columns={1}
+            data={accountList}
+            keyExtractor={acc => String(acc.id)}
+            scrollableRef={scrollableRef}
+            activeItemScale={1.04}
+            dragActivationDelay={150}
+            onDragEnd={({ data }) => reorderAccounts(data.map(acc => acc.id))}
+            renderItem={({ item: acc, index }) => (
+              <ListCard index={index} total={accountList.length}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={[styles.iconBox, { backgroundColor: acc.color + '20' }]}>
+                    {acc.icon && acc.icon.startsWith('http') ? (
+                      <Image source={{ uri: acc.icon }} style={{ width: 20, height: 20, borderRadius: 4 }} />
+                    ) : (
+                      <Ionicons name={acc.icon || 'wallet-outline'} size={20} color={acc.color || activeTheme.text} />
+                    )}
+                  </View>
+                  <View style={{ marginLeft: 12, flex: 1, marginRight: 8 }}>
+                    <Text numberOfLines={1} style={[styles.accName, { color: activeTheme.text }]}>{acc.name}</Text>
+                    {acc.type === 'credit' ? (
+                      <Text numberOfLines={1} style={[styles.accBalance, { color: activeTheme.textSecondary }]}>Cartão de Crédito • Limite: R$ {CurrencyUtils.formatDisplay(acc.creditLimit)}</Text>
+                    ) : (
+                      <Text numberOfLines={1} style={[styles.accBalance, { color: activeTheme.textSecondary }]}>{acc.type === 'cash' ? 'Dinheiro' : 'Conta Corrente'} • Saldo Inic: R$ {CurrencyUtils.formatDisplay(acc.balance)}</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={{ marginLeft: 12, flex: 1, marginRight: 8 }}>
-                  <Text numberOfLines={1} style={[styles.accName, { color: activeTheme.text }]}>{acc.name}</Text>
-                  {acc.type === 'credit' ? (
-                    <Text numberOfLines={1} style={[styles.accBalance, { color: activeTheme.textSecondary }]}>Cartão de Crédito • Limite: R$ {CurrencyUtils.formatDisplay(acc.creditLimit)}</Text>
-                  ) : (
-                    <Text numberOfLines={1} style={[styles.accBalance, { color: activeTheme.textSecondary }]}>{acc.type === 'cash' ? 'Dinheiro' : 'Conta Corrente'} • Saldo Inic: R$ {CurrencyUtils.formatDisplay(acc.balance)}</Text>
-                  )}
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(acc)}>
+                    <Ionicons name="pencil" size={20} color={activeTheme.textSecondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => deleteAccount(acc.id)}>
+                    <Ionicons name="trash" size={20} color={activeTheme.expense} />
+                  </TouchableOpacity>
                 </View>
-              </View>
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(acc)}>
-                  <Ionicons name="pencil" size={20} color={activeTheme.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => deleteAccount(acc.id)}>
-                  <Ionicons name="trash" size={20} color={activeTheme.expense} />
-                </TouchableOpacity>
-              </View>
-            </ListCard>
-          )}
-        />
+              </ListCard>
+            )}
+          />
+        )}
 
         <TouchableOpacity style={[styles.addBtn, { borderColor: activeTheme.accent }]} onPress={openNew}>
           <Ionicons name="add" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
