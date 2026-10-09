@@ -54,7 +54,11 @@ export class RecurrenceGenerator {
         }
 
         // Advance date
-        currentDate = this.addInterval(currentDate, rec.frequencyType, rec.frequencyInterval);
+        if (rec.frequencyType === 'monthly' || rec.frequencyType === 'yearly') {
+          currentDate = this.occurrenceAt(rec.startDate, rec.frequencyType, rec.frequencyInterval, iteration + 1);
+        } else {
+          currentDate = this.addInterval(currentDate, rec.frequencyType, rec.frequencyInterval);
+        }
         iteration++;
       }
     });
@@ -75,6 +79,26 @@ export class RecurrenceGenerator {
     } else if (type === 'yearly') {
       d.setFullYear(d.getFullYear() + interval);
     }
+    return d.getTime();
+  }
+
+  static occurrenceAt(startDate, type, interval, occurrenceIndex) {
+    const d = new Date(startDate);
+    if (type !== 'monthly' && type !== 'yearly') {
+      return this.addInterval(startDate, type, interval * occurrenceIndex);
+    }
+
+    const anchorDay = d.getDate();
+
+    d.setDate(1);
+    if (type === 'monthly') {
+      d.setMonth(d.getMonth() + (interval * occurrenceIndex));
+    } else if (type === 'yearly') {
+      d.setFullYear(d.getFullYear() + (interval * occurrenceIndex));
+    }
+
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(anchorDay, lastDay));
     return d.getTime();
   }
 }

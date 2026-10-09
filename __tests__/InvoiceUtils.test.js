@@ -20,15 +20,19 @@ describe('InvoiceUtils', () => {
       expect(InvoiceUtils.getInvoiceMonthForTransaction(timestamp(2026, 6, 1), 31, 10)).toBe('2026-07');
     });
 
-    it.failing('treats February 28 as a 31st closing day', () => {
+    it('treats February 28 as a 31st closing day', () => {
       expect(InvoiceUtils.getInvoiceMonthForTransaction(timestamp(2026, 2, 28), 31, 10)).toBe('2026-04');
+    });
+
+    it('clamps a 30th closing day to February 28', () => {
+      expect(InvoiceUtils.getInvoiceMonthForTransaction(timestamp(2026, 2, 28), 30, 10)).toBe('2026-04');
     });
 
     it('assigns the day after February’s clamped closing date to the next invoice', () => {
       expect(InvoiceUtils.getInvoiceMonthForTransaction(timestamp(2026, 3, 1), 31, 10)).toBe('2026-04');
     });
 
-    it.failing('treats April 30 as a 31st closing day', () => {
+    it('treats April 30 as a 31st closing day', () => {
       expect(InvoiceUtils.getInvoiceMonthForTransaction(timestamp(2026, 4, 30), 31, 10)).toBe('2026-06');
     });
 
@@ -37,17 +41,29 @@ describe('InvoiceUtils', () => {
     });
   });
 
+  describe('getInvoiceDueDate', () => {
+    it('clamps a 31st due day to April 30', () => {
+      expect(InvoiceUtils.getInvoiceDueDate('2026-04', 31)).toBe(timestamp(2026, 4, 30));
+    });
+  });
+
   describe('getInvoiceCycleDates', () => {
-    it.failing('clamps a 31st closing day to February and the previous day', () => {
+    it('clamps a 31st closing day to February and the previous day', () => {
       const cycle = InvoiceUtils.getInvoiceCycleDates('2026-03', 31, 10);
       expect(cycle.cycleStart).toBe(timestamp(2026, 1, 31));
       expect(cycle.cycleEnd).toBe(new Date(2026, 1, 27, 23, 59, 59, 999).getTime());
     });
 
-    it.failing('ends the cycle on the day before a 30-day-month closing date', () => {
+    it('ends the cycle on the day before a 30-day-month closing date', () => {
       const cycle = InvoiceUtils.getInvoiceCycleDates('2026-05', 31, 10);
       expect(cycle.cycleStart).toBe(timestamp(2026, 3, 31));
       expect(cycle.cycleEnd).toBe(new Date(2026, 3, 29, 23, 59, 59, 999).getTime());
+    });
+
+    it('clamps a 31st closing day to February 29 in leap years', () => {
+      const cycle = InvoiceUtils.getInvoiceCycleDates('2028-03', 31, 10);
+      expect(cycle.cycleStart).toBe(timestamp(2028, 1, 31));
+      expect(cycle.cycleEnd).toBe(new Date(2028, 1, 28, 23, 59, 59, 999).getTime());
     });
   });
 
