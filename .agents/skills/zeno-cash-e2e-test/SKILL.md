@@ -287,6 +287,11 @@ verify everything returns to the baseline.
 - [ ] Descartar uma proposta não grava nada; Editar altera o nome do grupo antes de aplicar.
 - [ ] Propor uma regra e confirmar que ela aparece em GroupDetails → Regras.
 - [ ] Erro do provedor aparece em uma bolha vermelha, sem travar a conversa.
+- [ ] Com `gemini-3.7-flash`, os campos de preço mostram os valores padrão e uma resposta
+      exibe tokens, custo estimado e a nota sobre plano pago/gratuito do Gemini.
+- [ ] Com um 429 Gemini simulado, aparece uma bolha de aviso distinta com ícone, mensagem do
+      provedor, tempo de espera quando disponível e dica para trocar para um modelo mais leve;
+      o consumo mensal não aumenta.
 - [ ] Repetir os fluxos na web e no Android; se a API estiver indisponível, marcar os casos
       dependentes como untested e registrar o motivo.
 
