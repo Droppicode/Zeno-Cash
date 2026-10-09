@@ -1,0 +1,92 @@
+name: Android Release
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - '.github/workflows/release-android.yml'
+      - 'build_local.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  EXPO_PUBLIC_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_WEB_CLIENT_ID || '258312772968-j51vl853hp2jv0sa7tsjo0atkd426r2l.apps.googleusercontent.com' }}
+  EXPECTED_CERT_SHA256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Require Google Web Client ID
+        run: |
+          if [ -z "${EXPO_PUBLIC_WEB_CLIENT_ID// }" ]; then
+            echo "::error::Repository variable EXPO_PUBLIC_WEB_CLIENT_ID is empty; Google Drive backup would break."
+            exit 1
+          fi
+          echo "EXPO_PUBLIC_WEB_CLIENT_ID=$EXPO_PUBLIC_WEB_CLIENT_ID" > .env
+
+      - name: Check tag matches app.json version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          APP_VERSION=$(node -p "require('./app.json').expo.version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${TAG_VERSION%%-*}"
+          if [ "$APP_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match app.json version $APP_VERSION"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Expo prebuild
+        run: npx expo prebuild --platform android --clean
+        env:
+          NODE_ENV: production
+          APP_ENV: production
+
+      - name: Assemble release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Verify signing certificate
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
+          if [ "$ACTUAL" != "$EXPECTED_CERT_SHA256" ]; then
+            echo "::error::APK signed with $ACTUAL, expected $EXPECTED_CERT_SHA256 (in-place updates would fail)"
+            exit 1
+          fi
+
+      - name: Verify Client ID is bundled
+        run: |
+          unzip -p android/app/build/outputs/apk/release/app-release.apk assets/index.android.bundle \
+            | grep -qF "$EXPO_PUBLIC_WEB_CLIENT_ID"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish GitHub pre-release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" android/app/build/outputs/apk/release/app-release.apk \
+            --title "$GITHUB_REF_NAME" --generate-notes --prerelease --verify-tag
