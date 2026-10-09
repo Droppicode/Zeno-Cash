@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { expoDb, openRestoredDatabase } from '../database/db';
+import { expoDb, openRestoredDatabase, flushWebDb } from '../database/db';
 import { TransactionRepository } from './TransactionRepository';
 import { Alert, Platform, NativeModules } from 'react-native';
 import { Logger } from '../utils/logger';
@@ -38,6 +38,34 @@ const downloadOnWeb = (content, fileName, mimeType) => {
   URL.revokeObjectURL(url);
 };
 
+export const readPickedFileAsText = async asset => {
+  if (Platform.OS === 'web') {
+    if (typeof asset.file?.text === 'function') return asset.file.text();
+    return (await fetch(asset.uri)).text();
+  }
+  return FileSystem.readAsStringAsync(asset.uri);
+};
+
+const confirmAndRestoreJSONWeb = async data => {
+  if (!data?.version || !data?.data) {
+    Alert.alert('Erro', 'Arquivo JSON inválido ou não suportado.');
+    return false;
+  }
+
+  const confirmed = await new Promise(resolve => {
+    Alert.alert('Restaurar backup', 'Substituir todos os dados atuais pelo backup?', [
+      { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'Restaurar', style: 'destructive', onPress: () => resolve(true) }
+    ]);
+  });
+  if (!confirmed) return false;
+
+  await DataExportService.executeImport(data, 'replace');
+  await flushWebDb();
+  window.location.reload();
+  return true;
+};
+
 export const DataExportService = {
   exportToJSON: async () => {
     try {
@@ -50,7 +78,8 @@ export const DataExportService = {
       const transactionGroups = await expoDb.getAllAsync('SELECT * FROM transaction_groups');
       const recurrenceGroups = await expoDb.getAllAsync('SELECT * FROM recurrence_groups');
       const groupRules = await expoDb.getAllAsync('SELECT * FROM group_rules');
-      const settingsTable = await expoDb.getAllAsync('SELECT * FROM settings');
+      const settingsTable = (await expoDb.getAllAsync('SELECT * FROM settings'))
+        .filter(setting => !String(setting.key).startsWith('llmKey'));
 
       const data = {
         version: 1,
@@ -141,6 +170,7 @@ export const DataExportService = {
   },
 
   createAutoBackup: async () => {
+    if (Platform.OS === 'web') return false;
     try {
       const accounts = await expoDb.getAllAsync('SELECT * FROM accounts');
       const transactions = await expoDb.getAllAsync('SELECT * FROM transactions');
@@ -151,7 +181,8 @@ export const DataExportService = {
       const transactionGroups = await expoDb.getAllAsync('SELECT * FROM transaction_groups');
       const recurrenceGroups = await expoDb.getAllAsync('SELECT * FROM recurrence_groups');
       const groupRules = await expoDb.getAllAsync('SELECT * FROM group_rules');
-      const settingsTable = await expoDb.getAllAsync('SELECT * FROM settings');
+      const settingsTable = (await expoDb.getAllAsync('SELECT * FROM settings'))
+        .filter(setting => !String(setting.key).startsWith('llmKey'));
 
       const data = {
         version: 1,
@@ -178,6 +209,7 @@ export const DataExportService = {
   },
 
   restoreAutoBackup: async () => {
+    if (Platform.OS === 'web') return false;
     try {
       const fileUri = FileSystem.cacheDirectory + 'zenocash_auto_backup.json';
       const jsonStr = await FileSystem.readAsStringAsync(fileUri);
@@ -200,8 +232,7 @@ export const DataExportService = {
 
       if (result.canceled) return null;
 
-      const fileUri = result.assets[0].uri;
-      const jsonStr = await FileSystem.readAsStringAsync(fileUri);
+      const jsonStr = await readPickedFileAsText(result.assets[0]);
       const data = JSON.parse(jsonStr);
 
       if (!data.version || !data.data) {
@@ -213,6 +244,24 @@ export const DataExportService = {
       Logger.error('DataExportService.pickAndReadJSON', err);
       Alert.alert('Erro', 'Não foi possível ler o arquivo JSON.');
       return null;
+    }
+  },
+
+  restoreJSONWeb: async () => {
+    if (Platform.OS !== 'web') return false;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true
+      });
+      if (result.canceled) return false;
+
+      const data = JSON.parse(await readPickedFileAsText(result.assets[0]));
+      return await confirmAndRestoreJSONWeb(data);
+    } catch (err) {
+      Logger.error('DataExportService.restoreJSONWeb', err);
+      Alert.alert('Erro', 'Não foi possível restaurar o backup JSON.');
+      return false;
     }
   },
 
@@ -230,6 +279,9 @@ export const DataExportService = {
         groupRules = [],
         settingsTable = []
       } = data.data;
+      const safeSettingsTable = (settingsTable || []).filter(setting => (
+        !String(setting?.key || '').startsWith('llmKey')
+      ));
 
       await expoDb.withTransactionAsync(async () => {
         const insertWithoutId = async (table, rows) => {
@@ -309,13 +361,12 @@ export const DataExportService = {
           }
         }
         
-        if (settingsTable && settingsTable.length > 0) {
-          for (const s of settingsTable) {
+        if (safeSettingsTable.length > 0) {
+          for (const s of safeSettingsTable) {
             await expoDb.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [s.key, s.value]);
           }
         }
       });
-
       await TransactionRepository.rebuildAllMonthlyBalances();
     } catch (err) {
       Logger.error('DataExportService.executeImport', err);
@@ -451,7 +502,8 @@ export const DataExportService = {
       if (result.canceled) return false;
 
       const fileUri = result.assets[0].uri;
-      const fileName = result.assets[0].name.toLowerCase();
+      const asset = result.assets[0];
+      const fileName = (asset.name || '').toLowerCase();
 
       if (!fileName.endsWith('.db') && !fileName.endsWith('.sqlite') && !fileName.endsWith('.json')) {
         Alert.alert('Erro', 'Por favor, selecione um arquivo válido (.db, .sqlite, ou .json).');
@@ -459,16 +511,22 @@ export const DataExportService = {
       }
 
       if (fileName.endsWith('.json')) {
-          const jsonStr = await FileSystem.readAsStringAsync(fileUri);
+          const jsonStr = await readPickedFileAsText(asset);
           const data = JSON.parse(jsonStr);
           if (!data.version || !data.data) {
             Alert.alert('Erro', 'Arquivo JSON inválido.');
             return false;
           }
+          if (Platform.OS === 'web') return await confirmAndRestoreJSONWeb(data);
           await DataExportService.createAutoBackup();
           await DataExportService.executeImport(data, 'replace');
           Alert.alert('Sucesso', 'Dados do JSON restaurados! Reinicie o aplicativo completamente.');
           return true;
+      }
+
+      if (Platform.OS === 'web') {
+        Alert.alert('Formato indisponível', 'Backups .db e .sqlite só podem ser restaurados no app Android.');
+        return false;
       }
 
       await DataExportService.createAutoBackup();

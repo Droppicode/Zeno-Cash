@@ -98,10 +98,23 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
       )}
 
       {Platform.OS === 'web' ? (
-        <View style={{ backgroundColor: activeTheme.card, padding: 20, borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: activeTheme.accent + '30' }}>
-          <Ionicons name="laptop-outline" size={48} color={activeTheme.textSecondary} style={{ marginBottom: 12 }} />
-          <Text style={{ color: activeTheme.text, fontSize: 16, textAlign: 'center' }}>
-            Backups na Nuvem e Locais são funcionalidades exclusivas do aplicativo móvel (Android/iOS).
+        <View style={{ backgroundColor: activeTheme.card, padding: 16, borderRadius: 6, borderWidth: 1, borderColor: activeTheme.accent + '30' }}>
+          <TouchableOpacity
+            style={[styles.backupBtn, { borderColor: activeTheme.accent, marginTop: 0 }]}
+            onPress={() => DataExportService.exportToJSON()}
+          >
+            <Ionicons name="download-outline" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />
+            <Text style={[styles.backupText, { color: activeTheme.accent }]}>Exportar backup (JSON)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.backupBtn, { borderColor: activeTheme.income, marginTop: 12 }]}
+            onPress={() => DataExportService.restoreJSONWeb()}
+          >
+            <Ionicons name="cloud-download-outline" size={20} color={activeTheme.income} style={{ marginRight: 8 }} />
+            <Text style={[styles.backupText, { color: activeTheme.income }]}>Restaurar backup (JSON)</Text>
+          </TouchableOpacity>
+          <Text style={{ color: activeTheme.textSecondary, fontSize: 12, marginTop: 12 }}>
+            Backup no Google Drive e arquivos .db só no app Android.
           </Text>
         </View>
       ) : backupMode === 'drive' && !isGoogleSignedIn ? (

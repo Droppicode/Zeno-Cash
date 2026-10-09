@@ -7,6 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { DEFAULT_ASSISTANT_PERMISSIONS, resolvePermissions } from '../services/ai/permissions';
 import { DEFAULT_MODEL_PRICES } from '../services/ai/usage';
+import webKeyStore from '../services/ai/webKeyStore';
 
 export const SettingsContext = createContext();
 
@@ -244,8 +245,8 @@ export const SettingsProvider = ({ children }) => {
 
         const providerFromDb = data.find(i => i.key === 'llmProvider')?.value || 'openai';
         try {
-          const secureKey = Platform.OS === 'web' 
-            ? localStorage.getItem(`llmKey_${providerFromDb}`)
+          const secureKey = Platform.OS === 'web'
+            ? webKeyStore.get(providerFromDb)
             : await SecureStore.getItemAsync(`llmKey_${providerFromDb}`);
           if (secureKey) setLlmKey(secureKey);
         } catch(e) { Logger.error('SecureStore init', e); }
@@ -307,7 +308,7 @@ export const SettingsProvider = ({ children }) => {
 
   const getSecureKey = async (provider) => {
     try {
-      if (Platform.OS === 'web') return localStorage.getItem(`llmKey_${provider}`) || '';
+      if (Platform.OS === 'web') return webKeyStore.get(provider);
       return await SecureStore.getItemAsync(`llmKey_${provider}`) || '';
     } catch (err) {
       Logger.error('SecureStore.getItemAsync', err);
@@ -315,15 +316,11 @@ export const SettingsProvider = ({ children }) => {
     }
   };
 
-  const saveSecureKey = async (provider, keyStr) => {
+  const saveSecureKey = async (provider, keyStr, remember = false) => {
     try {
-      if (keyStr) {
-        if (Platform.OS === 'web') localStorage.setItem(`llmKey_${provider}`, keyStr);
-        else await SecureStore.setItemAsync(`llmKey_${provider}`, keyStr);
-      } else {
-        if (Platform.OS === 'web') localStorage.removeItem(`llmKey_${provider}`);
-        else await SecureStore.deleteItemAsync(`llmKey_${provider}`);
-      }
+      if (Platform.OS === 'web') webKeyStore.set(provider, keyStr, remember);
+      else if (keyStr) await SecureStore.setItemAsync(`llmKey_${provider}`, keyStr);
+      else await SecureStore.deleteItemAsync(`llmKey_${provider}`);
       if (provider === llmProvider) {
         setLlmKey(keyStr);
       }
