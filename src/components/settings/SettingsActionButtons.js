@@ -60,27 +60,29 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
       )}
 
       {/* Segmented Control for Backup Mode */}
-      <View style={{ flexDirection: 'row', backgroundColor: activeTheme.cardSecondary || activeTheme.card, borderRadius: 6, padding: 4, marginBottom: 15 }}>
-        <TouchableOpacity 
-          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 4, backgroundColor: backupMode === 'drive' ? activeTheme.accent + '20' : 'transparent' }}
-          onPress={() => handleModeChange('drive')}
-        >
-          <Text style={{ color: backupMode === 'drive' ? activeTheme.accent : activeTheme.textSecondary, fontWeight: backupMode === 'drive' ? 'bold' : 'normal' }}>
-            Google Drive
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 4, backgroundColor: backupMode === 'local' ? activeTheme.accent + '20' : 'transparent' }}
-          onPress={() => handleModeChange('local')}
-        >
-          <Text style={{ color: backupMode === 'local' ? activeTheme.accent : activeTheme.textSecondary, fontWeight: backupMode === 'local' ? 'bold' : 'normal' }}>
-            Dispositivo
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {Platform.OS !== 'web' && (
+        <View style={{ flexDirection: 'row', backgroundColor: activeTheme.cardSecondary || activeTheme.card, borderRadius: 6, padding: 4, marginBottom: 15 }}>
+          <TouchableOpacity
+            style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 4, backgroundColor: backupMode === 'drive' ? activeTheme.accent + '20' : 'transparent' }}
+            onPress={() => handleModeChange('drive')}
+          >
+            <Text style={{ color: backupMode === 'drive' ? activeTheme.accent : activeTheme.textSecondary, fontWeight: backupMode === 'drive' ? 'bold' : 'normal' }}>
+              Google Drive
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 4, backgroundColor: backupMode === 'local' ? activeTheme.accent + '20' : 'transparent' }}
+            onPress={() => handleModeChange('local')}
+          >
+            <Text style={{ color: backupMode === 'local' ? activeTheme.accent : activeTheme.textSecondary, fontWeight: backupMode === 'local' ? 'bold' : 'normal' }}>
+              Dispositivo
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Auto Backup Toggle */}
-      {!(backupMode === 'drive' && !isGoogleSignedIn) && (
+      {Platform.OS !== 'web' && !(backupMode === 'drive' && !isGoogleSignedIn) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: activeTheme.card, padding: 15, borderRadius: 6, marginBottom: 20 }}>
           <View style={{ flex: 1, marginRight: 15 }}>
             <Text style={{ color: activeTheme.text, fontSize: 16, fontWeight: 'bold' }}>Backup Automático Diário</Text>
@@ -112,6 +114,13 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
           >
             <Ionicons name="cloud-download-outline" size={20} color={activeTheme.income} style={{ marginRight: 8 }} />
             <Text style={[styles.backupText, { color: activeTheme.income }]}>Restaurar backup (JSON)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.backupBtn, { borderColor: activeTheme.textSecondary, marginTop: 12 }]}
+            onPress={() => DataExportService.exportToCSV()}
+          >
+            <Ionicons name="stats-chart" size={18} color={activeTheme.textSecondary} style={{ marginRight: 8 }} />
+            <Text style={[styles.backupText, { color: activeTheme.textSecondary }]}>Exportar CSV</Text>
           </TouchableOpacity>
           <Text style={{ color: activeTheme.textSecondary, fontSize: 12, marginTop: 12 }}>
             Backup no Google Drive e arquivos .db só no app Android.
@@ -167,7 +176,7 @@ export function CloudBackupButtons({ activeTheme, styles, dataManagementHook }) 
         </View>
       )}
 
-      {backupMode === 'local' && (
+      {Platform.OS !== 'web' && backupMode === 'local' && (
         <>
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, paddingTop: 20, borderTopWidth: 1, borderTopColor: activeTheme.border }}>
             <TouchableOpacity 
