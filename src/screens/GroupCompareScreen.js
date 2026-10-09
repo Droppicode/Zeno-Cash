@@ -9,6 +9,7 @@ import { GroupsRepository } from '../services/GroupsRepository';
 import { calculateGroupStats } from '../utils/GroupStats';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import { getZoomFactor } from '../utils/scaler';
+import { barMax, formatCompactYLabel, sanitizeSeries } from '../utils/chartSafety';
 
 const monthNames = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -62,6 +63,7 @@ export default function GroupCompareScreen({ navigation }) {
       .reduce((sum, tx) => sum + (tx.type === 'income' ? -Math.abs(tx.amount || 0) : Math.abs(tx.amount || 0)), 0);
     return { value: Number.isFinite(total) ? total : 0, label: index === 0 ? month.label : '', frontColor: group.color || activeTheme.accent, spacing: index === selectedGroups.length - 1 ? 14 * z : 2 * z };
   })), [months, selectedGroups, transactionsByGroup, activeTheme.accent, z]);
+  const safeChartData = useMemo(() => sanitizeSeries(chartData), [chartData]);
 
   const format = value => `R$ ${CurrencyUtils.formatDisplay(Math.abs(value || 0))}`;
   const rows = [
@@ -106,7 +108,7 @@ export default function GroupCompareScreen({ navigation }) {
               </View>
             </ScrollView>
             <Text style={styles.chartTitle}>Últimos seis meses</Text>
-            {chartData.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false}><BarChart data={chartData} barWidth={18 * z} height={190 * z} noOfSections={4} hideRules xAxisThickness={0} yAxisThickness={0} yAxisLabelTexts={[]} xAxisLabelTextStyle={{ color: activeTheme.textSecondary, fontSize: 10 * z }} /></ScrollView>}
+            {safeChartData.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false}><BarChart data={safeChartData} maxValue={barMax(safeChartData.map(item => item.value))} formatYLabel={formatCompactYLabel} barWidth={18 * z} height={190 * z} noOfSections={4} hideRules xAxisThickness={0} yAxisThickness={0} yAxisLabelTexts={[]} xAxisLabelTextStyle={{ color: activeTheme.textSecondary, fontSize: 10 * z }} /></ScrollView>}
           </>
         )}
         {selectedGroups.length < 2 && <Text style={styles.empty}>Selecione pelo menos dois grupos.</Text>}

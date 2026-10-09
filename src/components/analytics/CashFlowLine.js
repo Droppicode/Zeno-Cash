@@ -1,28 +1,26 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Dimensions, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import CollapsibleSection from './CollapsibleSection';
 import { getZoomFactor } from '../../utils/scaler';
+import { downsample, fitSpacing, formatCompactYLabel, limitDataPointLabels, lineScale, sanitizeSeries } from '../../utils/chartSafety';
 
 export default function CashFlowLine({ theme, series }) {
   const z = getZoomFactor(theme);
-  const f = theme.fontFamily || 'monospace';
 
-  if (!series || series.length === 0) return null;
+  if (!Array.isArray(series) || series.length === 0) return null;
 
-  const maxVal = Math.max(...series.map(s => s.value), 0);
-  const minVal = Math.min(...series.map(s => s.value), 0);
-  const range = Math.max(maxVal - minVal, 1);
-  const pad = range * 0.1;
-  const yAxisOffset = Math.floor(minVal - pad);
-  const chartMaxValue = Math.ceil(maxVal + pad - yAxisOffset);
+  const safeSeries = limitDataPointLabels(downsample(sanitizeSeries(series)));
+  const { yAxisOffset, maxValue } = lineScale(safeSeries.map(point => point.value));
+  const chartWidth = Dimensions.get('window').width - 64 * z;
 
   return (
     <CollapsibleSection title="Fluxo de Caixa" subtitle="Evolução do saldo ao longo do período" theme={theme}>
       <View style={{ alignItems: 'center' }}>
         <LineChart
-          data={series}
+          data={safeSeries}
           color={theme.accent}
+          spacing={fitSpacing(safeSeries.length, chartWidth)}
           thickness={3 * z}
           dataPointsColor={theme.accent}
           dataPointsRadius={4 * z}
@@ -31,8 +29,9 @@ export default function CashFlowLine({ theme, series }) {
           yAxisThickness={0}
           yAxisTextStyle={{ color: theme.textSecondary, fontSize: 10 * z }}
           xAxisLabelTextStyle={{ color: theme.textSecondary, fontSize: 10 * z }}
-          maxValue={chartMaxValue}
+          maxValue={maxValue}
           yAxisOffset={yAxisOffset}
+          formatYLabel={formatCompactYLabel}
           noOfSections={4}
           areaChart
           startFillColor={theme.accent}
