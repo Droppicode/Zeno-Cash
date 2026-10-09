@@ -4,15 +4,17 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import CollapsibleSection from './CollapsibleSection';
 import { getZoomFactor } from '../../utils/scaler';
+import { finite } from '../../utils/chartSafety';
 
 export default function ExpenseComposition({ theme, data, totalExpense, isMacro, setIsMacro, macroTargets }) {
   const z = getZoomFactor(theme);
   const f = theme.fontFamily || 'monospace';
+  const safeTotalExpense = finite(totalExpense);
 
-  const pieData = data.filter(i => i.total > 0).map(item => ({
-    value: item.total,
+  const pieData = data.filter(i => Number.isFinite(+i.total) && +i.total > 0).map(item => ({
+    value: finite(item.total),
     color: item.color,
-    text: totalExpense > 0 ? `${((item.total / totalExpense) * 100).toFixed(0)}%` : '0%'
+    text: safeTotalExpense > 0 ? `${((finite(item.total) / safeTotalExpense) * 100).toFixed(0)}%` : '0%'
   }));
 
   return (
@@ -39,7 +41,7 @@ export default function ExpenseComposition({ theme, data, totalExpense, isMacro,
             centerLabelComponent={() => (
               <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={{ fontSize: 12 * z, color: theme.textSecondary, fontFamily: f }}>Total</Text>
-                <Text style={{ fontSize: 16 * z, color: theme.text, fontWeight: 'bold', fontFamily: f }}>R$ {totalExpense.toFixed(0)}</Text>
+                <Text style={{ fontSize: 16 * z, color: theme.text, fontWeight: 'bold', fontFamily: f }}>R$ {safeTotalExpense.toFixed(0)}</Text>
               </View>
             )}
           />
