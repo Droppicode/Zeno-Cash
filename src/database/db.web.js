@@ -5,6 +5,10 @@ import { drizzle } from 'drizzle-orm/sql-js';
 export let expoDb = null;
 export let db = null;
 
+export const openRestoredDatabase = () => {
+  throw new Error('Restoring a SQLite database file is not supported on web');
+};
+
 const STORAGE_KEY = 'zenocash_web_db';
 const PERSIST_INTERVAL_MS = 2000;
 

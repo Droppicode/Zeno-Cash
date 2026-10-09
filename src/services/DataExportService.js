@@ -1,10 +1,31 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { expoDb } from '../database/db';
+import { expoDb, openRestoredDatabase } from '../database/db';
 import { TransactionRepository } from './TransactionRepository';
 import { Alert, Platform, NativeModules } from 'react-native';
 import { Logger } from '../utils/logger';
+
+export const rebuildRestoredDatabaseMonthlyBalances = async () => {
+  const restoredDb = openRestoredDatabase();
+  try {
+    await restoredDb.execAsync(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS monthly_balances (
+        month_key TEXT PRIMARY KEY,
+        income REAL DEFAULT 0,
+        expense REAL DEFAULT 0,
+        total REAL DEFAULT 0
+      );
+    `);
+    await TransactionRepository.rebuildAllMonthlyBalances(restoredDb);
+  } finally {
+    await restoredDb.closeAsync();
+  }
+};
 
 const downloadOnWeb = (content, fileName, mimeType) => {
   const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
@@ -292,6 +313,8 @@ export const DataExportService = {
           }
         }
       });
+
+      await TransactionRepository.rebuildAllMonthlyBalances();
     } catch (err) {
       Logger.error('DataExportService.executeImport', err);
       throw err;
@@ -461,6 +484,8 @@ export const DataExportService = {
         const shmInfo = await FileSystem.getInfoAsync(shmUri);
         if (shmInfo.exists) await FileSystem.deleteAsync(shmUri);
       } catch(e) {}
+
+      await rebuildRestoredDatabaseMonthlyBalances();
 
       Alert.alert(
         'Sucesso', 
