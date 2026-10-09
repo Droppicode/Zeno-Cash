@@ -14,9 +14,9 @@ export default function HomeGroups({ activeTheme, styles, navigation, refreshKey
     const groups = await loadGroups();
     const rows = await Promise.all(groups.map(async group => {
       const transactions = await GroupsRepository.getTransactionsForGroup(group.id);
-      return { group, transactions, latest: transactions[0]?.date || 0 };
+      return { group, transactions };
     }));
-    setGroupsWithTransactions(rows.sort((a, b) => b.latest - a.latest).slice(0, 3));
+    setGroupsWithTransactions(rows.slice(0, 3));
   }, [loadGroups]);
 
   useEffect(() => { loadData(); }, [loadData, groupList.length, refreshKey]);

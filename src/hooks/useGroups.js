@@ -30,6 +30,22 @@ export const useGroups = () => {
     await loadGroups({ includeArchived: true });
   }, [loadGroups]);
 
+  const reorderGroups = useCallback(async (ids) => {
+    const orderedIds = new Set(ids.map(String));
+    setGroupList(current => {
+      const byId = new Map(current.map(group => [String(group.id), group]));
+      return [
+        ...ids.map(id => byId.get(String(id))).filter(Boolean),
+        ...current.filter(group => !orderedIds.has(String(group.id)))
+      ];
+    });
+    try {
+      await GroupsRepository.reorder(ids);
+    } finally {
+      await loadGroups({ includeArchived: true });
+    }
+  }, [loadGroups]);
+
   const loadTxGroupMap = useCallback(async () => {
     const map = await GroupsRepository.getTransactionGroupMap();
     setTxGroupMap(map);
@@ -42,9 +58,10 @@ export const useGroups = () => {
     loadGroups,
     saveGroup,
     deleteGroup,
+    reorderGroups,
     txGroupMap,
     loadTxGroupMap
-  }), [groupList, loading, loadGroups, saveGroup, deleteGroup, txGroupMap, loadTxGroupMap]);
+  }), [groupList, loading, loadGroups, saveGroup, deleteGroup, reorderGroups, txGroupMap, loadTxGroupMap]);
 
   return hookValue;
 };
