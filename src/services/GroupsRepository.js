@@ -1,6 +1,6 @@
 import { db, expoDb } from '../database/db';
 import { groups } from '../database/schema';
-import { desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
 
 const mapGroup = (row) => ({
@@ -23,9 +23,14 @@ const mapTransaction = (row) => ({
 export const GroupsRepository = {
   getAll: async ({ includeArchived = false } = {}) => {
     try {
+      const orderGroups = [
+        asc(sql`${groups.sortOrder} IS NULL`),
+        asc(groups.sortOrder),
+        desc(groups.createdAt)
+      ];
       const query = includeArchived
-        ? db.select().from(groups).orderBy(desc(groups.createdAt))
-        : db.select().from(groups).where(eq(groups.isArchived, 0)).orderBy(desc(groups.createdAt));
+        ? db.select().from(groups).orderBy(...orderGroups)
+        : db.select().from(groups).where(eq(groups.isArchived, 0)).orderBy(...orderGroups);
       return (await query).map(mapGroup);
     } catch (err) {
       Logger.error('GroupsRepository.getAll', err);
@@ -45,13 +50,36 @@ export const GroupsRepository = {
 
   add: async (data) => {
     try {
-      const result = await db.insert(groups).values({
+      const values = {
         ...data,
         createdAt: data.createdAt || Date.now()
-      }).returning({ id: groups.id });
+      };
+      if (values.sortOrder == null) {
+        values.sortOrder = sql`(SELECT COALESCE(MAX(sort_order), 0) + 1 FROM groups)`;
+      }
+      const result = await db.insert(groups).values(values).returning({ id: groups.id });
       return result[0]?.id;
     } catch (err) {
       Logger.error('GroupsRepository.add', err);
+      throw err;
+    }
+  },
+
+  reorder: async (ids) => {
+    try {
+      const updateOrder = async () => {
+        for (const [index, id] of ids.entries()) {
+          await expoDb.runAsync('UPDATE groups SET sort_order = ? WHERE id = ?', [index + 1, id]);
+        }
+      };
+      if (typeof expoDb.withTransactionAsync === 'function') {
+        await expoDb.withTransactionAsync(updateOrder);
+      } else {
+        await updateOrder();
+      }
+      return true;
+    } catch (err) {
+      Logger.error('GroupsRepository.reorder', err);
       throw err;
     }
   },

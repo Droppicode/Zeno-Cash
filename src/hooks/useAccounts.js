@@ -29,9 +29,25 @@ export const useAccounts = () => {
     await loadAccounts();
   }, [loadAccounts]);
 
+  const reorderAccounts = useCallback(async (ids) => {
+    const orderedIds = new Set(ids.map(String));
+    setAccountList(current => {
+      const byId = new Map(current.map(account => [String(account.id), account]));
+      return [
+        ...ids.map(id => byId.get(String(id))).filter(Boolean),
+        ...current.filter(account => !orderedIds.has(String(account.id)))
+      ];
+    });
+    try {
+      await AccountRepository.reorder(ids);
+    } finally {
+      await loadAccounts();
+    }
+  }, [loadAccounts]);
+
   const hookValue = useMemo(() => ({
-    accountList, loading, loadAccounts, saveAccount, deleteAccount
-  }), [accountList, loading, loadAccounts, saveAccount, deleteAccount]);
+    accountList, loading, loadAccounts, saveAccount, deleteAccount, reorderAccounts
+  }), [accountList, loading, loadAccounts, saveAccount, deleteAccount, reorderAccounts]);
 
   return hookValue;
 };

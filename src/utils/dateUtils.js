@@ -4,15 +4,11 @@ export const DateUtils = {
     now.setHours(23, 59, 59, 999);
     
     let limitDate = new Date(0);
-    
-    if (periodKey === '30d') {
+
+    const daysBack = { '7d': 7, '30d': 30, '90d': 90 }[periodKey];
+    if (daysBack) {
       const d = new Date(now);
-      d.setDate(d.getDate() - 30);
-      d.setHours(0, 0, 0, 0);
-      limitDate = d;
-    } else if (periodKey === '90d') {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 90);
+      d.setDate(d.getDate() - daysBack);
       d.setHours(0, 0, 0, 0);
       limitDate = d;
     }

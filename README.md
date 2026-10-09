@@ -107,7 +107,11 @@ npm run web      # web version in the browser
 
 To try the app with realistic data, open **Config** and use *Popular Dados Mock (Seed Dev)*.
 
-**AI assistant:** add your own API key in **Config → Assistente IA**. The key is stored only on the device (SecureStore on Android, `localStorage` on web) and requests go straight to the provider, with no backend in between.
+**AI assistant:** add your own API key in **Config → Assistente IA**. The key is stored only on the device (SecureStore on Android; on web it lasts only for the tab session unless you enable *Lembrar chave neste navegador*) and requests go straight to the provider, with no backend in between.
+
+## 📦 Android release
+
+After bumping `expo.version` in `app.json` on `main`, push a tag such as `vX.Y.Z-alpha` with the matching version. The Android release action builds and verifies the APK, then publishes it as a GitHub pre-release.
 
 ## 🏗️ Architecture
 
@@ -137,3 +141,5 @@ To try the app with realistic data, open **Config** and use *Popular Dados Mock 
 ## 🧪 Testing
 
 [`.agents/skills/zeno-cash-e2e-test/SKILL.md`](.agents/skills/zeno-cash-e2e-test/SKILL.md) is a full end-to-end test plan covering every screen on web and Android: transactions, splits and debts, cards and invoices, month switching, filters, groups, the AI assistant and all settings. It starts from a reset database with known seed data and checks balances and totals after each step.
+
+Run `npm test` for unit tests and `npm run lint` for ESLint.

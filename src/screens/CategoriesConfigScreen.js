@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAnimatedRef } from 'react-native-reanimated';
+import Sortable from 'react-native-sortables';
 import { SettingsContext } from '../context/SettingsContext';
 import { useCategories } from '../hooks/useCategories';
 import { getZoomFactor } from '../utils/scaler';
@@ -14,7 +16,8 @@ const MACRO_OPTIONS = ['Essenciais', 'Estilo de Vida', 'Investimento', 'Outros']
 
 export default function CategoriesConfigScreen({ onBack }) {
   const { activeTheme } = useContext(SettingsContext);
-  const { categoryList, loadCategories, saveCategory: saveCat, deleteCategory: delCat } = useCategories();
+  const { categoryList, loadCategories, saveCategory: saveCat, deleteCategory: delCat, reorderCategories } = useCategories();
+  const scrollableRef = useAnimatedRef();
   const [showEditor, setShowEditor] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -89,28 +92,42 @@ export default function CategoriesConfigScreen({ onBack }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {categoryList.map((cat, index) => (
-          <ListCard key={cat.id} index={index} total={categoryList.length}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <View style={[styles.iconBox, { backgroundColor: cat.color + '20' }]}>
-                <Ionicons name={cat.icon || 'list'} size={20} color={cat.color || activeTheme.text} />
-              </View>
-              <View style={{ marginLeft: 12 }}>
-                <Text style={[styles.catName, { color: activeTheme.text }]}>{cat.name}</Text>
-                <Text style={[styles.catMacro, { color: activeTheme.textSecondary }]}>Grupo: {cat.macro || 'Outros'}</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(cat)}>
-                <Ionicons name="pencil" size={20} color={activeTheme.textSecondary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => deleteCategory(cat.id)}>
-                <Ionicons name="trash" size={20} color={activeTheme.expense} />
-              </TouchableOpacity>
-            </View>
-          </ListCard>
-        ))}
+      <ScrollView ref={scrollableRef} contentContainerStyle={styles.scroll}>
+        <Text style={{ color: activeTheme.textSecondary, fontSize: 12 * z, marginBottom: 12 * z }}>
+          Segure e arraste para reordenar
+        </Text>
+        {categoryList.length > 0 && (
+          <Sortable.Grid
+            columns={1}
+            data={categoryList}
+            keyExtractor={cat => String(cat.id)}
+            scrollableRef={scrollableRef}
+            activeItemScale={1.04}
+            dragActivationDelay={150}
+            onDragEnd={({ data }) => reorderCategories(data.map(cat => cat.id))}
+            renderItem={({ item: cat, index }) => (
+              <ListCard index={index} total={categoryList.length}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={[styles.iconBox, { backgroundColor: cat.color + '20' }]}>
+                    <Ionicons name={cat.icon || 'list'} size={20} color={cat.color || activeTheme.text} />
+                  </View>
+                  <View style={{ marginLeft: 12 }}>
+                    <Text style={[styles.catName, { color: activeTheme.text }]}>{cat.name}</Text>
+                    <Text style={[styles.catMacro, { color: activeTheme.textSecondary }]}>Grupo: {cat.macro || 'Outros'}</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(cat)}>
+                    <Ionicons name="pencil" size={20} color={activeTheme.textSecondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => deleteCategory(cat.id)}>
+                    <Ionicons name="trash" size={20} color={activeTheme.expense} />
+                  </TouchableOpacity>
+                </View>
+              </ListCard>
+            )}
+          />
+        )}
 
         <TouchableOpacity style={[styles.addBtn, { borderColor: activeTheme.accent }]} onPress={openNew}>
           <Ionicons name="add" size={20} color={activeTheme.accent} style={{ marginRight: 8 }} />

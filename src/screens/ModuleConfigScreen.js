@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -6,6 +6,7 @@ import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import BaseModalBottom from '../components/ui/BaseModalBottom';
 import { CategoryRepository } from '../services/CategoryRepository';
+import { useCategories } from '../hooks/useCategories';
 
 const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
 
@@ -70,6 +71,7 @@ export default function ModuleConfigScreen({ onBack }) {
     activeTheme, uiConfig, saveSetting,
     macroTargets, macroMapping, macroOptions 
   } = useContext(SettingsContext);
+  const { categoryList, loadCategories } = useCategories();
 
   const [newMacroName, setNewMacroName] = useState('');
   const [showMappingModal, setShowMappingModal] = useState(false);
@@ -77,6 +79,17 @@ export default function ModuleConfigScreen({ onBack }) {
 
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
   const z = getZoomFactor(activeTheme);
+  const macroCategoryNames = useMemo(() => {
+    const categoryNames = new Set(categoryList.map(category => category.name));
+    return [
+      ...categoryList.map(category => category.name).filter(name => Object.prototype.hasOwnProperty.call(macroMapping, name)),
+      ...Object.keys(macroMapping).filter(name => !categoryNames.has(name))
+    ];
+  }, [categoryList, macroMapping]);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   const handleToggleUi = (key) => {
     const newConfig = { ...uiConfig, [key]: !uiConfig[key] };
@@ -406,7 +419,7 @@ export default function ModuleConfigScreen({ onBack }) {
         <Text style={[styles.modalSub, { color: activeTheme.textSecondary }]}>Toque no botão à direita para trocar o grupo macro da categoria.</Text>
         
         <ScrollView style={{ maxHeight: 400, marginBottom: 16 }}>
-          {Object.keys(macroMapping).sort().map(microCat => {
+          {macroCategoryNames.map(microCat => {
             const currentMacro = macroMapping[microCat];
             const macroIdx = macroOptions.indexOf(currentMacro);
             const macroColor = currentMacro === 'Outros' ? activeTheme.textSecondary : COLORS_PALETTE[macroIdx % COLORS_PALETTE.length] || activeTheme.textSecondary;

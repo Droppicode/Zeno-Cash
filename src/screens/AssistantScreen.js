@@ -16,7 +16,7 @@ import { AccountRepository } from '../services/AccountRepository';
 import { CategoryRepository } from '../services/CategoryRepository';
 import { DebtsRepository } from '../services/DebtsRepository';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
-import { addUsage, estimateCost, formatTokens, formatUsd } from '../services/ai/usage';
+import { addUsage, estimateCost, formatTokens, formatUsd, GEMINI_COST_NOTE } from '../services/ai/usage';
 import GroupModal from '../components/GroupModal';
 import { getZoomFactor } from '../utils/scaler';
 
@@ -191,10 +191,21 @@ export default function AssistantScreen({ navigation }) {
         text: result.text,
         proposals: result.proposals,
         remembered: result.memoryWrites?.length ? result.memoryWrites : [],
-        usage: result.usage
+        usage: result.usage,
+        provider: llmProvider,
+        model: llmModel
       }]);
     } catch (error) {
-      setMessages(current => [...current, { id: `m_${Date.now()}_e`, role: 'assistant', text: error.message || 'Não foi possível consultar o provedor.', error: true }]);
+      const quotaWarning = error?.status === 429;
+      setMessages(current => [...current, {
+        id: `m_${Date.now()}_e`,
+        role: 'assistant',
+        text: error.message || 'Não foi possível consultar o provedor.',
+        error: !quotaWarning,
+        quotaWarning,
+        retryAfterSeconds: error.retryAfterSeconds,
+        provider: error.provider || llmProvider
+      }]);
     } finally {
       setBusy(false);
       setStep('');
@@ -420,17 +431,35 @@ export default function AssistantScreen({ navigation }) {
   );
 
   const renderMessage = ({ item }) => (
-    <View style={[styles.message, item.role === 'user' ? styles.userMessage : styles.assistantMessage]}>
+    <View style={[
+      styles.message,
+      item.role === 'user' ? styles.userMessage : styles.assistantMessage,
+      item.quotaWarning && styles.quotaMessage
+    ]}>
       {item.role === 'user' && item.attachment ? <Text style={styles.attachmentLine}>📎 {item.attachment.name}</Text> : null}
-      {item.role === 'assistant' && !item.error ? (
+      {item.quotaWarning ? (
+        <>
+          <View style={styles.quotaTitle}>
+            <Ionicons name="warning-outline" size={18 * z} color={activeTheme.accent} />
+            <Text style={[styles.messageText, { flex: 1 }]}>{item.text}</Text>
+          </View>
+          {item.retryAfterSeconds != null ? (
+            <Text style={styles.quotaDetail}>Tente novamente em {Math.max(0, Math.ceil(item.retryAfterSeconds))}s</Text>
+          ) : null}
+          <Text style={styles.quotaDetail}>Troque para um modelo mais leve em Config → Assistente IA.</Text>
+        </>
+      ) : item.role === 'assistant' && !item.error ? (
         <Markdown style={markdownStyles}>{item.text || ''}</Markdown>
       ) : (
         <Text style={[styles.messageText, item.error && { color: activeTheme.expense }]}>{item.text}</Text>
       )}
       {item.role === 'assistant' && item.usage?.requests ? (
-        <Text style={styles.usage}>
-          {formatTokens(item.usage.input + item.usage.output)} tokens{estimateCost(assistantPrices, llmModel, item.usage) != null ? ` · ~${formatUsd(estimateCost(assistantPrices, llmModel, item.usage))}` : ''}
-        </Text>
+        <>
+          <Text style={styles.usage}>
+            {formatTokens(item.usage.input + item.usage.output)} tokens{estimateCost(assistantPrices, item.model || llmModel, item.usage) != null ? ` · ~${formatUsd(estimateCost(assistantPrices, item.model || llmModel, item.usage))}` : ''}
+          </Text>
+          {item.provider === 'gemini' ? <Text style={styles.costNote}>{GEMINI_COST_NOTE}</Text> : null}
+        </>
       ) : null}
       {item.role === 'assistant' && item.remembered?.map(text => <Text key={text} style={styles.remembered}>Lembrado: {text}</Text>)}
       {(item.proposals || []).map(proposal => renderProposal(item.id, proposal))}
@@ -532,9 +561,13 @@ const getStyles = theme => {
     message: { maxWidth: '90%', padding: 12 * z, borderRadius: 10 * z, marginBottom: 10 * z },
     userMessage: { alignSelf: 'flex-end', backgroundColor: theme.cardSecondary },
     assistantMessage: { alignSelf: 'flex-start', width: '90%', backgroundColor: theme.card },
+    quotaMessage: { borderWidth: 1, borderColor: theme.accent },
+    quotaTitle: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 * z },
+    quotaDetail: { color: theme.textSecondary, fontSize: 11 * z, lineHeight: 16 * z, marginTop: 7 * z, fontFamily: f },
     messageText: { color: theme.text, lineHeight: 20 * z, fontFamily: f },
     attachmentLine: { color: theme.textSecondary, fontSize: 11 * z, marginBottom: 5 * z, fontFamily: f },
     usage: { color: theme.textSecondary, fontSize: 10 * z, marginTop: 6 * z, fontFamily: f },
+    costNote: { color: theme.textSecondary, fontSize: 9 * z, marginTop: 3 * z, fontFamily: f },
     remembered: { color: theme.textSecondary, fontSize: 11 * z, marginTop: 8 * z, fontFamily: f },
     empty: { alignItems: 'center', paddingTop: 45 * z },
     emptyText: { color: theme.textSecondary, marginTop: 10 * z, fontFamily: f },

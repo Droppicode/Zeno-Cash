@@ -17,7 +17,7 @@ import { transactions } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { CurrencyUtils } from '../utils/currencyUtils';
 
-const DebtItem = React.memo(({ item, activeTheme, styles, onEdit, onDelete }) => {
+const DebtItem = React.memo(function DebtItem({ item, activeTheme, styles, onEdit, onDelete }) {
   const isOwe = item.type === 'owe';
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR');
   return (

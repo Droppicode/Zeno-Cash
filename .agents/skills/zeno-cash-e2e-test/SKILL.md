@@ -122,6 +122,9 @@ verify everything returns to the baseline.
 - [ ] T13 Apagar asks for confirmation; recurrence delete behaves per contract.
 - [ ] T14 Change type expense↔income and account on edit → both old and new balances fix.
 
+### TransactionModal regression
+- [ ] Run `/home/ubuntu/r8/transaction-modal-golden.cjs` on original and refactored code with a fresh web context; compare exported transaction, recurrence, debt, and group-link data. Cover expense, income, subscription, installment with interest, mixed split, edit, validation, and title auto-categorization; compare the four modal screenshots at the same viewport.
+
 ### Split (Dividir / Pessoas na divisão)
 - [ ] S1 Add 2 people with fixed amounts → debts created in Debts screen, linked icon (people).
 - [ ] S2 Percentage split (isPercentage) → amounts computed correctly.
@@ -205,6 +208,16 @@ verify everything returns to the baseline.
       without any checking account shows the warning. Long names don't push actions off.
 - [ ] Categorias: create (name, macro group, icon, colour), edit, delete (transactions lose
       category, no crash).
+- [ ] Contas: long-press a card for 150 ms and drag it; open a new transaction and
+      verify the first account is selected by default.
+- [ ] Categorias: drag a card to a new position, open TransactionModal and verify the
+      category chips follow the saved order.
+- [ ] Grupos: drag a group card; verify its order persists after reload and is reflected
+      on the Home groups card and in the group picker.
+- [ ] Reload web or cold-start Android and verify the account and category orders persist;
+      export a backup, restore it, and verify both orders again.
+- [ ] Android drag: use `adb shell input draganddrop x1 y1 x2 y2 1500`, or a long-duration
+      `swipe` if `draganddrop` is unavailable.
 - [ ] Módulos: toggle every switch ([Geral] Investimentos tab, hide Acertos, [Home]
       Pendências/Contas/Cartões/Últimas/Dívidas) and verify effect; reorder Home and
       Análise modules; macro groups + category→macro mapping + targets.
@@ -214,6 +227,11 @@ verify everything returns to the baseline.
 - [ ] Assistente IA: provider, model, API key saved (don't use real keys unless given).
 - [ ] Comportamento Padrão: 30d / 90d / all → applied after restart.
 - [ ] Backup: frequency, limit, Exportar JSON, Exportar CSV, Google Drive backup/restore
+- [ ] Web backup: exportar JSON, anotar totais da Home e quantidade de transações,
+      adicionar duas transações, restaurar o arquivo exportado e confirmar a substituição;
+      após reload e novo reload, conferir totais e contagem. Restaurar também o fixture JSON.
+- [ ] Web rejeita arquivos `.db`/`.sqlite` com aviso claro; Google Drive e arquivos `.db`
+      permanecem disponíveis apenas no app Android.
       (Android + credentials only), Zona de Perigo wipe → app returns to empty state.
 
 ## 11. Persistence
@@ -287,6 +305,11 @@ verify everything returns to the baseline.
 - [ ] Descartar uma proposta não grava nada; Editar altera o nome do grupo antes de aplicar.
 - [ ] Propor uma regra e confirmar que ela aparece em GroupDetails → Regras.
 - [ ] Erro do provedor aparece em uma bolha vermelha, sem travar a conversa.
+- [ ] Com `gemini-3.7-flash`, os campos de preço mostram os valores padrão e uma resposta
+      exibe tokens, custo estimado e a nota sobre plano pago/gratuito do Gemini.
+- [ ] Com um 429 Gemini simulado, aparece uma bolha de aviso distinta com ícone, mensagem do
+      provedor, tempo de espera quando disponível e dica para trocar para um modelo mais leve;
+      o consumo mensal não aumenta.
 - [ ] Repetir os fluxos na web e no Android; se a API estiver indisponível, marcar os casos
       dependentes como untested e registrar o motivo.
 
@@ -333,6 +356,10 @@ Notas da Fase 4:
 - [ ] Saldos/faturas: "Qual o saldo das minhas contas e a fatura atual dos cartões?" → valores batem com Home/tela do cartão.
 - [ ] Markdown: "Liste meus saldos em uma tabela markdown com negrito" → tabela e negrito renderizados (sem `**`, `|`, `###` literais), cores do tema; mensagens de erro continuam texto simples.
 - [ ] Consumo: cada resposta mostra "N tokens"; cabeçalho mostra "Conversa: N tokens". Config → Consumo deste mês soma tokens e chamadas por modelo; Gemini mostra aviso de que não informa limite restante. Preencher preço (ex.: 0,1 / 0,4) → custo estimado aparece em Config e nas mensagens. "Zerar contador" zera.
+- [ ] Web: com "Lembrar chave neste navegador" desligado, a chave permanece após reload
+      na aba atual, não aparece em `localStorage` e não existe em uma nova aba. Ao ligar,
+      a chave passa para `localStorage` e fica disponível em uma nova aba. Limpar as chaves
+      usadas no teste ao final; nunca registrar valores em capturas ou logs.
 - Not testable without keys: limites de rate limit de OpenAI/Claude (cabeçalhos) — registrar como não testado.
 - Assertions extras:
   - Visite a aba Transações antes de aplicar mudanças no Assistente e volte sem reload: a aba já montada deve atualizar na hora.

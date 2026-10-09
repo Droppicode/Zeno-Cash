@@ -11,6 +11,7 @@ export const accounts = sqliteTable('accounts', {
   closingDay: integer('closing_day'),
   dueDay: integer('due_day'),
   creditLimit: real('credit_limit'),
+  sortOrder: integer('sort_order'),
 });
 
 export const transactions = sqliteTable('transactions', {
@@ -33,6 +34,7 @@ export const categories = sqliteTable('categories', {
   icon: text('icon'),
   color: text('color'),
   macro: text('macro'),
+  sortOrder: integer('sort_order'),
 });
 
 export const settings = sqliteTable('settings', {
@@ -90,6 +92,7 @@ export const groups = sqliteTable('groups', {
   budget: real('budget'),
   isArchived: integer('is_archived').default(0),
   createdAt: integer('created_at').notNull(),
+  sortOrder: integer('sort_order'),
 });
 
 export const transactionGroups = sqliteTable('transaction_groups', {

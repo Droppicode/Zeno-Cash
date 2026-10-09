@@ -5,7 +5,7 @@ import { getZoomFactor } from '../../utils/scaler';
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const toYYYYMM = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-const MonthItem = React.memo(({ item, index, ITEM_WIDTH, scrollX, isSelected, onPress, styles }) => {
+const MonthItem = React.memo(function MonthItem({ item, index, ITEM_WIDTH, scrollX, isSelected, onPress, styles }) {
   const position = Animated.subtract(index * ITEM_WIDTH, scrollX);
   
   const opacity = position.interpolate({

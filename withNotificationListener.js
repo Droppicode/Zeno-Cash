@@ -3,18 +3,21 @@ const { withAndroidManifest } = require('@expo/config-plugins');
 function withNotificationListener(config) {
   return withAndroidManifest(config, (config) => {
     const androidManifest = config.modResults.manifest;
+    const application = androidManifest.application[0];
+
+    androidManifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
 
     // Garante que o array de services exista dentro da tag <application>
-    if (!androidManifest.application[0].service) {
-      androidManifest.application[0].service = [];
+    if (!application.service) {
+      application.service = [];
     }
 
-    const hasService = androidManifest.application[0].service.some(
+    const hasService = application.service.some(
       (s) => s.$['android:name'] === 'com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener'
     );
 
     if (!hasService) {
-      androidManifest.application[0].service.push({
+      application.service.push({
         $: {
           'android:name': 'com.lesimoes.androidnotificationlistener.RNAndroidNotificationListener',
           'android:label': 'RNAndroidNotificationListener',
@@ -32,6 +35,25 @@ function withNotificationListener(config) {
             ]
           }
         ]
+      });
+    }
+
+    if (!application.receiver) {
+      application.receiver = [];
+    }
+
+    const bootReceiver = application.receiver.find(
+      (receiver) => receiver.$['android:name'] === 'com.lesimoes.androidnotificationlistener.BootUpReceiver'
+    );
+
+    if (bootReceiver) {
+      bootReceiver.$['tools:node'] = 'remove';
+    } else {
+      application.receiver.push({
+        $: {
+          'android:name': 'com.lesimoes.androidnotificationlistener.BootUpReceiver',
+          'tools:node': 'remove'
+        }
       });
     }
 

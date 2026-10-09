@@ -37,7 +37,7 @@ export default function CreditCardScreen({ route, navigation }) {
 
   const invoices = useMemo(() => {
     return InvoiceUtils.groupTransactionsByInvoice(cardTransactions, account.closingDay, account.dueDay);
-  }, [cardTransactions, account.closingDay]);
+  }, [cardTransactions, account.closingDay, account.dueDay]);
 
   const [currentInvoiceIndex, setCurrentInvoiceIndex] = useState(0);
 
@@ -52,7 +52,7 @@ export default function CreditCardScreen({ route, navigation }) {
       }
       invoices._init = true;
     }
-  }, [invoices, account.closingDay]);
+  }, [invoices, account.closingDay, account.dueDay]);
 
   const handleNextInvoice = () => {
     if (currentInvoiceIndex < invoices.length - 1) setCurrentInvoiceIndex(currentInvoiceIndex + 1);
@@ -62,6 +62,9 @@ export default function CreditCardScreen({ route, navigation }) {
   };
 
   const currentInvoice = invoices[currentInvoiceIndex] || { monthKey: 'N/A', closingBalance: 0, cycleExpenses: 0, cyclePayments: 0, previousBalance: 0, transactions: [] };
+  const displayedDueDay = account.dueDay && currentInvoice.monthKey !== 'N/A'
+    ? new Date(InvoiceUtils.getInvoiceDueDate(currentInvoice.monthKey, account.dueDay)).getDate()
+    : account.dueDay;
 
   const handleAddInterest = () => {
     const cycleDates = InvoiceUtils.getInvoiceCycleDates(currentInvoice.monthKey, account.closingDay, account.dueDay);
@@ -151,7 +154,7 @@ export default function CreditCardScreen({ route, navigation }) {
               
               <View style={{ alignItems: 'center' }}>
                 <Text style={[styles.invoiceMonth, { color: activeTheme.text }]}>{formatMonthKey(currentInvoice.monthKey)}</Text>
-                <Text style={{ color: activeTheme.textSecondary, fontSize: 12 }}>Vencimento dia {account.dueDay}</Text>
+                <Text style={{ color: activeTheme.textSecondary, fontSize: 12 }}>Vencimento dia {displayedDueDay}</Text>
               </View>
 
               <TouchableOpacity onPress={handleNextInvoice} disabled={currentInvoiceIndex === invoices.length - 1} style={{ padding: 8, opacity: currentInvoiceIndex === invoices.length - 1 ? 0.3 : 1 }}>

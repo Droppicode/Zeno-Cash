@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { expoDb } from './db';
 import { TransactionRepository } from '../services/TransactionRepository';
+import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
 
 export const resetDatabase = async () => {
@@ -204,7 +205,12 @@ export const seedDatabase = async (force = false) => {
       for (let m = monthsAgo; m >= 0; m--) {
         if (recData.installments && iteration >= recData.installments) break;
 
-        const txDate = new Date(now.getFullYear(), now.getMonth() - m, dayOfMonth, 10, 0, 0);
+        const txDate = new Date(RecurrenceGenerator.occurrenceAt(
+          startDate,
+          recData.frequencyType,
+          recData.frequencyInterval,
+          iteration
+        ));
         if (txDate.getTime() <= now.getTime()) {
           let baseAmount = recData.installments ? (recData.amount / recData.installments) : recData.amount;
           let finalAmount = baseAmount;

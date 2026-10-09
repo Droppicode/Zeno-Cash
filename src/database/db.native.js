@@ -3,6 +3,8 @@ import { drizzle } from 'drizzle-orm/expo-sqlite';
 
 // Inicializa a conexão nativa com o banco do Expo
 export const expoDb = openDatabaseSync('zenocash.db');
+export const openRestoredDatabase = () => openDatabaseSync('zenocash.db');
+export const flushWebDb = async () => {};
 
 expoDb.execSync('PRAGMA journal_mode = WAL;');
 expoDb.execSync('PRAGMA foreign_keys = ON;');
@@ -89,7 +91,8 @@ expoDb.execSync(`
     end_date INTEGER,
     budget REAL,
     is_archived INTEGER DEFAULT 0,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    sort_order INTEGER
   );
 
   CREATE TABLE IF NOT EXISTS transaction_groups (
@@ -139,6 +142,9 @@ try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN associated_account_id INT
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN closing_day INTEGER;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN due_day INTEGER;'); } catch (e) {}
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN credit_limit REAL;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch (e) {}
 
 // Índices para otimização de performance
 try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);'); } catch (e) {}
