@@ -24,12 +24,41 @@ const providerError = (provider, status) => {
   return `Erro Claude: ${status}`;
 };
 
+const retryAfterFromHeader = headers => {
+  const value = headers?.get?.('Retry-After');
+  if (value == null || value.trim() === '') return null;
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds);
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? Math.max(0, Math.ceil((timestamp - Date.now()) / 1000)) : null;
+};
+
+const retryDelayFromGeminiBody = body => {
+  const details = body?.error?.details || body?.details || [];
+  const retryInfo = details.find(detail => (
+    String(detail?.['@type'] || detail?.type || '').endsWith('RetryInfo')
+  ));
+  const match = String(retryInfo?.retryDelay || '').match(/^(\d+(?:\.\d+)?)s$/);
+  return match ? Math.ceil(Number(match[1])) : null;
+};
+
 const requestJson = async (url, options, provider) => {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await fetch(url, options);
     if (response.ok) return { data: await response.json(), headers: response.headers };
+    const body = typeof response.json === 'function'
+      ? await response.json().catch(() => null)
+      : null;
     if ((response.status !== 429 && response.status !== 503) || attempt === 1) {
-      throw new Error(providerError(provider, response.status));
+      const error = new Error(providerError(provider, response.status));
+      error.provider = provider;
+      error.status = response.status;
+      const retryAfterSeconds = retryAfterFromHeader(response.headers)
+        ?? (provider === 'gemini' ? retryDelayFromGeminiBody(body) : null);
+      if (retryAfterSeconds != null) error.retryAfterSeconds = retryAfterSeconds;
+      throw error;
     }
     await new Promise(resolve => setTimeout(resolve, 1500));
   }

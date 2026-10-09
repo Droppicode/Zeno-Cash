@@ -103,6 +103,7 @@ export async function runAgent({ provider, model, apiKey, history = [], userText
       finalText = response.text || 'A consulta excedeu o limite de etapas. Tente reformular a pergunta.';
       messages = [...finalMessages, { role: 'assistant', text: response.text, toolCalls: [], raw: response.raw }];
     } catch (error) {
+      if (error?.status === 429) throw error;
       finalText = 'A consulta excedeu o limite de etapas. Tente reformular a pergunta.';
     }
   }

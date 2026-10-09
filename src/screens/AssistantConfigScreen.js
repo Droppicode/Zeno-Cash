@@ -6,7 +6,7 @@ import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import BaseModalCenter from '../components/ui/BaseModalCenter';
 import { PERMISSION_OPTIONS } from '../services/ai/permissions';
-import { formatTokens, formatUsd, monthTotals, estimateCost } from '../services/ai/usage';
+import { formatTokens, formatUsd, monthTotals, estimateCost, GEMINI_COST_NOTE } from '../services/ai/usage';
 import webKeyStore from '../services/ai/webKeyStore';
 
 const PROVIDER_MODELS = {
@@ -146,7 +146,7 @@ export default function AssistantConfigScreen({ onBack }) {
               <Ionicons name="help-circle-outline" size={20} color={activeTheme.accent} />
             </TouchableOpacity>
           </View>
-          <TextInput
+            <TextInput
             style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
             placeholder={providerLocal === 'openai' ? "sk-proj-..." : "Cole a chave aqui..."}
             placeholderTextColor={activeTheme.textSecondary}
@@ -239,7 +239,7 @@ export default function AssistantConfigScreen({ onBack }) {
               onBlur={() => savePrice('input')}
               onSubmitEditing={() => savePrice('input')}
             />
-            <TextInput
+          <TextInput
               testID="price-output"
               style={[styles.input, { flex: 1, backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
               placeholder="Saída"
@@ -251,6 +251,11 @@ export default function AssistantConfigScreen({ onBack }) {
               onSubmitEditing={() => savePrice('output')}
             />
           </View>
+          {providerLocal === 'gemini' ? (
+            <Text style={[styles.usageModel, { color: activeTheme.textSecondary, marginTop: 6 * z }]}>
+              {GEMINI_COST_NOTE}
+            </Text>
+          ) : null}
         </View>
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Memória do assistente</Text>

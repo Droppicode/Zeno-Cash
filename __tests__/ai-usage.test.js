@@ -1,4 +1,4 @@
-import { addUsage, estimateCost, monthTotals } from '../src/services/ai/usage';
+import { addUsage, DEFAULT_MODEL_PRICES, estimateCost, monthTotals } from '../src/services/ai/usage';
 
 describe('AI usage accounting', () => {
   afterEach(() => jest.useRealTimers());
@@ -14,6 +14,42 @@ describe('AI usage accounting', () => {
     const prices = { model: { input: 2, output: 4 } };
     expect(estimateCost(prices, 'unknown', { input: 5 })).toBeNull();
     expect(estimateCost(prices, 'model', { input: 0, output: 0 })).toBe(0);
+  });
+
+  it('applies scheduled Gemini prices according to the local effective date', () => {
+    const usage = { input: 1_000_000, output: 1_000_000 };
+
+    expect(estimateCost(
+      DEFAULT_MODEL_PRICES,
+      'gemini-3.7-flash',
+      usage,
+      new Date(2026, 11, 31, 23, 59)
+    )).toBe(4.5);
+    expect(estimateCost(
+      DEFAULT_MODEL_PRICES,
+      'gemini-3.7-flash',
+      usage,
+      new Date(2027, 0, 1)
+    )).toBe(9);
+  });
+
+  it('uses a user-edited price without the default schedule', () => {
+    const prices = {
+      ...DEFAULT_MODEL_PRICES,
+      'gemini-3.7-flash': { input: 0.2, output: 0.8 }
+    };
+
+    expect(estimateCost(
+      prices,
+      'gemini-3.7-flash',
+      { input: 1_000_000, output: 1_000_000 },
+      new Date(2027, 0, 1)
+    )).toBe(1);
+  });
+
+  it('leaves models without an official price unpriced', () => {
+    expect(DEFAULT_MODEL_PRICES['gemini-3.5-flash']).toBeUndefined();
+    expect(estimateCost(DEFAULT_MODEL_PRICES, 'gemini-3.5-flash', { input: 100 })).toBeNull();
   });
 
   it('accumulates requests and tokens for the current month', () => {
