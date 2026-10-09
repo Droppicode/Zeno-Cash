@@ -109,6 +109,10 @@ To try the app with realistic data, open **Config** and use *Popular Dados Mock 
 
 **AI assistant:** add your own API key in **Config → Assistente IA**. The key is stored only on the device (SecureStore on Android, `localStorage` on web) and requests go straight to the provider, with no backend in between.
 
+## 📦 Android release
+
+After bumping `expo.version` in `app.json` on `main`, push a tag such as `vX.Y.Z-alpha` with the matching version. The Android release action builds and verifies the APK, then publishes it as a GitHub pre-release.
+
 ## 🏗️ Architecture
 
 | Layer | Technology |
