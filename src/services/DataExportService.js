@@ -22,6 +22,8 @@ export const rebuildRestoredDatabaseMonthlyBalances = async () => {
       );
     `);
     await TransactionRepository.rebuildAllMonthlyBalances(restoredDb);
+  } catch (err) {
+    Logger.error('DataExportService.rebuildRestoredDatabaseMonthlyBalances', err);
   } finally {
     await restoredDb.closeAsync();
   }
