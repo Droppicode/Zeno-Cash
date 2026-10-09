@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, BackHandler, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, BackHandler, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -188,6 +188,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Segurança e Backup</Text>
           <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Sincronize seus dados com o Google Drive de forma segura.</Text>
           
+          {Platform.OS !== 'web' && (<>
           <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary, marginBottom: 8, marginTop: 8 }]}>Frequência Automática:</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
             {['daily', 'weekly', 'monthly'].map(f => (
@@ -217,6 +218,8 @@ export default function SettingsScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          </>)}
 
           <CloudBackupButtons
             activeTheme={activeTheme}
