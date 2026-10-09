@@ -137,3 +137,5 @@ To try the app with realistic data, open **Config** and use *Popular Dados Mock 
 ## 🧪 Testing
 
 [`.agents/skills/zeno-cash-e2e-test/SKILL.md`](.agents/skills/zeno-cash-e2e-test/SKILL.md) is a full end-to-end test plan covering every screen on web and Android: transactions, splits and debts, cards and invoices, month switching, filters, groups, the AI assistant and all settings. It starts from a reset database with known seed data and checks balances and totals after each step.
+
+Run `npm test` for unit tests and `npm run lint` for ESLint.

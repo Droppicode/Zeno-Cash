@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 import SwipeableCard from './SwipeableCard';
 
-const TransactionItem = React.memo(({ 
+const TransactionItem = React.memo(function TransactionItem({
   item, 
   index, 
   sectionLength, 
@@ -23,7 +23,7 @@ const TransactionItem = React.memo(({
   onLongPress,
   selectable = false,
   selected = false
-}) => {
+}) {
   const dateStr = new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
   
   const isFirst = index === 0;
