@@ -2,6 +2,19 @@ const fs = require('fs');
 const { execSync, spawn } = require('child_process');
 const path = require('path');
 
+const envPath = path.join(__dirname, '.env');
+const hasWebClientIdInProcess = Boolean((process.env.EXPO_PUBLIC_WEB_CLIENT_ID || '').trim());
+const hasWebClientIdInFile = fs.existsSync(envPath)
+  && fs.readFileSync(envPath, 'utf8').split(/\r?\n/).some((line) => {
+    const match = line.match(/^\s*EXPO_PUBLIC_WEB_CLIENT_ID\s*=\s*(.*)$/);
+    return Boolean(match && match[1].trim().replace(/^["']|["']$/g, '').trim());
+  });
+
+if (!hasWebClientIdInProcess && !hasWebClientIdInFile) {
+  console.error('Missing EXPO_PUBLIC_WEB_CLIENT_ID. Set it in process.env or add a non-empty EXPO_PUBLIC_WEB_CLIENT_ID=... line to .env.');
+  process.exit(1);
+}
+
 const appJsonPath = path.join(__dirname, 'app.json');
 let appJson;
 

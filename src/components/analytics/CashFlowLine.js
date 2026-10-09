@@ -12,6 +12,10 @@ export default function CashFlowLine({ theme, series }) {
 
   const maxVal = Math.max(...series.map(s => s.value), 0);
   const minVal = Math.min(...series.map(s => s.value), 0);
+  const range = Math.max(maxVal - minVal, 1);
+  const pad = range * 0.1;
+  const yAxisOffset = Math.floor(minVal - pad);
+  const chartMaxValue = Math.ceil(maxVal + pad - yAxisOffset);
 
   return (
     <CollapsibleSection title="Fluxo de Caixa" subtitle="Evolução do saldo ao longo do período" theme={theme}>
@@ -27,8 +31,9 @@ export default function CashFlowLine({ theme, series }) {
           yAxisThickness={0}
           yAxisTextStyle={{ color: theme.textSecondary, fontSize: 10 * z }}
           xAxisLabelTextStyle={{ color: theme.textSecondary, fontSize: 10 * z }}
-          maxValue={maxVal + (Math.abs(maxVal) * 0.1)}
-          minValue={minVal - (Math.abs(minVal) * 0.1)}
+          maxValue={chartMaxValue}
+          yAxisOffset={yAxisOffset}
+          noOfSections={4}
           areaChart
           startFillColor={theme.accent}
           startOpacity={0.3}
