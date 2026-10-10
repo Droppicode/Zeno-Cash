@@ -6,6 +6,7 @@ import { db } from '../database/db';
 import { transactions, accounts } from '../database/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { parseBankNotification } from './notificationParser';
+import { TransactionRepository } from './TransactionRepository';
 import { enrichPendingTransaction, getNotificationAiConfig } from './notificationEnricher';
 
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
@@ -54,6 +55,7 @@ export const headlessNotificationListener = async ({ notification }) => {
     };
 
     const [inserted] = await db.insert(transactions).values(newTx).returning({ id: transactions.id });
+    await TransactionRepository.recalculateMonth(newTx.date);
     DeviceEventEmitter.emit('refreshTransactions');
 
     let final = { description: txDesc, amount };
@@ -65,6 +67,7 @@ export const headlessNotificationListener = async ({ notification }) => {
         console.log('Sugestão da IA indisponível:', error?.message);
         await db.update(transactions).set({ aiStatus: 'failed' }).where(eq(transactions.id, inserted.id));
       }
+      await TransactionRepository.recalculateMonth(newTx.date);
       DeviceEventEmitter.emit('refreshTransactions');
     }
 

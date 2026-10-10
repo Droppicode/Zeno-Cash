@@ -28,6 +28,9 @@ const INCOME_KEYWORDS = [
 ];
 
 const AMOUNT_PATTERN = /(?:r\$|brl)\s*([+-])?\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?|\d+(?:\.\d{1,2})?)(?![\d.,]*\d)/i;
+const TOTAL_PATTERN = /total\s+(?:de\s+)?(?:(?:r\$|brl)\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)(?![\d.,]*\d)/i;
+const INFO_ONLY_PATTERN = /fatura\s+(?:fechou|fechada|est[aá]\s+fechada|est[aá]\s+dispon[ií]vel|dispon[ií]vel|vence|venceu|vencendo)|limite\s+(?:dispon[ií]vel|aumentou|liberado)/i;
+const TRANSACTION_HINT = /pag(?:amento|o|a|ou)\b|compra|pix|transfer|recebe|debitad|estorn/i;
 const VALUE_WORD_PATTERN = /valor\s+(?:de\s+)?([+-])?\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)(?![\d.,]*\d)/i;
 
 export const findBank = (packageName = '') => {
@@ -69,15 +72,24 @@ export const parseBankNotification = (notification) => {
   const rawText = uniqueParts([title, body]).join(' ').replace(/\s+/g, ' ').trim();
   const content = rawText.toLowerCase();
 
+  if (INFO_ONLY_PATTERN.test(content) && !TRANSACTION_HINT.test(content)) return null;
+
   const found = extractAmount(content);
   if (!found) return null;
+  const total = content.match(TOTAL_PATTERN);
+  const totalAmount = total ? parseBrlAmount(total[1]) : NaN;
+  if (Number.isFinite(totalAmount) && totalAmount > found.amount) found.amount = totalAmount;
 
   const isIncome = INCOME_KEYWORDS.some(kw => content.includes(kw));
   const type = found.sign === '-' ? 'expense'
     : (found.sign === '+' || isIncome) ? 'income' : 'expense';
 
   let label = 'Transação Pendente';
-  if (content.includes('pix')) {
+  if (content.includes('cashback')) {
+    label = 'Cashback';
+  } else if (/estorn|reembolso/.test(content)) {
+    label = 'Estorno';
+  } else if (content.includes('pix')) {
     label = type === 'income' ? 'Pix Recebido' : 'Pix Enviado';
   } else if (/cart[aã]o|compra/.test(content)) {
     label = type === 'income' ? 'Estorno no Cartão' : 'Compra no Cartão';

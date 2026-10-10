@@ -43,7 +43,7 @@ describe('parseBankNotification', () => {
     expect(parseBankNotification(notif('br.com.intermedium', 'Pagamento', 'Pagamento no valor de 89,90 realizado.')))
       .toMatchObject({ amount: 89.9, type: 'expense', bankName: 'Inter' });
     expect(parseBankNotification(notif('com.picpay', 'Estorno', 'Compra estornada: R$ 15,00')))
-      .toMatchObject({ amount: 15, type: 'income', description: 'Estorno no Cartão - PicPay' });
+      .toMatchObject({ amount: 15, type: 'income', description: 'Estorno - PicPay' });
   });
 
   it('prefers the expanded text when the short text is truncated', () => {
@@ -59,4 +59,35 @@ describe('parseBankNotification', () => {
     expect(parseBankNotification(notif('com.whatsapp', 'João', 'te mandei R$ 50,00'))).toBeNull();
     expect(parseBankNotification(notif('com.mmn.zenocash', 'Pix Enviado - Santander', 'Pendência de R$ 1,65 salva.'))).toBeNull();
   });
+
+  it('uses the installment total when the text states it', () => {
+    const tx = parseBankNotification(notif(
+      'com.nu.production', 'Compra aprovada',
+      'Compra no Magazine em 3x de R$ 45,90. Valor total R$ 137,70.'
+    ));
+    expect(tx.amount).toBe(137.7);
+    expect(tx.type).toBe('expense');
+  });
+
+  it('ignores invoice-closed and limit notices', () => {
+    expect(parseBankNotification(notif(
+      'com.bradesco', 'Fatura fechada',
+      'Sua fatura fechou em R$ 1.234,56. Vencimento em 20/10.'
+    ))).toBeNull();
+    expect(parseBankNotification(notif(
+      'com.itau', 'Limite', 'Seu limite disponível é de R$ 2.000,00.'
+    ))).toBeNull();
+    expect(parseBankNotification(notif(
+      'com.itau', 'Fatura paga', 'Pagamento da fatura de R$ 1.234,56 realizado.'
+    )).amount).toBe(1234.56);
+  });
+
+  it('labels cashback separately from refunds', () => {
+    const tx = parseBankNotification(notif(
+      'com.picpay', 'Cashback', 'Você recebeu R$ 12,34 de cashback na compra com cartão.'
+    ));
+    expect(tx.type).toBe('income');
+    expect(tx.description).toBe('Cashback - PicPay');
+  });
 });
+

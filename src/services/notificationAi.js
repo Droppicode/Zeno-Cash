@@ -77,7 +77,9 @@ export const buildNotificationPrompt = ({ parsed, date, categories, examples, ca
     'Imite o estilo dos exemplos do usuário (palavras, capitalização, tamanho). Se um exemplo tiver a mesma loja, destinatário ou o mesmo valor recorrente, reutilize o título e a categoria dele.',
     'Não invente nomes que não estão na notificação nem nos exemplos. Sem pistas, use um título genérico como "Pix enviado".',
     `category deve ser exatamente um destes nomes, ou null: ${JSON.stringify(categoryNames)}.`,
-    'amount é o valor da transação em reais (número com ponto decimal), igual ao valor da notificação.'
+    'Use a loja, o destinatário ou o serviço no título quando houver, com nome limpo e capitalização normal (ex.: "IFOOD *RESTAURANTE" → "iFood", "ENEL" → "Conta de luz", TED de salário → "Salário"). Cashback é cashback, não estorno.',
+    'A leitura automática é só um ponto de partida: não copie o título dela nem coloque o nome do banco no título, a menos que os exemplos do usuário façam isso.',
+    'amount é o valor da transação em reais (número com ponto decimal), igual ao valor da notificação. Em compras parceladas use o valor total e coloque as parcelas na note (ex.: "3x de R$ 45,90"). Em compras internacionais use o valor em reais.'
   ].join('\n');
 
   const user = [
