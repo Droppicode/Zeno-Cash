@@ -28,9 +28,9 @@ const INCOME_KEYWORDS = [
 ];
 
 const AMOUNT_PATTERN = /(?:r\$|brl)\s*([+-])?\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?|\d+(?:\.\d{1,2})?)(?![\d.,]*\d)/i;
-const TOTAL_PATTERN = /total\s+(?:de\s+)?(?:(?:r\$|brl)\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)(?![\d.,]*\d)/i;
+const TOTAL_PATTERN = /total(?:\s+d[ao]\s+\w+)?\s*:?\s*(?:de\s+)?(?:(?:r\$|brl)\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)(?![\d.,]*\d)/i;
 const INFO_ONLY_PATTERN = /fatura\s+(?:fechou|fechada|est[aá]\s+fechada|est[aá]\s+dispon[ií]vel|dispon[ií]vel|vence|venceu|vencendo)|limite\s+(?:dispon[ií]vel|aumentou|liberado)/i;
-const TRANSACTION_HINT = /pag(?:amento|o|a|ou)\b|compra|pix|transfer|recebe|debitad|estorn/i;
+const TRANSACTION_HINT = /confirmad|realizad|efetuad|aprovad|recebid|enviad|debitad|estornad|\bpag[oa]\b|\bpagou\b/i;
 const VALUE_WORD_PATTERN = /valor\s+(?:de\s+)?([+-])?\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)(?![\d.,]*\d)/i;
 
 export const findBank = (packageName = '') => {

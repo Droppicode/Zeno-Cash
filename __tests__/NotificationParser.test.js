@@ -63,7 +63,7 @@ describe('parseBankNotification', () => {
   it('uses the installment total when the text states it', () => {
     const tx = parseBankNotification(notif(
       'com.nu.production', 'Compra aprovada',
-      'Compra no Magazine em 3x de R$ 45,90. Valor total R$ 137,70.'
+      'Compra no Magazine em 3x de R$ 45,90. Valor total da compra: R$ 137,70.'
     ));
     expect(tx.amount).toBe(137.7);
     expect(tx.type).toBe('expense');
@@ -72,7 +72,7 @@ describe('parseBankNotification', () => {
   it('ignores invoice-closed and limit notices', () => {
     expect(parseBankNotification(notif(
       'com.bradesco', 'Fatura fechada',
-      'Sua fatura fechou em R$ 1.234,56. Vencimento em 20/10.'
+      'Sua fatura fechou em R$ 1.234,56. Vencimento em 20/10. Veja as opções de pagamento no app.'
     ))).toBeNull();
     expect(parseBankNotification(notif(
       'com.itau', 'Limite', 'Seu limite disponível é de R$ 2.000,00.'
