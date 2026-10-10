@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 import SwipeableCard from './SwipeableCard';
+import AiLoadingBorder from './AiLoadingBorder';
+import { isAiLoading } from '../../services/notificationAi';
 
 const TransactionItem = React.memo(function TransactionItem({
   item, 
@@ -42,6 +44,7 @@ const TransactionItem = React.memo(function TransactionItem({
     >
       {(isSwiping) => (
         <TouchableOpacity onPress={selectable ? onLongPress : onEdit} onLongPress={onLongPress} activeOpacity={0.7}>
+          <AiLoadingBorder active={isAiLoading(item)} color={activeTheme.accent}>
           <View style={[
             styles.card, 
             { backgroundColor: activeTheme.card },
@@ -76,8 +79,8 @@ const TransactionItem = React.memo(function TransactionItem({
                 )}
                 {item.isPending === 1 && !item.isVirtual && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6, backgroundColor: '#FF980020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                    <Ionicons name="time-outline" size={10} color="#FF9800" />
-                    <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>Pendente</Text>
+                    <Ionicons name={isAiLoading(item) ? 'sparkles' : 'time-outline'} size={10} color="#FF9800" />
+                    <Text style={{ color: '#FF9800', fontSize: 10, marginLeft: 4, fontWeight: 'bold' }}>{isAiLoading(item) ? 'IA lendo…' : 'Pendente'}</Text>
                   </View>
                 )}
                 {hasSplit && (
@@ -104,7 +107,8 @@ const TransactionItem = React.memo(function TransactionItem({
             {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
           </Text>
         </View>
-      </TouchableOpacity>
+          </AiLoadingBorder>
+        </TouchableOpacity>
       )}
     </SwipeableCard>
   );

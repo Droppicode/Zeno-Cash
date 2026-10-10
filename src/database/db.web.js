@@ -195,6 +195,8 @@ export const initWebDb = async () => {
   try { sqlite.run('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch (e) {}
   try { sqlite.run('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch (e) {}
   try { sqlite.run('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+  try { sqlite.run('ALTER TABLE transactions ADD COLUMN source_text TEXT;'); } catch (e) {}
+  try { sqlite.run('ALTER TABLE transactions ADD COLUMN ai_status TEXT;'); } catch (e) {}
 
   // A estrutura e o seed das tabelas serão feitos na chamada seedDatabase() de seed.js
   db = drizzle(sqlite);

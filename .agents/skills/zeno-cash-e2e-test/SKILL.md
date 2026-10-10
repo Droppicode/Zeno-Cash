@@ -370,6 +370,15 @@ Notas da Fase 4:
   - O cartão de edição mostra só "campo → novo valor" (não mostra o valor antigo).
 - Android: dependência nativa nova exige novo `npx expo run:android`. Feche o teclado antes de tocar em Aplicar (o primeiro toque pode só fechar o teclado). Se o Reload perder o bundle, refaça `adb reverse tcp:8081 tcp:8081` e abra o deep link do expo-development-client apontando para http://127.0.0.1:8081.
 
+## Notificações bancárias e sugestões com IA (Android release)
+- Build: copie o `.env` (gitignored) para worktrees separadas antes do `expo prebuild`, senão o Client ID do Google some. Gere com APP_ENV/NODE_ENV=production e `assembleRelease -PreactNativeArchitectures=x86_64`; release não precisa de Metro. Confira o certificado antes de `adb install -r`.
+- Disparo: `adb shell cmd notification post` sai de com.android.shell e é ignorado. Use APKs auxiliares descartáveis com pacotes tipo `com.santander.app`/`com.mercadopago.wallet` (receiver exportado + broadcast com title/text/bigText/titleBig em base64). Limpe as notificações antes de desinstalar os auxiliares.
+- Config → Assistente IA define provider/chave; Config → Automações → "Sugestões com IA" liga/desliga. As notificações usam o modelo rápido do provider (ex. gemini-3.5-flash-lite), não o modelo do Assistente: confira no consumo.
+- Casos: Santander "R$ 1.650,00." = 1650; borda tracejada girando + "IA lendo…" na Home e com a aba Transações já aberta (sem refocar), depois título/categoria da IA; editar e aprovar (ex. Aluguel/Moradia) e a próxima notificação parecida deve seguir esse estilo; toggle desligado = ai_status null; chave inválida = failed sem crash.
+- Background: use Home do Android, não force-stop. Para headless frio, mate o PID; notificações postadas durante o rebind do listener podem se perder (limitação do Android), teste com um evento novo após o serviço voltar.
+- Estados rápidos (~1-2 s): use um observador read-only do SQLite e screencap; a compressão do vídeo pode pular esses frames.
+- Ao final, restaure os dados reais do usuário e confira saldos e zero pendentes.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that

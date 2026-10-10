@@ -142,8 +142,9 @@ export default function TransactionsScreen({ route, navigation }) {
   useFocusEffect(reloadAll);
 
   React.useEffect(() => {
-    const subscription = DeviceEventEmitter.addListener('assistantDataChanged', reloadAll);
-    return () => subscription.remove();
+    const subscriptions = ['assistantDataChanged', 'refreshTransactions']
+      .map(event => DeviceEventEmitter.addListener(event, reloadAll));
+    return () => subscriptions.forEach(subscription => subscription.remove());
   }, [reloadAll]);
 
   const filteredList = useMemo(() => {
