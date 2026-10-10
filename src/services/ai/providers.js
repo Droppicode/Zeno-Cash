@@ -196,7 +196,7 @@ const claudeMessages = messages => messages.flatMap(message => {
   return [];
 });
 
-const gemini = async ({ model, apiKey, system, messages, tools }) => {
+const gemini = async ({ model, apiKey, system, messages, tools, signal }) => {
   const modelName = model || 'gemini-3.5-flash';
   const { data } = await requestJson(
     `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
@@ -206,8 +206,9 @@ const gemini = async ({ model, apiKey, system, messages, tools }) => {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
         contents: geminiContents(messages),
-        tools: [{ functionDeclarations: tools }]
-      })
+        ...(tools.length ? { tools: [{ functionDeclarations: tools }] } : {})
+      }),
+      signal
     },
     'gemini'
   );
@@ -229,15 +230,16 @@ const gemini = async ({ model, apiKey, system, messages, tools }) => {
   };
 };
 
-const openai = async ({ model, apiKey, system, messages, tools }) => {
+const openai = async ({ model, apiKey, system, messages, tools, signal }) => {
   const { data, headers } = await requestJson('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: model || 'gpt-4o',
       messages: [{ role: 'system', content: system }, ...openAiMessages(messages)],
-      tools: tools.map(tool => ({ type: 'function', function: tool }))
-    })
+      ...(tools.length ? { tools: tools.map(tool => ({ type: 'function', function: tool })) } : {})
+    }),
+    signal
   }, 'openai');
   const message = data.choices?.[0]?.message || {};
   return {
@@ -258,7 +260,7 @@ const openai = async ({ model, apiKey, system, messages, tools }) => {
   };
 };
 
-const claude = async ({ model, apiKey, system, messages, tools }) => {
+const claude = async ({ model, apiKey, system, messages, tools, signal }) => {
   const { data, headers } = await requestJson('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -271,9 +273,10 @@ const claude = async ({ model, apiKey, system, messages, tools }) => {
       model: model || 'claude-sonnet-4-6',
       system,
       max_tokens: 4000,
-      tools: tools.map(tool => ({ name: tool.name, description: tool.description, input_schema: tool.parameters })),
+      ...(tools.length ? { tools: tools.map(tool => ({ name: tool.name, description: tool.description, input_schema: tool.parameters })) } : {}),
       messages: claudeMessages(messages)
-    })
+    }),
+    signal
   }, 'claude');
   const content = data.content || [];
   return {
@@ -294,11 +297,11 @@ const claude = async ({ model, apiKey, system, messages, tools }) => {
   };
 };
 
-export async function chatWithTools({ provider, model, apiKey, system, messages = [], tools = [] }) {
+export async function chatWithTools({ provider, model, apiKey, system, messages = [], tools = [], signal }) {
   if (!apiKey) throw new Error('Chave da API não configurada.');
-  if (provider === 'gemini') return gemini({ model, apiKey, system, messages, tools });
-  if (provider === 'openai') return openai({ model, apiKey, system, messages, tools });
-  if (provider === 'claude') return claude({ model, apiKey, system, messages, tools });
+  if (provider === 'gemini') return gemini({ model, apiKey, system, messages, tools, signal });
+  if (provider === 'openai') return openai({ model, apiKey, system, messages, tools, signal });
+  if (provider === 'claude') return claude({ model, apiKey, system, messages, tools, signal });
   throw new Error(`Provedor não suportado: ${provider}`);
 }
 

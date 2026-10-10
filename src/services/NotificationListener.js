@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { DeviceEventEmitter, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { CurrencyUtils } from '../utils/currencyUtils';
 
@@ -6,6 +6,7 @@ import { db } from '../database/db';
 import { transactions, accounts } from '../database/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { parseBankNotification } from './notificationParser';
+import { enrichPendingTransaction, getNotificationAiConfig } from './notificationEnricher';
 
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
 
@@ -37,6 +38,8 @@ export const headlessNotificationListener = async ({ notification }) => {
       || accountsData.find(acc => acc.name?.toLowerCase().includes(bankKey));
     const accId = account ? account.id : null;
 
+    const aiConfig = await getNotificationAiConfig().catch(() => null);
+
     const newTx = {
       amount,
       type,
@@ -45,17 +48,31 @@ export const headlessNotificationListener = async ({ notification }) => {
       categoryId: null,
       accountId: accId,
       isPending: 1,
-      note
+      note,
+      sourceText: rawText,
+      aiStatus: aiConfig ? 'pending' : null
     };
 
-    await db.insert(transactions).values(newTx);
-    console.log(`Transação pendente salva: R$ ${amount} (${type})`);
-    
+    const [inserted] = await db.insert(transactions).values(newTx).returning({ id: transactions.id });
+    DeviceEventEmitter.emit('refreshTransactions');
+
+    let final = { description: txDesc, amount };
+    if (aiConfig && inserted?.id) {
+      try {
+        const suggestion = await enrichPendingTransaction({ txId: inserted.id, parsed: parsedTx, config: aiConfig });
+        if (suggestion) final = suggestion;
+      } catch (error) {
+        console.log('Sugestão da IA indisponível:', error?.message);
+        await db.update(transactions).set({ aiStatus: 'failed' }).where(eq(transactions.id, inserted.id));
+      }
+      DeviceEventEmitter.emit('refreshTransactions');
+    }
+
     if (Platform.OS !== 'web') {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${txDesc}`,
-          body: `Pendência de R$ ${CurrencyUtils.formatDisplay(amount)} salva. Toque para aprovar!`,
+          title: final.description,
+          body: `Pendência de R$ ${CurrencyUtils.formatDisplay(final.amount)} salva. Toque para aprovar!`,
           sound: true,
         },
         trigger: null,
