@@ -110,7 +110,7 @@ export default function AutomationsConfigScreen({ onBack }) {
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={[styles.cardTitle, { color: activeTheme.text }]}>Sugestões com IA</Text>
-              <Text style={[styles.cardDesc, { color: activeTheme.textSecondary }]}>Envia o texto das notificações de banco ao provedor do Assistente para sugerir título, nota e categoria no seu estilo, aprendendo com as pendências que você aprova.</Text>
+              <Text style={[styles.cardDesc, { color: activeTheme.textSecondary }]}>Envia o texto das notificações de banco ao provedor do Assistente, usando o modelo mais rápido dele, para sugerir título, nota e categoria no seu estilo, aprendendo com as pendências que você aprova.</Text>
             </View>
             <Switch
               value={aiEnabled}

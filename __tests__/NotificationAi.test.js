@@ -1,4 +1,4 @@
-import { amountsInText, buildNotificationPrompt, isAiLoading, parseSuggestion, pickExamples } from '../src/services/notificationAi';
+import { amountsInText, buildNotificationPrompt, isAiLoading, notificationModelFor, parseSuggestion, pickExamples } from '../src/services/notificationAi';
 
 const categories = [{ id: 1, name: 'Moradia' }, { id: 2, name: 'Transporte' }];
 const parsed = {
@@ -52,5 +52,12 @@ describe('notification AI helpers', () => {
     expect(isAiLoading({ aiStatus: 'pending', date: 1000 }, 5000)).toBe(true);
     expect(isAiLoading({ aiStatus: 'pending', date: 1000 }, 40000)).toBe(false);
     expect(isAiLoading({ aiStatus: 'done', date: 1000 }, 2000)).toBe(false);
+  });
+
+  it('uses the fast model of the configured provider', () => {
+    expect(notificationModelFor('gemini', 'gemini-3.7-flash')).toBe('gemini-3.5-flash-lite');
+    expect(notificationModelFor('openai', 'gpt-4o')).toBe('gpt-4o-mini');
+    expect(notificationModelFor('claude', 'claude-sonnet-4-6')).toBe('claude-haiku-4-6');
+    expect(notificationModelFor('other', 'custom')).toBe('custom');
   });
 });

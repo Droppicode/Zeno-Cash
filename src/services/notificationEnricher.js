@@ -7,7 +7,7 @@ import { transactions, categories, settings } from '../database/schema';
 import { chatWithTools } from './ai/providers';
 import { addUsage } from './ai/usage';
 import webKeyStore from './ai/webKeyStore';
-import { buildNotificationPrompt, parseSuggestion, pickExamples } from './notificationAi';
+import { buildNotificationPrompt, notificationModelFor, parseSuggestion, pickExamples } from './notificationAi';
 
 const REQUEST_TIMEOUT_MS = 10000;
 const HISTORY_LIMIT = 300;
@@ -25,7 +25,7 @@ export const getNotificationAiConfig = async () => {
     ? webKeyStore.get(provider)
     : await SecureStore.getItemAsync(`llmKey_${provider}`);
   if (!apiKey) return null;
-  return { provider, model: values.llmModel || '', apiKey, usage: values.assistantUsage };
+  return { provider, model: notificationModelFor(provider, values.llmModel), apiKey, usage: values.assistantUsage };
 };
 
 const recordUsage = async (previous, entry) => {

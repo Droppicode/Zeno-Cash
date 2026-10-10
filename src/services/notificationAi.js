@@ -2,6 +2,14 @@ import { parseBrlAmount } from './notificationParser';
 
 const AI_LOADING_MAX_MS = 30000;
 
+const NOTIFICATION_MODELS = {
+  gemini: 'gemini-3.5-flash-lite',
+  openai: 'gpt-4o-mini',
+  claude: 'claude-haiku-4-6'
+};
+
+export const notificationModelFor = (provider, fallback = '') => NOTIFICATION_MODELS[provider] || fallback;
+
 export const isAiLoading = (tx, now = Date.now()) => (
   tx?.aiStatus === 'pending' && now - tx.date < AI_LOADING_MAX_MS
 );
