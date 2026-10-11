@@ -23,7 +23,7 @@ import { InvoiceUtils } from '../utils/InvoiceUtils';
 export default function RecurrenceDetailsScreen({ route, navigation }) {
   const { id } = route.params;
   const { activeTheme } = useContext(SettingsContext);
-  const { txList, loadTransactions, updateTransaction, saveTransaction, removeTransaction } = useTransactions();
+  const { txList, loadTransactions, updateTransaction, saveTransaction } = useTransactions();
   const { categoryList, loadCategories } = useCategories();
   const { debtsList, loadDebts } = useDebts();
   
@@ -43,6 +43,7 @@ export default function RecurrenceDetailsScreen({ route, navigation }) {
     loadCategories();
     loadDebts();
     fetchRecurrence();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount
   }, []);
 
   const fetchRecurrence = async () => {

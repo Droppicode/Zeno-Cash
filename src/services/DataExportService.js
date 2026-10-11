@@ -203,7 +203,7 @@ export const DataExportService = {
       const fileUri = FileSystem.cacheDirectory + 'zenocash_auto_backup.json';
       const info = await FileSystem.getInfoAsync(fileUri);
       return info.exists;
-    } catch (err) {
+    } catch {
       return false;
     }
   },
@@ -532,7 +532,7 @@ export const DataExportService = {
       await DataExportService.createAutoBackup();
       const dbDestUri = `${FileSystem.documentDirectory}SQLite/zenocash.db`;
       
-      try { await expoDb.closeAsync(); } catch (e) {}
+      try { await expoDb.closeAsync(); } catch {}
 
       await FileSystem.copyAsync({ from: fileUri, to: dbDestUri });
 
@@ -543,7 +543,7 @@ export const DataExportService = {
         if (walInfo.exists) await FileSystem.deleteAsync(walUri);
         const shmInfo = await FileSystem.getInfoAsync(shmUri);
         if (shmInfo.exists) await FileSystem.deleteAsync(shmUri);
-      } catch(e) {}
+      } catch {}
 
       await rebuildRestoredDatabaseMonthlyBalances();
 

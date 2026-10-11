@@ -29,7 +29,7 @@ export const createWebKeyStore = ({ local, session }) => ({
 const getWindowStorage = name => {
   try {
     return typeof window === 'undefined' ? null : window[name];
-  } catch (error) {
+  } catch {
     return null;
   }
 };

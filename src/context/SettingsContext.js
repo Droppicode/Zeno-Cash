@@ -263,9 +263,10 @@ export const SettingsProvider = ({ children }) => {
       }
     };
     loadSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount
   }, []);
 
-  const saveSettingInternal = async (key, value) => {
+  const saveSettingInternal = useCallback(async (key, value) => {
     try {
       const strValue = typeof value === 'string' ? value : JSON.stringify(value);
       const existing = await db.select().from(settings).where(eq(settings.key, key));
@@ -277,9 +278,19 @@ export const SettingsProvider = ({ children }) => {
     } catch (err) {
       Logger.error('SettingsContext.saveSettingInternal', err);
     }
-  };
+  }, []);
 
-  const saveSetting = async (key, value) => {
+  const getSecureKey = useCallback(async (provider) => {
+    try {
+      if (Platform.OS === 'web') return webKeyStore.get(provider);
+      return await SecureStore.getItemAsync(`llmKey_${provider}`) || '';
+    } catch (err) {
+      Logger.error('SecureStore.getItemAsync', err);
+      return '';
+    }
+  }, []);
+
+  const saveSetting = useCallback(async (key, value) => {
     if (key === 'activeTheme') setActiveTheme(value);
     if (key === 'customThemes') setCustomThemes(value);
     if (key === 'defaultPeriod') setDefaultPeriod(value);
@@ -304,19 +315,10 @@ export const SettingsProvider = ({ children }) => {
     if (key !== 'llmKey') {
       await saveSettingInternal(key, value);
     }
-  };
+  }, [saveSettingInternal, getSecureKey]);
 
-  const getSecureKey = async (provider) => {
-    try {
-      if (Platform.OS === 'web') return webKeyStore.get(provider);
-      return await SecureStore.getItemAsync(`llmKey_${provider}`) || '';
-    } catch (err) {
-      Logger.error('SecureStore.getItemAsync', err);
-      return '';
-    }
-  };
 
-  const saveSecureKey = async (provider, keyStr, remember = false) => {
+  const saveSecureKey = useCallback(async (provider, keyStr, remember = false) => {
     try {
       if (Platform.OS === 'web') webKeyStore.set(provider, keyStr, remember);
       else if (keyStr) await SecureStore.setItemAsync(`llmKey_${provider}`, keyStr);
@@ -327,7 +329,7 @@ export const SettingsProvider = ({ children }) => {
     } catch (err) {
       Logger.error('SecureStore.setItemAsync', err);
     }
-  };
+  }, [llmProvider]);
 
   const contextValue = useMemo(() => ({
     activeTheme, customThemes, defaultPeriod, assistantMemory, assistantPermissions, assistantUsage, assistantPrices,

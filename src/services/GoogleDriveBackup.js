@@ -185,7 +185,7 @@ export const getBackupFilesList = async (token) => {
 export const downloadBackupById = async (token, fileId) => {
     const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
     
-    try { await expoDb.closeAsync(); } catch (e) {}
+    try { await expoDb.closeAsync(); } catch {}
 
     const destinationFile = new File(Paths.document, 'SQLite', 'zenocash.db');
     if (destinationFile.exists) {
@@ -201,7 +201,7 @@ export const downloadBackupById = async (token, fileId) => {
       if (walFile.exists) await walFile.delete();
       const shmFile = new File(Paths.document, 'SQLite', 'zenocash.db-shm');
       if (shmFile.exists) await shmFile.delete();
-    } catch(e) {}
+    } catch {}
 
     await rebuildRestoredDatabaseMonthlyBalances();
     
@@ -228,7 +228,7 @@ export const downloadLatestBackup = async (token) => {
     const latestFile = data.files[0];
     const downloadUrl = `https://www.googleapis.com/drive/v3/files/${latestFile.id}?alt=media`;
     
-    try { await expoDb.closeAsync(); } catch (e) {}
+    try { await expoDb.closeAsync(); } catch {}
 
     const destinationFile = new File(Paths.document, 'SQLite', 'zenocash.db');
     if (destinationFile.exists) {
@@ -244,7 +244,7 @@ export const downloadLatestBackup = async (token) => {
       if (walFile.exists) await walFile.delete();
       const shmFile = new File(Paths.document, 'SQLite', 'zenocash.db-shm');
       if (shmFile.exists) await shmFile.delete();
-    } catch(e) {}
+    } catch {}
 
     await rebuildRestoredDatabaseMonthlyBalances();
     

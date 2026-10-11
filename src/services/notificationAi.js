@@ -105,7 +105,7 @@ export const parseSuggestion = (text, { parsed, categories }) => {
   let data;
   try {
     data = JSON.parse(jsonText.slice(start, end + 1));
-  } catch (e) {
+  } catch {
     return null;
   }
 

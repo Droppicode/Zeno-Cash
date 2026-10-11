@@ -127,34 +127,34 @@ expoDb.execSync(`
   WHERE NOT EXISTS (SELECT 1 FROM accounts);
 `);
 
-try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN note TEXT;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_pending INTEGER DEFAULT 0;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_ignored INTEGER DEFAULT 0;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN recurrence_id INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN source_text TEXT;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN ai_status TEXT;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE categories ADD COLUMN macro TEXT;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE debts ADD COLUMN transaction_id INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE debts ADD COLUMN recurrence_id INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_paid INTEGER DEFAULT 0;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_percentage INTEGER DEFAULT 0;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE debts ADD COLUMN ignores_interest INTEGER DEFAULT 0;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE debts ADD COLUMN description TEXT;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN associated_account_id INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN closing_day INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN due_day INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN credit_limit REAL;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch (e) {}
-try { expoDb.execSync('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN note TEXT;'); } catch {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_pending INTEGER DEFAULT 0;'); } catch {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN is_ignored INTEGER DEFAULT 0;'); } catch {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN recurrence_id INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN source_text TEXT;'); } catch {}
+try { expoDb.execSync('ALTER TABLE transactions ADD COLUMN ai_status TEXT;'); } catch {}
+try { expoDb.execSync('ALTER TABLE categories ADD COLUMN macro TEXT;'); } catch {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN transaction_id INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN recurrence_id INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_paid INTEGER DEFAULT 0;'); } catch {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN is_percentage INTEGER DEFAULT 0;'); } catch {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN ignores_interest INTEGER DEFAULT 0;'); } catch {}
+try { expoDb.execSync('ALTER TABLE debts ADD COLUMN description TEXT;'); } catch {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN associated_account_id INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN closing_day INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN due_day INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN credit_limit REAL;'); } catch {}
+try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch {}
 
 // Índices para otimização de performance
-try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);'); } catch (e) {}
-try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);'); } catch (e) {}
-try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);'); } catch (e) {}
-try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_debts_transaction ON debts(transaction_id);'); } catch (e) {}
-try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transaction_groups_group ON transaction_groups(group_id);'); } catch (e) {}
-try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_group_rules_group ON group_rules(group_id);'); } catch (e) {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);'); } catch {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);'); } catch {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);'); } catch {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_debts_transaction ON debts(transaction_id);'); } catch {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_transaction_groups_group ON transaction_groups(group_id);'); } catch {}
+try { expoDb.execSync('CREATE INDEX IF NOT EXISTS idx_group_rules_group ON group_rules(group_id);'); } catch {}
 
 expoDb.execSync(`
   INSERT INTO categories (name, icon, color, macro)

@@ -1,5 +1,5 @@
-import React, { useState, useContext, useMemo, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, BackHandler, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useContext, useMemo, useCallback } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, BackHandler, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -18,7 +18,7 @@ import { useDataManagement } from '../hooks/useDataManagement';
 import { CloudBackupButtons, DangerZoneButtons } from '../components/settings/SettingsActionButtons';
 
 export default function SettingsScreen({ navigation }) {
-  const { activeTheme, defaultPeriod, llmKey, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
+  const { activeTheme, defaultPeriod, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
   
   const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'groups', 'automations', 'extraction'
 

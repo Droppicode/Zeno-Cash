@@ -1,10 +1,9 @@
 import React, { useContext, useMemo, useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, Platform } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../../context/SettingsContext';
 import { getZoomFactor } from '../../utils/scaler';import { HapticFeedback } from '../../utils/haptics';
-import { Platform } from 'react-native';
 
 export default function SwipeableCard({ children, onDelete, onAccept, deleteText = 'Apagar', acceptText = 'Aprovar', containerStyle, enabled = true }) {
   const { activeTheme } = useContext(SettingsContext);

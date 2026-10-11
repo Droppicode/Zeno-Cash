@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useState, useMemo, useCallback } from 'react';
 import { LLMService } from '../services/llmService';
 import { Logger } from '../utils/logger';
 

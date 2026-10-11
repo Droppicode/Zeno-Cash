@@ -48,7 +48,6 @@ export default function WeeklyHeatmap({ theme, data }) {
 
   const getIntensityColor = (total) => {
     if (total === 0) return theme.cardSecondary;
-    const intensity = Math.min(1, total / (maxTotal || 1));
     // Blend de cardSecondary para expense color
     return theme.expense;
   };

@@ -1,9 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import CustomDatePicker from '../components/ui/CustomDatePicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
@@ -12,7 +10,6 @@ import { useCategories } from '../hooks/useCategories';
 import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
-import SwipeableCard from '../components/ui/SwipeableCard';
 import TransactionItem from '../components/ui/TransactionItem';
 import TransactionsFilterBar from '../components/ui/TransactionsFilterBar';
 import TransactionModal from '../components/TransactionModal';
@@ -103,7 +100,7 @@ export default function TransactionsScreen({ route, navigation }) {
       setAccountFilter(route.params.filterAccountId);
       navigation.setParams({ filterAccountId: undefined });
     }
-  }, [route?.params?.filterAccountId]);
+  }, [route?.params?.filterAccountId, navigation]);
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);

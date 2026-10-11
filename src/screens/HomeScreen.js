@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, TextInput, Image, DeviceEventEmitter, Platform, Alert } from 'react-native';
-import SwipeableCard from '../components/ui/SwipeableCard';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import MonthSelector from '../components/ui/MonthSelector';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTransactions } from '../hooks/useTransactions';
@@ -25,7 +23,7 @@ import HomeGroups from '../components/home/HomeGroups';
 import { useGroups } from '../hooks/useGroups';
 
 export default function HomeScreen({ route, navigation }) {
-  const { activeTheme, uiConfig, defaultPeriod } = React.useContext(SettingsContext);
+  const { activeTheme, uiConfig } = React.useContext(SettingsContext);
   const hideSettlements = uiConfig.hideDebtSettlements !== false;
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -42,7 +40,7 @@ export default function HomeScreen({ route, navigation }) {
         navigation.setParams({ type: undefined });
       }
     }
-  }, [route?.params?.type]);
+  }, [route?.params?.type, navigation]);
   
   const { 
     txList, 
@@ -50,7 +48,6 @@ export default function HomeScreen({ route, navigation }) {
     saveTransaction: saveTx, 
     updateTransaction, 
     removeTransaction, 
-    filterByPeriod,
     cachedBalances,
     loadMonthlyBalances 
   } = useTransactions();
@@ -95,7 +92,6 @@ export default function HomeScreen({ route, navigation }) {
     });
   }, [accountList]);
 
-  const filteredTxList = useMemo(() => filterByPeriod(txList, selectedMonths), [txList, selectedMonths, filterByPeriod]);
   
   useEffect(() => {
     loadMonthlyBalances(selectedMonths);
@@ -103,7 +99,7 @@ export default function HomeScreen({ route, navigation }) {
 
   const balance = cachedBalances;
 
-  const { pendingTxList, displayPendingList, recentTxList } = useMemo(() => {
+  const { displayPendingList, recentTxList } = useMemo(() => {
     const pending = txList.filter(t => t.isPending === 1 && t.isIgnored !== 1).sort((a, b) => a.date - b.date);
     return {
       pendingTxList: pending,

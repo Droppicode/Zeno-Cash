@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BaseModalBottom from './ui/BaseModalBottom';
 import GroupModal from './GroupModal';
@@ -17,7 +17,6 @@ export default function GroupPickerModal({
 }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [groupModalVisible, setGroupModalVisible] = useState(false);
-  const z = getZoomFactor(theme);
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   const initialKey = (initialSelectedIds || []).join(',');

@@ -1,6 +1,6 @@
 import React, { useState, useContext, useMemo } from 'react';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SettingsContext } from '../context/SettingsContext';
@@ -41,7 +41,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
     loadAccounts();
     loadCategories();
     loadTransactions();
-  }, []);
+  }, [loadAccounts, loadCategories, loadTransactions]);
 
   React.useEffect(() => {
     if (accountList.length > 0) {
@@ -160,7 +160,7 @@ export default function ExtractionReviewScreen({ route, navigation }) {
       Alert.alert('Sucesso', `${txs.length} transações importadas com sucesso!`, [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
-    } catch (err) {
+    } catch {
       Alert.alert('Erro', 'Ocorreu um erro ao salvar as transações.');
       setIsSaving(false);
     }
