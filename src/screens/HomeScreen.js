@@ -224,7 +224,7 @@ export default function HomeScreen({ route, navigation }) {
           }
 
           if (modKey === 'budgets' && uiConfig.homeShowBudgets !== false) {
-            return <HomeBudgets key="budgets" categoryList={categoryList} txList={filteredTxList} selectedMonths={selectedMonths} activeTheme={activeTheme} styles={styles} />;
+            return <HomeBudgets key="budgets" categoryList={categoryList} txList={txList} selectedMonths={selectedMonths} activeTheme={activeTheme} styles={styles} />;
           }
 
           if (modKey === 'groups' && uiConfig.homeShowGroups !== false) {
