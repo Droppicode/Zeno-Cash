@@ -1,10 +1,13 @@
-import { AppRegistry, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { CurrencyUtils } from '../utils/currencyUtils';
 
 import { db } from '../database/db';
 import { transactions, accounts } from '../database/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
+import { parseBankNotification } from './notificationParser';
+
+const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
 
 export const headlessNotificationListener = async ({ notification }) => {
   try {
@@ -18,104 +21,22 @@ export const headlessNotificationListener = async ({ notification }) => {
       return;
     }
     
-    const appName = parsed.app ? parsed.app.toLowerCase() : '';
-    const title = parsed.title || '';
-    const text = parsed.text || '';
-    
-    if (!appName.includes('.android') && !appName.includes('.huami')) {
-      console.log(`Notificação recebida do app ${appName}: ${title}`);
-    }
-    
-    // Mapeamento de bancos para o nome da conta e validação de pacotes
-    const bankMap = {
-      'nubank': 'Nubank',
-      'inter': 'Inter',
-      'itau': 'Itaú',
-      'itaú': 'Itaú',
-      'bradesco': 'Bradesco',
-      'santander': 'Santander',
-      'bb': 'Banco do Brasil',
-      'bancodobrasil': 'Banco do Brasil',
-      'caixa': 'Caixa Econômica',
-      'picpay': 'PicPay',
-      'mercadopago': 'Mercado Pago',
-      'c6': 'C6 Bank',
-      'btg': 'BTG Pactual',
-      'xp': 'XP Investimentos',
-      'neon': 'Neon',
-      'next': 'Next',
-      'sicoob': 'Sicoob',
-      'sicredi': 'Sicredi',
-      'pagbank': 'PagBank',
-      'willbank': 'Will Bank',
-      'original': 'Banco Original'
-    };
-    
-    const matchedBankKey = Object.keys(bankMap).find(key => appName.includes(key));
-    if (!matchedBankKey) return; // Ignora se não for app de banco conhecido
-    
-    const accountName = bankMap[matchedBankKey];
-    const content = `${title} ${text}`.toLowerCase();
-    
-    // Mostra TUDO que vier de banco no log do Metro
-    console.log(`[BANCO DETECTADO] Texto bruto: ${content}`);
-    
-    // Palavras-chave de Receita (Income) e Despesa (Expense)
-    const isIncome = ['recebid', 'recebeu', 'estorno', 'reembolso', 'salário', 'salario', 'depósito', 'deposito', 'entrou', 'rendend', 'rendimento'].some(kw => content.includes(kw));
-    const isExplicitExpense = ['enviad', 'compra', 'pagamento', 'aprovada', 'débito', 'debito', 'transferência realizada', 'ted enviado', 'saiu', 'gasto'].some(kw => content.includes(kw));
-    
-    // Default agora é DESPESA, a não ser que tenha palavras claras de RECEITA
-    const type = isIncome ? 'income' : 'expense';
-    
-    // Regex flexível: R$ 150,00 ou R$150.00 ou R$ 1.500,00
-    // Lida com espaços opcionais e aceita pontos e vírgulas livremente
-    const amountMatch = content.match(/r\$\s*([\d.,]+)/);
-    if (!amountMatch) {
-       console.log(`Ignorado: Não encontrou valor em Reais na string.`);
-       return;
-    }
-    
-    let amountStr = amountMatch[1].replace(/[^\d.,]/g, '');
-    
-    // Se não tiver nem ponto nem vírgula, é um número inteiro direto
-    // Lida com casos como "1.500,00" ou "1500,00" ou "1500.00"
-    const lastCommaIndex = amountStr.lastIndexOf(',');
-    const lastDotIndex = amountStr.lastIndexOf('.');
-    
-    let amount = 0;
-    if (lastCommaIndex > lastDotIndex) {
-      // Vírgula atua como separador decimal
-      amountStr = amountStr.replace(/\./g, '').replace(',', '.');
-    } else if (lastDotIndex > lastCommaIndex) {
-      // Ponto atua como separador decimal
-      amountStr = amountStr.replace(/,/g, '');
-    }
-    
-    amount = parseFloat(amountStr);
-    
-    if (isNaN(amount) || amount <= 0) {
-       console.log(`Ignorado: Valor inválido -> ${amountStr}`);
-       return;
-    }
-    
-    // Identificar o meio de pagamento para descrição temporária
-    let txDesc = 'Transação Pendente';
-    if (content.includes('pix')) {
-      txDesc = type === 'income' ? 'Pix Recebido' : 'Pix Enviado';
-    } else if (content.includes('cartão') || content.includes('cartao') || content.includes('compra')) {
-      txDesc = 'Compra no Cartão';
-    } else if (content.includes('transferência') || content.includes('ted') || content.includes('doc')) {
-      txDesc = type === 'income' ? 'Transferência Recebida' : 'Transferência Enviada';
-    } else if (content.includes('boleto') || content.includes('pagamento')) {
-      txDesc = 'Pagamento de Boleto';
-    }
-    
-    txDesc = `${txDesc} - ${accountName}`;
-    
-    // Tenta encontrar o ID da conta correspondente ao banco
-    const accountsData = await db.select().from(accounts).where(eq(accounts.name, accountName));
-    const accId = accountsData.length > 0 ? accountsData[0].id : null;
-    
+    const parsedTx = parseBankNotification(parsed);
+    if (!parsedTx) return;
+
+    const { amount, type, description: txDesc, bankName, rawText } = parsedTx;
+    const note = rawText.substring(0, 100);
+
+    const recentPending = await db.select().from(transactions)
+      .where(and(eq(transactions.isPending, 1), gte(transactions.date, Date.now() - DUPLICATE_WINDOW_MS)));
+    if (recentPending.some(tx => tx.amount === amount && tx.type === type && tx.note === note)) return;
+
+    const accountsData = await db.select().from(accounts);
+    const bankKey = bankName.toLowerCase();
+    const account = accountsData.find(acc => acc.name?.toLowerCase() === bankKey)
+      || accountsData.find(acc => acc.name?.toLowerCase().includes(bankKey));
+    const accId = account ? account.id : null;
+
     const newTx = {
       amount,
       type,
@@ -123,10 +44,10 @@ export const headlessNotificationListener = async ({ notification }) => {
       date: Date.now(),
       categoryId: null,
       accountId: accId,
-      isPending: 1, // Pendente para aprovação
-      note: text.substring(0, 100)
+      isPending: 1,
+      note
     };
-    
+
     await db.insert(transactions).values(newTx);
     console.log(`Transação pendente salva: R$ ${amount} (${type})`);
     
