@@ -16,6 +16,8 @@ import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 import { useDataManagement } from '../hooks/useDataManagement';
 import { CloudBackupButtons, DangerZoneButtons } from '../components/settings/SettingsActionButtons';
+import AppLockSettings from '../components/settings/AppLockSettings';
+import { isLockSupported } from '../services/AppLock';
 
 export default function SettingsScreen({ navigation }) {
   const { activeTheme, defaultPeriod, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
@@ -180,6 +182,8 @@ export default function SettingsScreen({ navigation }) {
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Chave, permissões e consumo</Text>
           </TouchableOpacity>
         </View>
+
+        {isLockSupported && <AppLockSettings theme={activeTheme} styles={styles} />}
 
         {/* Backup */}
         <View style={[styles.section, { backgroundColor: activeTheme.card }]}>

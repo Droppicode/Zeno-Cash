@@ -19,6 +19,7 @@ import { rescheduleReminders } from './src/services/ReminderScheduler';
 import * as NavigationBar from 'expo-navigation-bar';
 import { performSilentDailyBackup } from './src/services/GoogleDriveBackup';
 import WebMockPanel from './src/components/WebMockPanel';
+import AppLockGate from './src/components/lock/AppLockGate';
 import './src/utils/alertPolyfill';
 
 const prefix = Linking.createURL('/');
@@ -102,10 +103,12 @@ export default function App() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <SettingsProvider>
               <ExtractionProvider>
-                <NavigationContainer linking={linking}>
-                  <AppNavigator />
-                  <StatusBar style="light" hidden={true} />
-                </NavigationContainer>
+                <AppLockGate>
+                  <NavigationContainer linking={linking}>
+                    <AppNavigator />
+                    <StatusBar style="light" hidden={true} />
+                  </NavigationContainer>
+                </AppLockGate>
               </ExtractionProvider>
             </SettingsProvider>
           </GestureHandlerRootView>
