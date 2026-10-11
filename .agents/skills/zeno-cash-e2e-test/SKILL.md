@@ -379,6 +379,33 @@ Notas da Fase 4:
 - Estados rápidos (~1-2 s): use um observador read-only do SQLite e screencap; a compressão do vídeo pode pular esses frames.
 - Ao final, restaure os dados reais do usuário e confira saldos e zero pendentes.
 
+### Recovering after host restart
+- Reuse a release artifact only after checking the intended checkout and saved APK
+  hash. Compare the installed `pm path` base.apk hash too; a version number alone
+  does not identify the bundled JavaScript revision.
+- Start the saved AVD without wiping data. Wait for ADB online, boot completion,
+  package registration and Activity Manager readiness before opening scrcpy/app.
+  Early `offline`, missing activity service or missing activity errors can reflect
+  boot-time package scanning; check readiness before reinstalling or declaring loss.
+- Verify persisted listener access, provider/model, backup file and financial rows.
+  If interrupted after posting, restore the original through UI before recapturing
+  the same exact input, avoiding residual pending rows and deduplication.
+- Preserve the original private baseline rather than overwriting it with interrupted
+  test data. After final restore, compare all fields and delete private snapshots.
+
+### Fast-state evidence
+- Keep parser/native-pending and AI-final assertions separate. Use actual native
+  `ai_status=pending` to prove an amount was correct before enrichment.
+- A frame immediately after row insertion may precede the asynchronous header
+  render. Capture a later frame still showing the parser title/loading to prove
+  the period total updates before the enriched UI, not only afterward.
+- Review raw recording frames independently of automatic summaries. Automated
+  compression can omit loading; select real-speed intervals from the same recording
+  for the single recommended short video. Do not infer a visible category from an
+  icon; use a modal or read-only row for category assertions.
+- For repeated brand trials, vary only the amount and notification ID so the
+  duplicate guard does not suppress later calls. Disclose this variation.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
