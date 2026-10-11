@@ -7,6 +7,7 @@ import { transactions, categories, settings } from '../database/schema';
 import { chatWithTools } from './ai/providers';
 import { addUsage } from './ai/usage';
 import webKeyStore from './ai/webKeyStore';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
 import { buildNotificationPrompt, notificationModelFor, parseSuggestion, pickExamples } from './notificationAi';
 
 const REQUEST_TIMEOUT_MS = 10000;
@@ -82,7 +83,7 @@ export const enrichPendingTransaction = async ({ txId, parsed, config }) => {
 
   await db.update(transactions).set({
     description: suggestion.description,
-    note: suggestion.note,
+    note: [suggestion.note, InvoiceUtils.extractHiddenTags(current.note)].filter(Boolean).join(' '),
     type: suggestion.type,
     amount: suggestion.amount,
     categoryId: suggestion.categoryId ?? current.categoryId,

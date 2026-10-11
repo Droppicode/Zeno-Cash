@@ -8,6 +8,7 @@ import { and, eq, gte } from 'drizzle-orm';
 import { parseBankNotification } from './notificationParser';
 import { TransactionRepository } from './TransactionRepository';
 import { enrichPendingTransaction, getNotificationAiConfig } from './notificationEnricher';
+import { cardPaymentTag, pickNotificationAccounts } from './notificationAccounts';
 
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
 
@@ -26,18 +27,15 @@ export const headlessNotificationListener = async ({ notification }) => {
     const parsedTx = parseBankNotification(parsed);
     if (!parsedTx) return;
 
-    const { amount, type, description: txDesc, bankName, rawText } = parsedTx;
+    const { amount, type, description: txDesc, rawText } = parsedTx;
     const note = rawText.substring(0, 100);
 
     const recentPending = await db.select().from(transactions)
       .where(and(eq(transactions.isPending, 1), gte(transactions.date, Date.now() - DUPLICATE_WINDOW_MS)));
-    if (recentPending.some(tx => tx.amount === amount && tx.type === type && tx.note === note)) return;
+    if (recentPending.some(tx => tx.amount === amount && tx.type === type && tx.sourceText === rawText)) return;
 
     const accountsData = await db.select().from(accounts);
-    const bankKey = bankName.toLowerCase();
-    const account = accountsData.find(acc => acc.name?.toLowerCase() === bankKey)
-      || accountsData.find(acc => acc.name?.toLowerCase().includes(bankKey));
-    const accId = account ? account.id : null;
+    const { accountId: accId, cardId } = pickNotificationAccounts(accountsData, parsedTx);
 
     const aiConfig = await getNotificationAiConfig().catch(() => null);
 
@@ -49,7 +47,7 @@ export const headlessNotificationListener = async ({ notification }) => {
       categoryId: null,
       accountId: accId,
       isPending: 1,
-      note,
+      note: cardId ? `${note} ${cardPaymentTag(cardId)}` : note,
       sourceText: rawText,
       aiStatus: aiConfig ? 'pending' : null
     };
