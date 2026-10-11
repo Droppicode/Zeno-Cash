@@ -370,6 +370,99 @@ Notas da Fase 4:
   - O cartão de edição mostra só "campo → novo valor" (não mostra o valor antigo).
 - Android: dependência nativa nova exige novo `npx expo run:android`. Feche o teclado antes de tocar em Aplicar (o primeiro toque pode só fechar o teclado). Se o Reload perder o bundle, refaça `adb reverse tcp:8081 tcp:8081` e abra o deep link do expo-development-client apontando para http://127.0.0.1:8081.
 
+## Notificações bancárias e sugestões com IA (Android release)
+- Build: copie o `.env` (gitignored) para worktrees separadas antes do `expo prebuild`, senão o Client ID do Google some. Gere com APP_ENV/NODE_ENV=production e `assembleRelease -PreactNativeArchitectures=x86_64`; release não precisa de Metro. Confira o certificado antes de `adb install -r`.
+- Disparo: `adb shell cmd notification post` sai de com.android.shell e é ignorado. Use APKs auxiliares descartáveis com pacotes tipo `com.santander.app`/`com.mercadopago.wallet` (receiver exportado + broadcast com title/text/bigText/titleBig em base64). Limpe as notificações antes de desinstalar os auxiliares.
+- Config → Assistente IA define provider/chave; Config → Automações → "Sugestões com IA" liga/desliga. As notificações usam o modelo rápido do provider (ex. gemini-3.5-flash-lite), não o modelo do Assistente: confira no consumo.
+- Casos: Santander "R$ 1.650,00." = 1650; borda tracejada girando + "IA lendo…" na Home e com a aba Transações já aberta (sem refocar), depois título/categoria da IA; editar e aprovar (ex. Aluguel/Moradia) e a próxima notificação parecida deve seguir esse estilo; toggle desligado = ai_status null; chave inválida = failed sem crash.
+- Background: use Home do Android, não force-stop. Para headless frio, mate o PID; notificações postadas durante o rebind do listener podem se perder (limitação do Android), teste com um evento novo após o serviço voltar.
+- Estados rápidos (~1-2 s): use um observador read-only do SQLite e screencap; a compressão do vídeo pode pular esses frames.
+- Ao final, restaure os dados reais do usuário e confira saldos e zero pendentes.
+
+### Cartão e fatura pelas notificações
+- Prepare uma conta corrente com o nome do banco (ex. "Nubank") e um cartão (tipo crédito) com essa conta associada, fechamento e vencimento definidos.
+- "Compra aprovada ... no cartão de crédito" deve criar a pendência no cartão e, ao aprovar, cair na fatura aberta do ciclo da data. "cartão de débito" e Pix ficam na conta corrente.
+- "Pagamento da fatura de R$ X realizado" cria a pendência como despesa na conta corrente (título "Pagamento de Fatura"), sem a tag interna visível na nota. Ao aprovar (Home, Transações ou modal, com ou sem editar o valor), o app cria a entrada "Pagamento de Fatura" no cartão na fatura que já fechou e essa fatura zera/abaixa. Confira que não surgiu despesa duplicada e que a sugestão da IA não apaga o vínculo.
+- Sem cartão cadastrado para o banco, tudo continua na conta corrente como antes.
+
+### Recovering after host restart
+- Reuse a release artifact only after checking the intended checkout and saved APK
+  hash. Compare the installed `pm path` base.apk hash too; a version number alone
+  does not identify the bundled JavaScript revision.
+- Start the saved AVD without wiping data. Wait for ADB online, boot completion,
+  package registration and Activity Manager readiness before opening scrcpy/app.
+  Early `offline`, missing activity service or missing activity errors can reflect
+  boot-time package scanning; check readiness before reinstalling or declaring loss.
+- Verify persisted listener access, provider/model, backup file and financial rows.
+  If interrupted after posting, restore the original through UI before recapturing
+  the same exact input, avoiding residual pending rows and deduplication.
+- Preserve the original private baseline rather than overwriting it with interrupted
+  test data. After final restore, compare all fields and delete private snapshots.
+
+### Fast-state evidence
+- Keep parser/native-pending and AI-final assertions separate. Use actual native
+  `ai_status=pending` to prove an amount was correct before enrichment.
+- A frame immediately after row insertion may precede the asynchronous header
+  render. Capture a later frame still showing the parser title/loading to prove
+  the period total updates before the enriched UI, not only afterward.
+- Review raw recording frames independently of automatic summaries. Automated
+  compression can omit loading; select real-speed intervals from the same recording
+  for the single recommended short video. Do not infer a visible category from an
+  icon; use a modal or read-only row for category assertions.
+- For repeated brand trials, vary only the amount and notification ID so the
+  duplicate guard does not suppress later calls. Disclose this variation.
+
+## Orçamento por categoria
+- Config → Categorias: edit a category, set "Limite mensal" (e.g. 100,00), save. The list shows "Limite R$ 100,00/mês"; clearing the field removes the limit.
+- Home: the "Orçamento por Categoria" module lists only categories with a limit, sorted by % used. Bar is the category color under 80%, amber with a warning icon from 80%, red with an alert icon from 100% ("R$ X acima").
+- Spending counts approved expenses of the selected month(s). Pending and ignored transactions don't count, and a debt settlement ("Acerto") in the category subtracts. With several months selected, the limit is multiplied by the number of months.
+- With no limits set, the module shows a hint pointing to Config → Categorias.
+- Config → Módulos: "[Home] Mostrar Orçamento" hides/shows the module, and "Orçamento por Categoria" can be reordered like the other modules. Both persist after reload.
+- Android: adding/editing a transaction that pushes a category past 80% and then 100% posts one local notification per threshold per month. Re-saving does not repeat it, and disabling the Home module also disables the alerts.
+- Backup/restore keeps the limits (the `monthly_budget` column is exported with categories).
+
+## Web smoke tips
+- Use a separate Expo port (`npm run web -- --port 8082`) to isolate the browser's SQL.js data from other sessions. Import synthetic fixtures through Config → Restaurar backup (JSON).
+- For invoice opening tests, include a previous, current and future invoice; otherwise opening the last invoice by accident looks correct.
+- Recurrence-only debt contracts may be hidden from Dívidas. Open them via Transações → filters → forecast +60D → projected transaction → Ver Detalhes do Contrato.
+
+## Lembretes (Android)
+- Config → Automações → "Lembretes" card (hidden on web): master switch, plus "Vencimento da fatura" (1/3/5d antes), "Recorrências do dia" and "Dívidas paradas" (15/30/60 dias). Settings persist after restart.
+- Reminders are local notifications scheduled for 09:00 for the next 35 days. They are rebuilt on app start, when the app goes to background, in the daily background task and on every Lembretes setting change.
+- Inspect what is scheduled with `adb shell dumpsys alarm | grep com.mmn.zenocash` or `adb shell dumpsys notification`. To see one fire, move the emulator clock (`adb shell su root date MMDDhhmmYYYY.ss`) to 08:59 on the target day, wait for 09:00, then restore automatic time.
+- Expected: for a card with an open invoice (approved purchases only), "Fatura <cartão> vence em N dias" at due−N and "vence hoje" on the due date, both with the current amount. A fully paid invoice gets no reminder.
+- Expected: active recurrences due on the same day are grouped into one "Hoje: …" notification. Paused recurrences don't appear.
+- Expected: an open debt gets one "Dívida parada há N dias" reminder when it reaches N days. Debts already stale are summarized every Monday ("X dívidas paradas…"). Paid debts are excluded.
+- Turning the master switch off cancels all scheduled reminders.
+
+## Importar extrato OFX/CSV
+- Transações → import button → "Importar Transações". It offers "Extrato OFX/CSV" (no AI key needed) or "Documento (IA)", which opens the old camera/PDF chooser and still requires a key. On web the multi-option alert is a `window.prompt` with numbered options.
+- Fixture ideas: an OFX in SGML form (`OFXHEADER:100`, `<STMTTRN>` blocks without closing tags, Latin-1 accents), a credit card OFX (`<CCACCTFROM>`), a Nubank account CSV (`Data,Valor,Identificador,Descrição`), a Nubank card CSV (`date,title,amount`, where purchases are positive), and a `;` CSV with separate Crédito/Débito columns plus a "SALDO ANTERIOR" line.
+- Expected review screen ("Revisar Importação"): it says how many lines came from the file and how many were skipped because the same day, amount and type already exist (matched one-to-one).
+  - Below that are a "Conta do extrato" chip row (a credit card OFX/Nubank card CSV preselects the first credit card) and "Inverter entradas/saídas".
+  - Descriptions that match an existing transaction reuse its category. Balance lines are not imported.
+- After "Salvar Todas": transactions are approved (not pending) in the chosen account, group rules apply, and Home/account balances and invoices update. Importing the same file again skips everything.
+
+## Assistente proativo (Home)
+- The "Assistente" Home module (shown first by default) lists up to 5 on-device insights (no AI calls). Toggle it with Config → Módulos → "[Home] Mostrar Assistente Proativo"; it can be reordered as "Assistente Proativo". Hidden when there are no insights.
+- Fixture ideas (relative to today), each producing one insight:
+  - spike: a category with ~R$100/month in the 3 previous months up to today's day, and ≥R$200 this month.
+  - forecast: spending this month far above or below last month, on day ≥5.
+  - missing: "Aluguel" once in each of the 3 previous months around the same day, and nothing this month after that day + 2.
+  - price: "Netflix" 39,90 in the 2 previous months and 44,90 this month.
+  - debt: an open owed debt ≥30 days old.
+  - uncategorized: ≥3 approved transactions this month without a category.
+- Expected: pending, ignored and debt-settlement transactions don't count. "Dispensar" hides that insight for the current month and stays hidden after reload. The action links open Transações, Análise or Dívidas.
+
+## Bloqueio por PIN/biometria (Android only)
+- Config → "Bloqueio do App" (hidden on web). Turning on "Bloquear com PIN" asks for a new 4–6 digit PIN twice; a mismatch goes back to step 1. The PIN and config live in SecureStore (`appLockPin`, `appLockConfig`), not in SQLite or backups.
+- Expected:
+  - A cold start shows "Zeno Cash bloqueado" with the keypad before any data.
+  - Returning after ≥30s in background locks again; a short trip (<30s, e.g. the document picker) does not. Back does not dismiss the lock.
+  - Wrong PIN shows "PIN incorreto". From the 5th wrong attempt it shows a 30s countdown, doubling each time up to 15 min, and this survives a restart.
+- Biometrics on the emulator: enroll a fingerprint in Settings → Security, then `adb -e emu finger touch 1` while the prompt is up. "Desbloquear com biometria" only appears when hardware and enrollment exist, and turning it on requires a successful prompt. With it on, the prompt opens automatically on lock; "Usar PIN" falls back to the keypad.
+- "Alterar PIN" asks for the current PIN, then the new one twice. Turning the switch off asks for the current PIN and removes the lock.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that

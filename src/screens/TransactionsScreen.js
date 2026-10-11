@@ -1,9 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { CurrencyUtils } from '../utils/currencyUtils';
-import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, Text, View, SectionList, TextInput, TouchableOpacity, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import CustomDatePicker from '../components/ui/CustomDatePicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { resolveCategory } from '../services/categorizer';
 import { SettingsContext } from '../context/SettingsContext';
@@ -12,7 +10,6 @@ import { useCategories } from '../hooks/useCategories';
 import { useAccounts } from '../hooks/useAccounts';
 import { DateUtils } from '../utils/dateUtils';
 import { InvoiceUtils } from '../utils/InvoiceUtils';
-import SwipeableCard from '../components/ui/SwipeableCard';
 import TransactionItem from '../components/ui/TransactionItem';
 import TransactionsFilterBar from '../components/ui/TransactionsFilterBar';
 import TransactionModal from '../components/TransactionModal';
@@ -21,6 +18,7 @@ import { useDebts } from '../hooks/useDebts';
 import { getZoomFactor } from '../utils/scaler';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
+import { pickStatement } from '../services/StatementImport';
 import { DocumentScanner } from '../services/DocumentScanner';
 import { ExtractionContext } from '../context/ExtractionContext';
 import { useGroups } from '../hooks/useGroups';
@@ -48,6 +46,18 @@ export default function TransactionsScreen({ route, navigation }) {
   const isImporting = status === 'uploading' || status === 'processing';
 
   const handleImportData = async () => {
+    Alert.alert(
+      'Importar Transações',
+      'Extrato OFX/CSV do banco (sem IA) ou nota fiscal, PDF e imagem lidos pela IA:',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Documento (IA)', onPress: handleAiImport },
+        { text: 'Extrato OFX/CSV', onPress: importStatement }
+      ]
+    );
+  };
+
+  const handleAiImport = () => {
     if (!llmKey) {
       Alert.alert('Chave API Ausente', 'Configure sua chave API em Configurações > Assistente IA primeiro.');
       return;
@@ -62,6 +72,25 @@ export default function TransactionsScreen({ route, navigation }) {
         { text: 'Arquivo (PDF/Imagem)', onPress: () => processImport('file') }
       ]
     );
+  };
+
+  const importStatement = async () => {
+    try {
+      const statement = await pickStatement();
+      if (!statement) return;
+      if (statement.transactions.length === 0) {
+        Alert.alert('Extrato vazio', 'Não encontrei transações nesse arquivo. Use um extrato em OFX ou CSV com colunas de data, descrição e valor.');
+        return;
+      }
+      navigation.navigate('ExtractionReview', {
+        transactions: statement.transactions,
+        source: 'statement',
+        fileName: statement.fileName,
+        isCreditCard: statement.isCreditCard
+      });
+    } catch {
+      Alert.alert('Erro', 'Não foi possível ler o extrato.');
+    }
   };
 
   const processImport = async (source) => {
@@ -103,7 +132,7 @@ export default function TransactionsScreen({ route, navigation }) {
       setAccountFilter(route.params.filterAccountId);
       navigation.setParams({ filterAccountId: undefined });
     }
-  }, [route?.params?.filterAccountId]);
+  }, [route?.params?.filterAccountId, navigation]);
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedCats, setSelectedCats] = useState([]);
@@ -142,8 +171,9 @@ export default function TransactionsScreen({ route, navigation }) {
   useFocusEffect(reloadAll);
 
   React.useEffect(() => {
-    const subscription = DeviceEventEmitter.addListener('assistantDataChanged', reloadAll);
-    return () => subscription.remove();
+    const subscriptions = ['assistantDataChanged', 'refreshTransactions']
+      .map(event => DeviceEventEmitter.addListener(event, reloadAll));
+    return () => subscriptions.forEach(subscription => subscription.remove());
   }, [reloadAll]);
 
   const filteredList = useMemo(() => {

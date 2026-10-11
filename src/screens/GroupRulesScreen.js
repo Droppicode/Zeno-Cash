@@ -19,7 +19,7 @@ const parse = value => {
   try {
     const parsed = JSON.parse(value || '[]');
     return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
+  } catch {
     return [];
   }
 };
@@ -34,7 +34,6 @@ export default function GroupRulesScreen({ route, navigation }) {
   const [editingRule, setEditingRule] = useState(null);
   const [preview, setPreview] = useState([]);
   const [selectedPreviewIds, setSelectedPreviewIds] = useState([]);
-  const z = getZoomFactor(activeTheme);
   const styles = useMemo(() => getStyles(activeTheme), [activeTheme]);
 
   const loadData = useCallback(async () => {

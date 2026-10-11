@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { db } from '../database/db';
 import { CurrencyUtils } from '../utils/currencyUtils';
 import { recurrences, transactions } from '../database/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { RecurrenceGenerator } from './RecurrenceGenerator';
 import { Logger } from '../utils/logger';
 import { performSilentDailyBackup } from './GoogleDriveBackup';
@@ -14,6 +14,7 @@ import { GroupsRepository } from './GroupsRepository';
 import { GroupRulesRepository } from './GroupRulesRepository';
 import { matchGroupIdsForTransaction } from '../utils/GroupRules';
 import { TransactionRepository } from './TransactionRepository';
+import { rescheduleReminders } from './ReminderScheduler';
 
 const BACKGROUND_FETCH_TASK = 'background-recurrence-fetch';
 
@@ -111,6 +112,7 @@ export const materializeRecurrencesUpToToday = async () => {
 
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   const insertedCount = await materializeRecurrencesUpToToday();
+  await rescheduleReminders();
   
   try {
     await performSilentDailyBackup();

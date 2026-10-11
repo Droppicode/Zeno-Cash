@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CurrencyUtils } from '../../utils/currencyUtils';
 import SwipeableCard from '../ui/SwipeableCard';
-import { resolveCategory } from '../../services/categorizer';
+import AiLoadingBorder from '../ui/AiLoadingBorder';
+import { isAiLoading } from '../../services/notificationAi';
 import { InvoiceUtils } from '../../utils/InvoiceUtils';
 
 export default function HomePendingTx({
@@ -45,6 +46,7 @@ export default function HomePendingTx({
               }}
             >
               <TouchableOpacity activeOpacity={0.7} onPress={() => { setEditingTx(item); setModalVisible(true); }}>
+                <AiLoadingBorder active={isAiLoading(item)} color={activeTheme.accent}>
                 <View style={[styles.groupedItem, { backgroundColor: activeTheme.card }, !isLast && { borderBottomWidth: 1, borderBottomColor: activeTheme.background }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <View style={[styles.groupedIcon, { backgroundColor: activeTheme.expense + '20' }]}>
@@ -59,6 +61,9 @@ export default function HomePendingTx({
                         {item.recurrenceId && (
                           <Ionicons name="repeat" size={14} color={activeTheme.textSecondary} style={{ marginLeft: 4 }} />
                         )}
+                        {isAiLoading(item) && (
+                          <Ionicons name="sparkles" size={14} color={activeTheme.accent} style={{ marginLeft: 4 }} />
+                        )}
                       </View>
                       <Text style={[{ color: activeTheme.textSecondary, fontSize: 11 }]} numberOfLines={1}>
                         {new Date(item.date).toLocaleDateString('pt-BR')} {InvoiceUtils.formatDisplayNote(item.note) ? `- ${InvoiceUtils.formatDisplayNote(item.note)}` : ''}
@@ -69,6 +74,7 @@ export default function HomePendingTx({
                     {item.type === 'income' ? '+' : '-'} R$ {CurrencyUtils.formatDisplay(Math.abs(item.amount))}
                   </Text>
                 </View>
+                </AiLoadingBorder>
               </TouchableOpacity>
             </SwipeableCard>
           );

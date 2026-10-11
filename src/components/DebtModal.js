@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch, FlatList, Keyboard } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Keyboard } from 'react-native';
 import BaseModalBottom from './ui/BaseModalBottom';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
@@ -53,7 +53,7 @@ export default function DebtModal({ visible, onClose, onDelete, onViewTransactio
     }
   }, [visible, initialData, loadAccounts]);
 
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zeno Cash",
     "slug": "zeno-cash",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "entryPoint": "./index.js",
     "scheme": "zenocash",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
     "android": {
       "package": "com.mmn.zenocash",
       "allowBackup": false,
-      "versionCode": 29
+      "versionCode": 30
     },
     "androidStatusBar": {
       "hidden": true
@@ -28,6 +28,7 @@
     },
     "plugins": [
       "expo-sqlite",
+      "expo-local-authentication",
       "./withNotificationListener.js",
       "@react-native-google-signin/google-signin",
       [

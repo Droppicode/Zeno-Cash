@@ -113,7 +113,7 @@ export default function useTransactionForm({
       setTxDateObj(new Date());
     }
     isManuallyCategoryModified.current = false;
-  }, [visible, initialData, accountList, isContractEdit, loadGroups]);
+  }, [visible, initialData, accountList, isContractEdit, initialSplitMode, loadGroups]);
 
   useEffect(() => {
     if (visible && !isManuallyCategoryModified.current && !selectedCategoryId && description.length > 2 && categoryList.length > 0) {

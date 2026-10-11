@@ -192,9 +192,12 @@ export const initWebDb = async () => {
     CREATE INDEX IF NOT EXISTS idx_group_rules_group ON group_rules(group_id);
   `);
 
-  try { sqlite.run('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch (e) {}
-  try { sqlite.run('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch (e) {}
-  try { sqlite.run('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch (e) {}
+  try { sqlite.run('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch {}
+  try { sqlite.run('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch {}
+  try { sqlite.run('ALTER TABLE categories ADD COLUMN monthly_budget REAL;'); } catch {}
+  try { sqlite.run('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch {}
+  try { sqlite.run('ALTER TABLE transactions ADD COLUMN source_text TEXT;'); } catch {}
+  try { sqlite.run('ALTER TABLE transactions ADD COLUMN ai_status TEXT;'); } catch {}
 
   // A estrutura e o seed das tabelas serão feitos na chamada seedDatabase() de seed.js
   db = drizzle(sqlite);

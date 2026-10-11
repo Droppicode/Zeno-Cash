@@ -29,7 +29,7 @@ export default function CreditCardScreen({ route, navigation }) {
   useEffect(() => {
     loadTransactions();
     loadCategories();
-  }, []);
+  }, [loadTransactions, loadCategories]);
 
   const cardTransactions = useMemo(() => {
     return txList.filter(t => t.accountId === account.id && t.isPending !== 1 && t.isIgnored !== 1);
@@ -52,7 +52,7 @@ export default function CreditCardScreen({ route, navigation }) {
       }
       invoices._init = true;
     }
-  }, [invoices, account.closingDay, account.dueDay]);
+  }, [invoices, currentInvoiceIndex, account.closingDay, account.dueDay]);
 
   const handleNextInvoice = () => {
     if (currentInvoiceIndex < invoices.length - 1) setCurrentInvoiceIndex(currentInvoiceIndex + 1);

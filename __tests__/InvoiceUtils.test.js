@@ -79,4 +79,17 @@ describe('InvoiceUtils', () => {
       { previousBalance: 80, total: 130 }
     ]);
   });
+
+  it('returns the key of the invoice that is open today', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 11));
+    try {
+      const cycle = InvoiceUtils.getCurrentInvoiceCycle(20, 28);
+      expect(cycle.currentInvoiceKey).toBe(
+        InvoiceUtils.getInvoiceMonthForTransaction(timestamp(2026, 10, 11), 20, 28)
+      );
+      expect(cycle.cycleEnd).toBeGreaterThan(timestamp(2026, 10, 11));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
