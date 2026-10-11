@@ -20,6 +20,7 @@ import HomePendingTx from '../components/home/HomePendingTx';
 import HomeRecentTx from '../components/home/HomeRecentTx';
 import HomeDebts from '../components/home/HomeDebts';
 import HomeGroups from '../components/home/HomeGroups';
+import HomeBudgets from '../components/home/HomeBudgets';
 import { useGroups } from '../hooks/useGroups';
 
 export default function HomeScreen({ route, navigation }) {
@@ -108,11 +109,12 @@ export default function HomeScreen({ route, navigation }) {
         && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
   }, [txList, hideSettlements]);
-  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups'];
+  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
   let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
   if (!homeOrder.includes('debts')) homeOrder.push('debts');
   if (!homeOrder.includes('groups')) homeOrder.push('groups');
+  if (!homeOrder.includes('budgets')) homeOrder.push('budgets');
   if (!homeOrder.includes('creditCards')) {
     const idx = homeOrder.indexOf('accounts');
     if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
@@ -219,6 +221,10 @@ export default function HomeScreen({ route, navigation }) {
 
           if (modKey === 'debts' && uiConfig.homeShowDebts !== false) {
             return <HomeDebts key="debts" debtsList={debtsList} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
+          }
+
+          if (modKey === 'budgets' && uiConfig.homeShowBudgets !== false) {
+            return <HomeBudgets key="budgets" categoryList={categoryList} txList={txList} selectedMonths={selectedMonths} activeTheme={activeTheme} styles={styles} />;
           }
 
           if (modKey === 'groups' && uiConfig.homeShowGroups !== false) {

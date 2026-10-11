@@ -146,6 +146,7 @@ try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN due_day INTEGER;'); } cat
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN credit_limit REAL;'); } catch {}
 try { expoDb.execSync('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch {}
 try { expoDb.execSync('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch {}
+try { expoDb.execSync('ALTER TABLE categories ADD COLUMN monthly_budget REAL;'); } catch {}
 try { expoDb.execSync('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch {}
 
 // Índices para otimização de performance
