@@ -19,12 +19,13 @@ import HomeCreditCardsList from '../components/home/HomeCreditCardsList';
 import HomePendingTx from '../components/home/HomePendingTx';
 import HomeRecentTx from '../components/home/HomeRecentTx';
 import HomeDebts from '../components/home/HomeDebts';
+import HomeInsights from '../components/home/HomeInsights';
 import HomeGroups from '../components/home/HomeGroups';
 import HomeBudgets from '../components/home/HomeBudgets';
 import { useGroups } from '../hooks/useGroups';
 
 export default function HomeScreen({ route, navigation }) {
-  const { activeTheme, uiConfig } = React.useContext(SettingsContext);
+  const { activeTheme, uiConfig, saveSetting } = React.useContext(SettingsContext);
   const hideSettlements = uiConfig.hideDebtSettlements !== false;
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -109,9 +110,10 @@ export default function HomeScreen({ route, navigation }) {
         && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
   }, [txList, hideSettlements]);
-  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
+  const knownHomeModules = ['insights', 'accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
   let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
+  if (!homeOrder.includes('insights')) homeOrder.unshift('insights');
   if (!homeOrder.includes('debts')) homeOrder.push('debts');
   if (!homeOrder.includes('groups')) homeOrder.push('groups');
   if (!homeOrder.includes('budgets')) homeOrder.push('budgets');
@@ -215,6 +217,21 @@ export default function HomeScreen({ route, navigation }) {
                 setModalVisible={setModalVisible}
                 txGroupMap={txGroupMap}
                 groupColorMap={groupColorMap}
+              />
+            );
+          }
+
+          if (modKey === 'insights' && uiConfig.homeShowInsights !== false) {
+            return (
+              <HomeInsights
+                key="insights"
+                txList={txList}
+                categoryList={categoryList}
+                debtsList={debtsList}
+                activeTheme={activeTheme}
+                styles={styles}
+                navigation={navigation}
+                saveSetting={saveSetting}
               />
             );
           }

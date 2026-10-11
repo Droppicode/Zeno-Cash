@@ -443,6 +443,17 @@ Notas da Fase 4:
   - Descriptions that match an existing transaction reuse its category. Balance lines are not imported.
 - After "Salvar Todas": transactions are approved (not pending) in the chosen account, group rules apply, and Home/account balances and invoices update. Importing the same file again skips everything.
 
+## Assistente proativo (Home)
+- The "Assistente" Home module (shown first by default) lists up to 5 on-device insights (no AI calls). Toggle it with Config → Módulos → "[Home] Mostrar Assistente Proativo"; it can be reordered as "Assistente Proativo". Hidden when there are no insights.
+- Fixture ideas (relative to today), each producing one insight:
+  - spike: a category with ~R$100/month in the 3 previous months up to today's day, and ≥R$200 this month.
+  - forecast: spending this month far above or below last month, on day ≥5.
+  - missing: "Aluguel" once in each of the 3 previous months around the same day, and nothing this month after that day + 2.
+  - price: "Netflix" 39,90 in the 2 previous months and 44,90 this month.
+  - debt: an open owed debt ≥30 days old.
+  - uncategorized: ≥3 approved transactions this month without a category.
+- Expected: pending, ignored and debt-settlement transactions don't count. "Dispensar" hides that insight for the current month and stays hidden after reload. The action links open Transações, Análise or Dívidas.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
