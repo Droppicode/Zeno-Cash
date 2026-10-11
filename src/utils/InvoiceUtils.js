@@ -1,4 +1,4 @@
-const HIDDEN_TAGS_RE = /\[(?:invoice:\d{4}-\d{2}|debt:\d+)\]/g;
+const HIDDEN_TAGS_RE = /\[(?:invoice:\d{4}-\d{2}|debt:\d+|cardpay:\d+)\]/g;
 const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const effectiveDay = (year, month, day) => Math.min(day, daysInMonth(year, month));
 

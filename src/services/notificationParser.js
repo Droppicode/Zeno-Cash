@@ -84,8 +84,15 @@ export const parseBankNotification = (notification) => {
   const type = found.sign === '-' ? 'expense'
     : (found.sign === '+' || isIncome) ? 'income' : 'expense';
 
+  const isInvoicePayment = type === 'expense' && /pagamento\s+(?:d[ae]\s+)?(?:sua\s+)?fatura|fatura\s+(?:\w+\s+){0,3}paga\b/.test(content);
+  const isCard = !isInvoicePayment && !/d[eé]bito/.test(content)
+    && /cart[aã]o|compra\s+(?:no\s+)?cr[eé]dito|compra\s+aprovada/.test(content) && !/pix|cashback/.test(content);
+  const kind = isInvoicePayment ? 'invoice_payment' : isCard ? 'card' : 'account';
+
   let label = 'Transação Pendente';
-  if (content.includes('cashback')) {
+  if (isInvoicePayment) {
+    label = 'Pagamento de Fatura';
+  } else if (content.includes('cashback')) {
     label = 'Cashback';
   } else if (/estorn|reembolso/.test(content)) {
     label = 'Estorno';
@@ -105,6 +112,7 @@ export const parseBankNotification = (notification) => {
     amount: found.amount,
     type,
     bankName,
+    kind,
     description: `${label} - ${bankName}`,
     rawText
   };

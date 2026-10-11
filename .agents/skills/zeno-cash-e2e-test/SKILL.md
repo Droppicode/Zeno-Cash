@@ -379,6 +379,12 @@ Notas da Fase 4:
 - Estados rápidos (~1-2 s): use um observador read-only do SQLite e screencap; a compressão do vídeo pode pular esses frames.
 - Ao final, restaure os dados reais do usuário e confira saldos e zero pendentes.
 
+### Cartão e fatura pelas notificações
+- Prepare uma conta corrente com o nome do banco (ex. "Nubank") e um cartão (tipo crédito) com essa conta associada, fechamento e vencimento definidos.
+- "Compra aprovada ... no cartão de crédito" deve criar a pendência no cartão e, ao aprovar, cair na fatura aberta do ciclo da data. "cartão de débito" e Pix ficam na conta corrente.
+- "Pagamento da fatura de R$ X realizado" cria a pendência como despesa na conta corrente (título "Pagamento de Fatura"), sem a tag interna visível na nota. Ao aprovar (Home, Transações ou modal, com ou sem editar o valor), o app cria a entrada "Pagamento de Fatura" no cartão na fatura que já fechou e essa fatura zera/abaixa. Confira que não surgiu despesa duplicada e que a sugestão da IA não apaga o vínculo.
+- Sem cartão cadastrado para o banco, tudo continua na conta corrente como antes.
+
 ### Recovering after host restart
 - Reuse a release artifact only after checking the intended checkout and saved APK
   hash. Compare the installed `pm path` base.apk hash too; a version number alone

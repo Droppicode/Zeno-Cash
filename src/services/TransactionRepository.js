@@ -1,7 +1,9 @@
 import { db, expoDb } from '../database/db';
-import { transactions, monthlyBalances } from '../database/schema';
+import { accounts, transactions, monthlyBalances } from '../database/schema';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { Logger } from '../utils/logger';
+import { InvoiceUtils } from '../utils/InvoiceUtils';
+import { getCardPaymentId } from './notificationAccounts';
 
 export const MONTHLY_BALANCES_VERSION = 2;
 
@@ -115,7 +117,14 @@ export const TransactionRepository = {
   update: async (id, txData) => {
     try {
       const oldTx = await db.select().from(transactions).where(eq(transactions.id, id));
-      await db.update(transactions).set(txData).where(eq(transactions.id, id));
+      const cardId = oldTx[0]?.isPending === 1 && txData.isPending === 0
+        ? getCardPaymentId(txData.note ?? oldTx[0].note)
+        : null;
+      const update = cardId
+        ? { ...txData, note: (txData.note ?? oldTx[0].note).replace(/\s*\[cardpay:\d+\]/g, '').trim() }
+        : txData;
+      await db.update(transactions).set(update).where(eq(transactions.id, id));
+      if (cardId) await TransactionRepository.addCardPaymentCredit(cardId, { ...oldTx[0], ...update });
       
       if (oldTx.length > 0) {
         await TransactionRepository.recalculateMonth(oldTx[0].date);
@@ -132,6 +141,23 @@ export const TransactionRepository = {
       Logger.error('TransactionRepository.update', err);
       throw err;
     }
+  },
+
+  addCardPaymentCredit: async (cardId, payment) => {
+    const [card] = await db.select().from(accounts).where(eq(accounts.id, cardId));
+    if (!card) return null;
+    const invoiceKey = InvoiceUtils.getInvoiceMonthForTransaction(
+      { date: payment.date, type: 'income' }, card.closingDay, card.dueDay
+    );
+    return TransactionRepository.add({
+      amount: payment.amount,
+      description: 'Pagamento de Fatura',
+      type: 'income',
+      date: payment.date,
+      accountId: card.id,
+      isPending: 0,
+      note: `[invoice:${invoiceKey}]`
+    });
   },
 
   remove: async (id) => {
