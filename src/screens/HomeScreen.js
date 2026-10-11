@@ -77,17 +77,15 @@ export default function HomeScreen({ route, navigation }) {
   );
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const subscription = DeviceEventEmitter.addListener('refreshTransactions', () => {
-        loadTransactions();
-        loadAccounts();
-        loadCategories();
-        loadDebts();
-        loadGroups();
-        loadTxGroupMap();
-      });
-      return () => subscription.remove();
-    }
+    const subscription = DeviceEventEmitter.addListener('refreshTransactions', () => {
+      loadTransactions();
+      loadAccounts();
+      loadCategories();
+      loadDebts();
+      loadGroups();
+      loadTxGroupMap();
+    });
+    return () => subscription.remove();
   }, [loadTransactions, loadAccounts, loadCategories, loadDebts, loadGroups, loadTxGroupMap]);
 
   const accountBalances = useMemo(() => {

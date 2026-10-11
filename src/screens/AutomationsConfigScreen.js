@@ -3,12 +3,27 @@ import { View, Text, Switch, TouchableOpacity, StyleSheet, Alert, AppState } fro
 import { Ionicons } from '@expo/vector-icons';
 import RNAndroidNotificationListener from 'react-native-android-notification-listener';
 import { SettingsContext } from '../context/SettingsContext';
+import { db } from '../database/db';
+import { settings } from '../database/schema';
+import { eq } from 'drizzle-orm';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
 
 export default function AutomationsConfigScreen({ onBack }) {
-  const { activeTheme } = useContext(SettingsContext);
+  const { activeTheme, saveSetting, llmKey } = useContext(SettingsContext);
   const [hasPermission, setHasPermission] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(true);
+
+  useEffect(() => {
+    db.select().from(settings).where(eq(settings.key, 'notificationAi'))
+      .then(rows => setAiEnabled(rows[0]?.value !== 'false'))
+      .catch(() => {});
+  }, []);
+
+  const toggleAi = (value) => {
+    setAiEnabled(value);
+    saveSetting('notificationAi', value ? 'true' : 'false');
+  };
 
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
@@ -84,6 +99,30 @@ export default function AutomationsConfigScreen({ onBack }) {
             <View style={[styles.statusBox, { backgroundColor: activeTheme.income + '20' }]}>
               <Ionicons name="checkmark-circle" size={16} color={activeTheme.income} />
               <Text style={[styles.statusText, { color: activeTheme.income }]}>Serviço ativo e escutando notificações</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.card, { backgroundColor: activeTheme.card }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.iconBox, { backgroundColor: activeTheme.accent + '20' }]}>
+              <Ionicons name="sparkles" size={24} color={activeTheme.accent} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.cardTitle, { color: activeTheme.text }]}>Sugestões com IA</Text>
+              <Text style={[styles.cardDesc, { color: activeTheme.textSecondary }]}>Envia o texto das notificações de banco ao provedor do Assistente, usando o modelo mais rápido dele, para sugerir título, nota e categoria no seu estilo, aprendendo com as pendências que você aprova.</Text>
+            </View>
+            <Switch
+              value={aiEnabled}
+              onValueChange={toggleAi}
+              thumbColor={aiEnabled ? activeTheme.accent : '#f4f3f4'}
+              trackColor={{ false: '#767577', true: activeTheme.accent + '80' }}
+            />
+          </View>
+          {aiEnabled && !llmKey && (
+            <View style={[styles.statusBox, { backgroundColor: activeTheme.expense + '20' }]}>
+              <Ionicons name="key-outline" size={16} color={activeTheme.expense} />
+              <Text style={[styles.statusText, { color: activeTheme.expense, flex: 1 }]}>Adicione uma chave em Config → Assistente IA para ativar.</Text>
             </View>
           )}
         </View>

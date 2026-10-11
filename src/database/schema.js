@@ -26,6 +26,8 @@ export const transactions = sqliteTable('transactions', {
   isPending: integer('is_pending').default(0),
   isIgnored: integer('is_ignored').default(0),
   recurrenceId: integer('recurrence_id'), // ID from recurrences table
+  sourceText: text('source_text'),
+  aiStatus: text('ai_status'),
 });
 
 export const categories = sqliteTable('categories', {
