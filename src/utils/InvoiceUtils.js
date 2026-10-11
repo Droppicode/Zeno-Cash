@@ -156,7 +156,7 @@ export const InvoiceUtils = {
     const today = new Date();
     const currentInvoiceKey = InvoiceUtils.getInvoiceMonthForTransaction(today.getTime(), closingDay, dueDay);
     
-    return InvoiceUtils.getInvoiceCycleDates(currentInvoiceKey, closingDay, dueDay);
+    return { currentInvoiceKey, ...InvoiceUtils.getInvoiceCycleDates(currentInvoiceKey, closingDay, dueDay) };
   },
 
   getInvoiceDueDate: (monthKey, dueDay) => {
