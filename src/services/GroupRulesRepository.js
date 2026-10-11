@@ -1,4 +1,4 @@
-import { db, expoDb } from '../database/db';
+import { db } from '../database/db';
 import { groupRules } from '../database/schema';
 import { desc, eq } from 'drizzle-orm';
 import { Logger } from '../utils/logger';

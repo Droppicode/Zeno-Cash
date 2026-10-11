@@ -29,7 +29,6 @@ export default function CategoriesConfigScreen({ onBack }) {
   const [macro, setMacro] = useState(MACRO_OPTIONS[0]);
 
   const z = getZoomFactor(activeTheme);
-  const f = activeTheme.fontFamily || 'monospace';
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
   useEffect(() => {

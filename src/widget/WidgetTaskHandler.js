@@ -17,7 +17,7 @@ export async function widgetTaskHandler(props) {
         renderWidget: () => <ZenoWidget />,
         widgetInfo,
       });
-    } catch (e) {
+    } catch {
       // ignore
     }
   }

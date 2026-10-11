@@ -75,7 +75,6 @@ export class LLMService {
   }
 
   static async callOpenAI(model, apiKey, fileBase64, mimeType, categoriesStr, accountsStr, userContext) {
-    const isPdf = mimeType === 'application/pdf';
     // OpenAI suporta visão. Para PDFs muito longos poderíamos precisar de extração de texto, 
     // mas vamos enviar como imagem/pdf (GPT-4o suporta documentos e imagens).
     // Nota: O formato exato depende se estamos mandando base64 url

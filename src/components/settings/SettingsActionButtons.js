@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Switch, Platform } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DataExportService } from '../../services/DataExportService';
 import { SettingsContext } from '../../context/SettingsContext';

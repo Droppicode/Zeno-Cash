@@ -1,11 +1,10 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { useContext } from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import ExtractionBanner from '../components/ui/ExtractionBanner';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Platform } from 'react-native';
 import { HapticFeedback } from '../utils/haptics';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -30,8 +29,7 @@ function CustomTabBar({ state, descriptors, navigation, activeTheme }) {
   return (
     <View style={{ flexDirection: 'row', backgroundColor: activeTheme.card, paddingBottom: 24, paddingTop: 8, height: 70 }}>
       {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
+            const isFocused = state.index === index;
         const color = isFocused ? activeTheme.accent : activeTheme.textSecondary;
 
         const onPress = () => {

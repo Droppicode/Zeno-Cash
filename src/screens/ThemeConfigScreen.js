@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import ColorPicker from 'react-native-wheel-color-picker';
@@ -18,8 +18,6 @@ export default function ThemeConfigScreen({ onBack }) {
   const [showPicker, setShowPicker] = useState(false);
   const [tempColor, setTempColor] = useState('#ffffff');
 
-  const z = getZoomFactor(activeTheme);
-  const f = activeTheme.fontFamily || 'monospace';
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
 
   const applyTheme = (theme) => {

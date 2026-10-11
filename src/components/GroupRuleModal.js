@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BaseModalBottom from './ui/BaseModalBottom';
 import CustomDatePicker from './ui/CustomDatePicker';
 import { getZoomFactor } from '../utils/scaler';
@@ -20,9 +20,9 @@ export default function GroupRuleModal({ visible, theme, initialRule = null, cat
   useEffect(() => {
     if (!visible) return;
     let keywords = [];
-    try { keywords = initialRule?.keywords ? JSON.parse(initialRule.keywords) : []; } catch (err) {}
+    try { keywords = initialRule?.keywords ? JSON.parse(initialRule.keywords) : []; } catch {}
     let cats = [];
-    try { cats = initialRule?.categoryIds ? JSON.parse(initialRule.categoryIds) : []; } catch (err) {}
+    try { cats = initialRule?.categoryIds ? JSON.parse(initialRule.categoryIds) : []; } catch {}
     setKeywordsText(keywords.join(', '));
     setCategoryIds(cats.map(Number));
     setAccountId(initialRule?.accountId ?? null);

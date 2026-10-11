@@ -67,7 +67,7 @@ export function useDataManagement() {
               setIsResetting(true);
               await resetDatabase();
               Alert.alert('Sucesso', 'Aplicativo resetado com sucesso! Reinicie o app para recarregar.');
-            } catch (err) {
+            } catch {
               Alert.alert('Erro', 'Não foi possível resetar os dados.');
             } finally {
               setIsResetting(false);
@@ -91,7 +91,7 @@ export function useDataManagement() {
               setIsSeeding(true);
               await seedDatabase(true);
               Alert.alert('Sucesso', 'Base de dados gerada com sucesso! Reinicie o app para visualizar todas as novidades.');
-            } catch (err) {
+            } catch {
               Alert.alert('Erro', 'Não foi possível gerar a base de dados.');
             } finally {
               setIsSeeding(false);
@@ -107,7 +107,7 @@ export function useDataManagement() {
       setIsBackingUp(true);
       configureGoogleAuth();
       await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
+      await GoogleSignin.signIn();
       setIsGoogleSignedIn(true);
       const tokens = await GoogleSignin.getTokens();
       

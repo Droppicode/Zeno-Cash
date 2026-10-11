@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { getZoomFactor } from '../../utils/scaler';
 
 export default function AnalyticsFilters({ theme, filters, setFilters, accounts, categories }) {
   const z = getZoomFactor(theme);
-  const f = theme.fontFamily || 'monospace';
 
   const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));

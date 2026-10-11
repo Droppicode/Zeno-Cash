@@ -30,7 +30,7 @@ export const getNotificationAiConfig = async () => {
 
 const recordUsage = async (previous, entry) => {
   let state = {};
-  try { state = previous ? JSON.parse(previous) : {}; } catch (e) { state = {}; }
+  try { state = previous ? JSON.parse(previous) : {}; } catch { state = {}; }
   const value = JSON.stringify(addUsage(state, entry));
   const existing = await db.select().from(settings).where(eq(settings.key, 'assistantUsage'));
   if (existing.length > 0) await db.update(settings).set({ value }).where(eq(settings.key, 'assistantUsage'));

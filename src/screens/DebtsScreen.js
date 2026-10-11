@@ -62,8 +62,8 @@ const DebtItem = React.memo(function DebtItem({ item, activeTheme, styles, onEdi
 export default function DebtsScreen({ navigation }) {
   const { activeTheme } = useContext(SettingsContext);
   const { debtsList, loadDebts, removeDebt } = useDebts();
-  const { accountList, loadAccounts } = useAccounts();
-  const { txList, loadTransactions, updateTransaction, saveTransaction, removeTransaction } = useTransactions();
+  const { loadAccounts } = useAccounts();
+  const { loadTransactions, updateTransaction, saveTransaction, removeTransaction } = useTransactions();
   
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDebt, setEditingDebt] = useState(null);
@@ -83,7 +83,10 @@ export default function DebtsScreen({ navigation }) {
     }, [loadDebts, loadAccounts])
   );
 
-  const realDebts = debtsList.filter(d => (showPaid || d.isPaid !== 1) && !(d.transactionId === null && d.recurrenceId !== null));
+  const realDebts = useMemo(
+    () => debtsList.filter(d => (showPaid || d.isPaid !== 1) && !(d.transactionId === null && d.recurrenceId !== null)),
+    [debtsList, showPaid]
+  );
 
   const totalOwe = realDebts.filter(d => d.type === 'owe' && d.isPaid !== 1).reduce((acc, d) => acc + d.amount, 0);
   const totalOwed = realDebts.filter(d => d.type === 'owed' && d.isPaid !== 1).reduce((acc, d) => acc + d.amount, 0);
@@ -101,7 +104,7 @@ export default function DebtsScreen({ navigation }) {
       }
     });
     return Object.values(groups).sort((a, b) => a.personName.localeCompare(b.personName));
-  }, [debtsList, showPaid]);
+  }, [realDebts]);
 
   const toggleGroup = (name) => {
     setExpandedGroups(prev => ({ ...prev, [name]: !prev[name] }));
@@ -154,7 +157,7 @@ export default function DebtsScreen({ navigation }) {
         )}
       </View>
     );
-  }, [activeTheme, accountList, styles, handleEdit, handleDelete, expandedGroups]);
+  }, [activeTheme, styles, handleEdit, handleDelete, expandedGroups]);
 
   return (
     <SafeAreaView style={styles.container}>

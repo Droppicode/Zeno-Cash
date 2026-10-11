@@ -49,7 +49,7 @@ export default function AssistantConfigScreen({ onBack }) {
       if (Platform.OS === 'web') setRememberKey(webKeyStore.isRemembered(providerLocal));
     };
     loadKey();
-  }, [providerLocal]);
+  }, [providerLocal, getSecureKey]);
 
   const z = getZoomFactor(activeTheme);
   const f = activeTheme.fontFamily || 'monospace';

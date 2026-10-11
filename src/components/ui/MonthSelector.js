@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, FlatList, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { getZoomFactor } from '../../utils/scaler';
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -72,6 +72,7 @@ export default function MonthSelector({ theme, centerDate, selectedMonths, onCen
         flatListRef.current?.scrollToOffset({ offset: initialIndex * ITEM_WIDTH, animated: false });
       }, 100);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on mount
   }, []);
 
   const styles = React.useMemo(() => StyleSheet.create({

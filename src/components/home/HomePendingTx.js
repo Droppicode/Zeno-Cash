@@ -5,7 +5,6 @@ import { CurrencyUtils } from '../../utils/currencyUtils';
 import SwipeableCard from '../ui/SwipeableCard';
 import AiLoadingBorder from '../ui/AiLoadingBorder';
 import { isAiLoading } from '../../services/notificationAi';
-import { resolveCategory } from '../../services/categorizer';
 import { InvoiceUtils } from '../../utils/InvoiceUtils';
 
 export default function HomePendingTx({

@@ -2,7 +2,7 @@ const jsonStringify = value => JSON.stringify(value ?? {});
 
 const parseArgs = value => {
   if (value && typeof value === 'object') return value;
-  try { return JSON.parse(value || '{}'); } catch (err) { return {}; }
+  try { return JSON.parse(value || '{}'); } catch { return {}; }
 };
 
 const providerError = (provider, status) => {

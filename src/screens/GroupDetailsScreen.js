@@ -34,7 +34,6 @@ export default function GroupDetailsScreen({ route, navigation }) {
   const [groupModalVisible, setGroupModalVisible] = useState(false);
   const [transactionPickerVisible, setTransactionPickerVisible] = useState(false);
   const [isMacro, setIsMacro] = useState(false);
-  const z = getZoomFactor(activeTheme);
   const styles = useMemo(() => getStyles(activeTheme), [activeTheme]);
 
   const loadData = useCallback(async () => {
