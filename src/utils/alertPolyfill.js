@@ -9,7 +9,15 @@ if (Platform.OS === 'web') {
       return;
     }
     const cancel = buttons.find(b => b.style === 'cancel') || buttons[0];
-    const action = [...buttons].reverse().find(b => b !== cancel);
+    const actions = buttons.filter(b => b !== cancel);
+    if (actions.length > 1) {
+      const answer = window.prompt(`${text}\n\n${actions.map((b, i) => `${i + 1}. ${b.text}`).join('\n')}`, '1');
+      const chosen = actions[Number(answer) - 1];
+      if (chosen) chosen.onPress?.();
+      else cancel?.onPress?.();
+      return;
+    }
+    const action = actions[0];
     if (window.confirm(text)) action?.onPress?.();
     else cancel?.onPress?.();
   };

@@ -11,6 +11,7 @@ import TransactionModal from '../components/TransactionModal';
 import { getZoomFactor } from '../utils/scaler';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAccounts } from '../hooks/useAccounts';
+import { categoryFromHistory, splitDuplicates } from '../utils/StatementParser';
 
 export default function ExtractionReviewScreen({ route, navigation }) {
   const { activeTheme } = useContext(SettingsContext);
@@ -19,6 +20,10 @@ export default function ExtractionReviewScreen({ route, navigation }) {
   const { accountList, loadAccounts, saveAccount } = useAccounts();
   
   const initialTxs = route.params?.transactions || [];
+  const isStatement = route.params?.source === 'statement';
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [statementAccountId, setStatementAccountId] = useState(null);
+  const dedupedRef = React.useRef(false);
   
   // Mapeia contas e categorias por ID assim que carrega os dados da IA
   const [txs, setTxs] = useState(() => {
@@ -58,22 +63,30 @@ export default function ExtractionReviewScreen({ route, navigation }) {
   }, [accountList]);
 
   React.useEffect(() => {
-    if (txList && txList.length > 0) {
-      setTxs(prevTxs => prevTxs.filter(t => {
-        const isDuplicate = txList.some(existing => {
-          const d1 = new Date(existing.date);
-          const d2 = new Date(t.date);
-          const sameDay = d1.getFullYear() === d2.getFullYear() && 
-                          d1.getMonth() === d2.getMonth() && 
-                          d1.getDate() === d2.getDate();
-          return sameDay && 
-                 Math.abs(existing.amount - (Number(t.amount) || 0)) < 0.01 && 
-                 existing.type === t.type;
-        });
-        return !isDuplicate;
-      }));
-    }
-  }, [txList]);
+    if (dedupedRef.current || !txList || txList.length === 0) return;
+    dedupedRef.current = true;
+    setTxs(prevTxs => {
+      const { fresh, duplicates } = splitDuplicates(prevTxs, txList);
+      setSkippedCount(duplicates.length);
+      if (!isStatement) return fresh;
+      return fresh.map(t => (t.categoryId ? t : { ...t, categoryId: categoryFromHistory(t.description, txList) }));
+    });
+  }, [txList, isStatement]);
+
+  React.useEffect(() => {
+    if (!isStatement || statementAccountId !== null || accountList.length === 0) return;
+    const preferred = route.params?.isCreditCard ? accountList.find(a => a.type === 'credit') : null;
+    setStatementAccountId((preferred || accountList[0]).id);
+  }, [isStatement, statementAccountId, accountList, route.params?.isCreditCard]);
+
+  React.useEffect(() => {
+    if (statementAccountId === null) return;
+    setTxs(prev => prev.map(t => ({ ...t, accountId: statementAccountId })));
+  }, [statementAccountId]);
+
+  const invertTypes = () => {
+    setTxs(prev => prev.map(t => ({ ...t, type: t.type === 'income' ? 'expense' : 'income' })));
+  };
   
   const [editingTx, setEditingTx] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -187,9 +200,37 @@ export default function ExtractionReviewScreen({ route, navigation }) {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color={activeTheme.accent} />
           <Text style={[styles.infoText, { color: activeTheme.text }]}>
-            Encontramos {txs.length} transação(ões). Deslize para excluir ou toque para editar. Transações marcadas em vermelho precisam da sua atenção.
+            {isStatement
+              ? `${txs.length} transação(ões) em ${route.params?.fileName || 'extrato'}.`
+              : `Encontramos ${txs.length} transação(ões).`}
+            {skippedCount > 0 ? ` ${skippedCount} já existia(m) no app e foi(ram) pulada(s).` : ''}
+            {' '}Deslize para excluir ou toque para editar. Transações marcadas em vermelho precisam da sua atenção.
           </Text>
         </View>
+
+        {isStatement && (
+          <View style={styles.statementBox}>
+            <Text style={[styles.statementLabel, { color: activeTheme.textSecondary }]}>Conta do extrato</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {accountList.map(acc => {
+                const selected = acc.id === statementAccountId;
+                return (
+                  <TouchableOpacity
+                    key={acc.id}
+                    onPress={() => setStatementAccountId(acc.id)}
+                    style={[styles.chip, { backgroundColor: selected ? activeTheme.accent : activeTheme.card }]}
+                  >
+                    <Text style={[styles.chipText, { color: selected ? '#121212' : activeTheme.text }]}>{acc.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity onPress={invertTypes} style={styles.invertBtn}>
+              <Ionicons name="swap-vertical" size={16} color={activeTheme.accent} />
+              <Text style={[styles.chipText, { color: activeTheme.accent }]}>Inverter entradas/saídas</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {txs.map((item) => {
           const catInfo = resolveCategory(item, categoryList);
@@ -276,6 +317,12 @@ const getStyles = (theme) => {
     scroll: { padding: 16 * z, paddingBottom: 40 * z },
     infoBox: { flexDirection: 'row', backgroundColor: theme.accent + '20', padding: 16 * z, borderRadius: 6 * z, marginBottom: 16 * z, alignItems: 'center' },
     infoText: { flex: 1, marginLeft: 12 * z, fontSize: 13 * z, fontFamily: f, lineHeight: 18 * z },
+    statementBox: { marginBottom: 16 * z },
+    statementLabel: { fontSize: 12 * z, fontFamily: f, marginBottom: 8 * z },
+    chipRow: { gap: 8 * z },
+    chip: { paddingHorizontal: 12 * z, paddingVertical: 8 * z, borderRadius: 4 * z },
+    chipText: { fontSize: 13 * z, fontFamily: f, fontWeight: '600' },
+    invertBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 * z, marginTop: 12 * z, alignSelf: 'flex-start' },
     
     card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 * z, borderRadius: 6 * z, marginBottom: 12 * z },
     cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
