@@ -8,6 +8,7 @@ import { materializeRecurrencesUpToToday } from '../services/BackgroundTasks';
 import { GroupsRepository } from '../services/GroupsRepository';
 import { GroupRulesRepository } from '../services/GroupRulesRepository';
 import { matchGroupIdsForTransaction } from '../utils/GroupRules';
+import { checkBudgetAlerts } from '../services/budgetAlerts';
 
 export const useTransactions = () => {
   const [txList, setTxList] = useState([]);
@@ -89,6 +90,7 @@ export const useTransactions = () => {
     }
 
     await loadTransactions();
+    checkBudgetAlerts();
     return newTxId;
   }, [loadTransactions]);
 
@@ -130,6 +132,7 @@ export const useTransactions = () => {
     }
     
     await loadTransactions();
+    checkBudgetAlerts();
   }, [loadTransactions]);
 
   const saveTransaction = useCallback(async (id, data) => {

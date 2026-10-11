@@ -37,6 +37,7 @@ export const categories = sqliteTable('categories', {
   color: text('color'),
   macro: text('macro'),
   sortOrder: integer('sort_order'),
+  monthlyBudget: real('monthly_budget'),
 });
 
 export const settings = sqliteTable('settings', {

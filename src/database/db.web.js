@@ -194,6 +194,7 @@ export const initWebDb = async () => {
 
   try { sqlite.run('ALTER TABLE accounts ADD COLUMN sort_order INTEGER;'); } catch {}
   try { sqlite.run('ALTER TABLE categories ADD COLUMN sort_order INTEGER;'); } catch {}
+  try { sqlite.run('ALTER TABLE categories ADD COLUMN monthly_budget REAL;'); } catch {}
   try { sqlite.run('ALTER TABLE groups ADD COLUMN sort_order INTEGER;'); } catch {}
   try { sqlite.run('ALTER TABLE transactions ADD COLUMN source_text TEXT;'); } catch {}
   try { sqlite.run('ALTER TABLE transactions ADD COLUMN ai_status TEXT;'); } catch {}

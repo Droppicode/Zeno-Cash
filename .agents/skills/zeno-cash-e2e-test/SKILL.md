@@ -406,6 +406,20 @@ Notas da Fase 4:
 - For repeated brand trials, vary only the amount and notification ID so the
   duplicate guard does not suppress later calls. Disclose this variation.
 
+## Orçamento por categoria
+- Config → Categorias: edit a category, set "Limite mensal" (e.g. 100,00), save. The list shows "Limite R$ 100,00/mês"; clearing the field removes the limit.
+- Home: the "Orçamento por Categoria" module lists only categories with a limit, sorted by % used. Bar is the category color under 80%, amber with a warning icon from 80%, red with an alert icon from 100% ("R$ X acima").
+- Spending counts approved expenses of the selected month(s). Pending and ignored transactions don't count, and a debt settlement ("Acerto") in the category subtracts. With several months selected, the limit is multiplied by the number of months.
+- With no limits set, the module shows a hint pointing to Config → Categorias.
+- Config → Módulos: "[Home] Mostrar Orçamento" hides/shows the module, and "Orçamento por Categoria" can be reordered like the other modules. Both persist after reload.
+- Android: adding/editing a transaction that pushes a category past 80% and then 100% posts one local notification per threshold per month. Re-saving does not repeat it, and disabling the Home module also disables the alerts.
+- Backup/restore keeps the limits (the `monthly_budget` column is exported with categories).
+
+## Web smoke tips
+- Use a separate Expo port (`npm run web -- --port 8082`) to isolate the browser's SQL.js data from other sessions. Import synthetic fixtures through Config → Restaurar backup (JSON).
+- For invoice opening tests, include a previous, current and future invoice; otherwise opening the last invoice by accident looks correct.
+- Recurrence-only debt contracts may be hidden from Dívidas. Open them via Transações → filters → forecast +60D → projected transaction → Ver Detalhes do Contrato.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
