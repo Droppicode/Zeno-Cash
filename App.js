@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,6 +15,7 @@ import { ExtractionProvider } from './src/context/ExtractionContext';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { registerBackgroundFetchAsync } from './src/services/BackgroundTasks';
+import { rescheduleReminders } from './src/services/ReminderScheduler';
 import * as NavigationBar from 'expo-navigation-bar';
 import { performSilentDailyBackup } from './src/services/GoogleDriveBackup';
 import WebMockPanel from './src/components/WebMockPanel';
@@ -45,6 +46,7 @@ export default function App() {
 
           // Registra a tarefa diária em background
           await registerBackgroundFetchAsync();
+          rescheduleReminders();
         }
 
         // Tenta executar o backup diário silencioso do Google Drive (sem travar o carregamento do app)
@@ -67,6 +69,12 @@ export default function App() {
     };
 
     initApp();
+
+    if (Platform.OS === 'web') return undefined;
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'background') rescheduleReminders();
+    });
+    return () => subscription.remove();
   }, []);
 
   const linking = {

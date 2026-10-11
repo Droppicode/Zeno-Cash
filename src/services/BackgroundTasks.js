@@ -14,6 +14,7 @@ import { GroupsRepository } from './GroupsRepository';
 import { GroupRulesRepository } from './GroupRulesRepository';
 import { matchGroupIdsForTransaction } from '../utils/GroupRules';
 import { TransactionRepository } from './TransactionRepository';
+import { rescheduleReminders } from './ReminderScheduler';
 
 const BACKGROUND_FETCH_TASK = 'background-recurrence-fetch';
 
@@ -111,6 +112,7 @@ export const materializeRecurrencesUpToToday = async () => {
 
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
   const insertedCount = await materializeRecurrencesUpToToday();
+  await rescheduleReminders();
   
   try {
     await performSilentDailyBackup();

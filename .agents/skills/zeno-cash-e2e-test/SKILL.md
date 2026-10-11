@@ -426,6 +426,15 @@ Notas da Fase 4:
 - For invoice opening tests, include a previous, current and future invoice; otherwise opening the last invoice by accident looks correct.
 - Recurrence-only debt contracts may be hidden from Dívidas. Open them via Transações → filters → forecast +60D → projected transaction → Ver Detalhes do Contrato.
 
+## Lembretes (Android)
+- Config → Automações → "Lembretes" card (hidden on web): master switch, plus "Vencimento da fatura" (1/3/5d antes), "Recorrências do dia" and "Dívidas paradas" (15/30/60 dias). Settings persist after restart.
+- Reminders are local notifications scheduled for 09:00 for the next 35 days. They are rebuilt on app start, when the app goes to background, in the daily background task and on every Lembretes setting change.
+- Inspect what is scheduled with `adb shell dumpsys alarm | grep com.mmn.zenocash` or `adb shell dumpsys notification`. To see one fire, move the emulator clock (`adb shell su root date MMDDhhmmYYYY.ss`) to 08:59 on the target day, wait for 09:00, then restore automatic time.
+- Expected: for a card with an open invoice (approved purchases only), "Fatura <cartão> vence em N dias" at due−N and "vence hoje" on the due date, both with the current amount. A fully paid invoice gets no reminder.
+- Expected: active recurrences due on the same day are grouped into one "Hoje: …" notification. Paused recurrences don't appear.
+- Expected: an open debt gets one "Dívida parada há N dias" reminder when it reaches N days. Debts already stale are summarized every Monday ("X dívidas paradas…"). Paid debts are excluded.
+- Turning the master switch off cancels all scheduled reminders.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that
