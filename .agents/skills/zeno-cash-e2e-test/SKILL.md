@@ -406,6 +406,14 @@ Notas da Fase 4:
 - For repeated brand trials, vary only the amount and notification ID so the
   duplicate guard does not suppress later calls. Disclose this variation.
 
+## Importar extrato OFX/CSV
+- Transações → import button → "Importar Transações". It offers "Extrato OFX/CSV" (no AI key needed) or "Documento (IA)", which opens the old camera/PDF chooser and still requires a key. On web the multi-option alert is a `window.prompt` with numbered options.
+- Fixture ideas: an OFX in SGML form (`OFXHEADER:100`, `<STMTTRN>` blocks without closing tags, Latin-1 accents), a credit card OFX (`<CCACCTFROM>`), a Nubank account CSV (`Data,Valor,Identificador,Descrição`), a Nubank card CSV (`date,title,amount`, where purchases are positive), and a `;` CSV with separate Crédito/Débito columns plus a "SALDO ANTERIOR" line.
+- Expected review screen ("Revisar Importação"): it says how many lines came from the file and how many were skipped because the same day, amount and type already exist (matched one-to-one).
+  - Below that are a "Conta do extrato" chip row (a credit card OFX/Nubank card CSV preselects the first credit card) and "Inverter entradas/saídas".
+  - Descriptions that match an existing transaction reuse its category. Balance lines are not imported.
+- After "Salvar Todas": transactions are approved (not pending) in the chosen account, group rules apply, and Home/account balances and invoices update. Importing the same file again skips everything.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that

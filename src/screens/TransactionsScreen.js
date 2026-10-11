@@ -18,6 +18,7 @@ import { useDebts } from '../hooks/useDebts';
 import { getZoomFactor } from '../utils/scaler';
 import { RecurrenceRepository } from '../services/RecurrenceRepository';
 import { RecurrenceGenerator } from '../services/RecurrenceGenerator';
+import { pickStatement } from '../services/StatementImport';
 import { DocumentScanner } from '../services/DocumentScanner';
 import { ExtractionContext } from '../context/ExtractionContext';
 import { useGroups } from '../hooks/useGroups';
@@ -45,6 +46,18 @@ export default function TransactionsScreen({ route, navigation }) {
   const isImporting = status === 'uploading' || status === 'processing';
 
   const handleImportData = async () => {
+    Alert.alert(
+      'Importar Transações',
+      'Extrato OFX/CSV do banco (sem IA) ou nota fiscal, PDF e imagem lidos pela IA:',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Documento (IA)', onPress: handleAiImport },
+        { text: 'Extrato OFX/CSV', onPress: importStatement }
+      ]
+    );
+  };
+
+  const handleAiImport = () => {
     if (!llmKey) {
       Alert.alert('Chave API Ausente', 'Configure sua chave API em Configurações > Assistente IA primeiro.');
       return;
@@ -59,6 +72,25 @@ export default function TransactionsScreen({ route, navigation }) {
         { text: 'Arquivo (PDF/Imagem)', onPress: () => processImport('file') }
       ]
     );
+  };
+
+  const importStatement = async () => {
+    try {
+      const statement = await pickStatement();
+      if (!statement) return;
+      if (statement.transactions.length === 0) {
+        Alert.alert('Extrato vazio', 'Não encontrei transações nesse arquivo. Use um extrato em OFX ou CSV com colunas de data, descrição e valor.');
+        return;
+      }
+      navigation.navigate('ExtractionReview', {
+        transactions: statement.transactions,
+        source: 'statement',
+        fileName: statement.fileName,
+        isCreditCard: statement.isCreditCard
+      });
+    } catch {
+      Alert.alert('Erro', 'Não foi possível ler o extrato.');
+    }
   };
 
   const processImport = async (source) => {
