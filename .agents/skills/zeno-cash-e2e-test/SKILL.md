@@ -406,6 +406,15 @@ Notas da Fase 4:
 - For repeated brand trials, vary only the amount and notification ID so the
   duplicate guard does not suppress later calls. Disclose this variation.
 
+## Bloqueio por PIN/biometria (Android only)
+- Config → "Bloqueio do App" (hidden on web). Turning on "Bloquear com PIN" asks for a new 4–6 digit PIN twice; a mismatch goes back to step 1. The PIN and config live in SecureStore (`appLockPin`, `appLockConfig`), not in SQLite or backups.
+- Expected:
+  - A cold start shows "Zeno Cash bloqueado" with the keypad before any data.
+  - Returning after ≥30s in background locks again; a short trip (<30s, e.g. the document picker) does not. Back does not dismiss the lock.
+  - Wrong PIN shows "PIN incorreto". From the 5th wrong attempt it shows a 30s countdown, doubling each time up to 15 min, and this survives a restart.
+- Biometrics on the emulator: enroll a fingerprint in Settings → Security, then `adb -e emu finger touch 1` while the prompt is up. "Desbloquear com biometria" only appears when hardware and enrollment exist, and turning it on requires a successful prompt. With it on, the prompt opens automatically on lock; "Usar PIN" falls back to the keypad.
+- "Alterar PIN" asks for the current PIN, then the new one twice. Turning the switch off asks for the current PIN and removes the lock.
+
 ## 13. Cross-screen consistency (final check)
 After all sections, for each account compare: Home account balance == sum of its
 transactions (confirmed, not future) + initial balance == Transações filtered by that

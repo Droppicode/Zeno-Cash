@@ -28,6 +28,7 @@
     },
     "plugins": [
       "expo-sqlite",
+      "expo-local-authentication",
       "./withNotificationListener.js",
       "@react-native-google-signin/google-signin",
       [
