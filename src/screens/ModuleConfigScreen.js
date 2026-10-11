@@ -107,9 +107,10 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', { ...uiConfig, analyticsDisabledModules: newDisabled });
   };
 
-  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups'];
+  const knownHomeModules = ['insights', 'accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
   let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
+  if (!homeOrder.includes('insights')) homeOrder.unshift('insights');
   if (!homeOrder.includes('debts')) homeOrder.push('debts');
   if (!homeOrder.includes('groups')) homeOrder.push('groups');
   if (!homeOrder.includes('creditCards')) {
@@ -144,6 +145,7 @@ export default function ModuleConfigScreen({ onBack }) {
     if (key === 'recent') return 'Últimas Transações';
     if (key === 'debts') return 'Controle de Dívidas';
     if (key === 'groups') return 'Grupos';
+    if (key === 'insights') return 'Assistente Proativo';
     return key;
   };
 
@@ -291,6 +293,10 @@ export default function ModuleConfigScreen({ onBack }) {
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
             <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Grupos</Text>
             <Switch value={uiConfig.homeShowGroups !== false} onValueChange={() => handleToggleUi('homeShowGroups')} trackColor={{ false: '#333', true: activeTheme.accent }} />
+          </View>
+          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Assistente Proativo</Text>
+            <Switch value={uiConfig.homeShowInsights !== false} onValueChange={() => handleToggleUi('homeShowInsights')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
 
           <Text style={[styles.sectionTitle, { color: activeTheme.text, marginTop: 24 * z }]}>Ordem na Tela Inicial</Text>
