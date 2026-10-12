@@ -145,8 +145,8 @@ verify everything returns to the baseline.
 - [ ] Search text (if present) combined with filters.
 - [ ] Swipe on pending item → accept; swipe delete → confirm and removed.
 - [ ] Tap item → modal opens pre-filled; edit persists.
-- [ ] Acertos hidden when Config → Módulos → "[Geral] Esconder Acertos de Dívidas nas
-      Transações" is ON (default); visible when OFF. Same for Home recent list.
+- [ ] Acertos hidden when Config → Módulos → Geral → "Esconder acertos de dívidas" is ON
+      (default); visible when OFF. Same for Home recent list.
 - [ ] Extraction button (Transactions tab) without API key → "Chave API Ausente" alert.
 
 ## 5. Debts (Controle de Dívidas)
@@ -218,9 +218,12 @@ verify everything returns to the baseline.
       export a backup, restore it, and verify both orders again.
 - [ ] Android drag: use `adb shell input draganddrop x1 y1 x2 y2 1500`, or a long-duration
       `swipe` if `draganddrop` is unavailable.
-- [ ] Módulos: toggle every switch ([Geral] Investimentos tab, hide Acertos, [Home]
-      Pendências/Contas/Cartões/Últimas/Dívidas) and verify effect; reorder Home and
-      Análise modules; macro groups + category→macro mapping + targets.
+- [ ] Módulos: tabs Tela Inicial / Análise / Geral. Home and Análise tabs are one list per
+      tab: each row has a drag handle, icon, name and switch (switch hides/shows the module,
+      disabled rows dim but stay in the list). Hold and drag to reorder; "Padrão" appears once
+      the order differs from the default and restores it. Default Home order: Contas, Cartões,
+      Pendentes, Últimas, Dívidas, Limites por Macro, Grupos. Geral tab: Investimentos tab and
+      hide Acertos. Verify each effect and that order/toggles persist after reload.
 - [ ] Automações: notification listener toggle (Android only; web simulate via panel:
       Pix Nubank, Compra Itaú, Salário, Netflix cartão → transactions created and
       categorised).
@@ -412,14 +415,14 @@ Notas da Fase 4:
 - For repeated brand trials, vary only the amount and notification ID so the
   duplicate guard does not suppress later calls. Disclose this variation.
 
-## Orçamento por categoria
-- Config → Categorias: edit a category, set "Limite mensal" (e.g. 100,00), save. The list shows "Limite R$ 100,00/mês"; clearing the field removes the limit.
-- Home: the "Orçamento por Categoria" module lists only categories with a limit, sorted by % used. Bar is the category color under 80%, amber with a warning icon from 80%, red with an alert icon from 100% ("R$ X acima").
-- Spending counts approved expenses of the selected month(s). Pending and ignored transactions don't count, and a debt settlement ("Acerto") in the category subtracts. With several months selected, the limit is multiplied by the number of months.
-- With no limits set, the module shows a hint pointing to Config → Categorias.
-- Config → Módulos: "[Home] Mostrar Orçamento" hides/shows the module, and "Orçamento por Categoria" can be reordered like the other modules. Both persist after reload.
-- Android: adding/editing a transaction that pushes a category past 80% and then 100% posts one local notification per threshold per month. Re-saving does not repeat it, and disabling the Home module also disables the alerts.
-- Backup/restore keeps the limits (the `monthly_budget` column is exported with categories).
+## Limites por macro
+- Config → "Macros" card (also opened from the Home module's options icon or its empty hint). Each macro card has "Limite por mês (R$)", "Meta (%)" (used by Análise → composição macro), rename/remove, and the list of its categories. "Outros" is fixed and collects categories without a macro.
+- The "Categorias" list on that screen shows each category with a macro pill; tapping cycles it through the macros (saved to `categories.macro`). Config → Categorias' editor offers the same macros. Renaming a macro moves its categories, limit and %; removing it moves its categories to Outros.
+- Home: the "Limites por Macro" module lists only macros with a limit, in macro order. Bar is the macro color under 80%, amber with a warning icon from 80%, red with an alert icon from 100% ("R$ X acima"). With no limits it shows a hint that opens Config → Macros.
+- Spending sums approved expenses of every category in the macro for the selected month(s). Pending and ignored transactions don't count, and a debt settlement ("Acerto") subtracts. With several months selected, the limit is multiplied by the number of months.
+- Config → Módulos → Tela Inicial: the "Limites por Macro" switch hides/shows the module, and dragging reorders it. Both persist after reload. By default it sits right below Controle de Dívidas, also for saved orders from older versions that don't include it yet.
+- Android: a transaction that pushes a macro past 80% and then 100% posts one local notification per threshold per month ("Essenciais chegou a 80% do limite" / "Limite de Essenciais estourado"). Disabling the Home module also disables the alerts.
+- Limits are stored in the `macroBudgets` setting, so backup/restore keeps them.
 
 ## Web smoke tips
 - Use a separate Expo port (`npm run web -- --port 8082`) to isolate the browser's SQL.js data from other sessions. Import synthetic fixtures through Config → Restaurar backup (JSON).
@@ -442,17 +445,6 @@ Notas da Fase 4:
   - Below that are a "Conta do extrato" chip row (a credit card OFX/Nubank card CSV preselects the first credit card) and "Inverter entradas/saídas".
   - Descriptions that match an existing transaction reuse its category. Balance lines are not imported.
 - After "Salvar Todas": transactions are approved (not pending) in the chosen account, group rules apply, and Home/account balances and invoices update. Importing the same file again skips everything.
-
-## Assistente proativo (Home)
-- The "Assistente" Home module (shown first by default) lists up to 5 on-device insights (no AI calls). Toggle it with Config → Módulos → "[Home] Mostrar Assistente Proativo"; it can be reordered as "Assistente Proativo". Hidden when there are no insights.
-- Fixture ideas (relative to today), each producing one insight:
-  - spike: a category with ~R$100/month in the 3 previous months up to today's day, and ≥R$200 this month.
-  - forecast: spending this month far above or below last month, on day ≥5.
-  - missing: "Aluguel" once in each of the 3 previous months around the same day, and nothing this month after that day + 2.
-  - price: "Netflix" 39,90 in the 2 previous months and 44,90 this month.
-  - debt: an open owed debt ≥30 days old.
-  - uncategorized: ≥3 approved transactions this month without a category.
-- Expected: pending, ignored and debt-settlement transactions don't count. "Dispensar" hides that insight for the current month and stays hidden after reload. The action links open Transações, Análise or Dívidas.
 
 ## Bloqueio por PIN/biometria (Android only)
 - Config → "Bloqueio do App" (hidden on web). Turning on "Bloquear com PIN" asks for a new 4–6 digit PIN twice; a mismatch goes back to step 1. The PIN and config live in SecureStore (`appLockPin`, `appLockConfig`), not in SQLite or backups.
@@ -478,3 +470,20 @@ account. Home debt totals == Debts screen totals. Card invoice totals == CreditC
 - For each failure: steps, expected vs actual, screenshot, suspected file.
 - Known non-bugs: emulator-only notification-listener crash, Google Sign-In failing when
   `EXPO_PUBLIC_WEB_CLIENT_ID` is not set.
+
+## Release APK identity and macro alert tips
+- Select Node with `source ~/.nvm/nvm.sh`.
+- Set **both** `APP_ENV=production` and `NODE_ENV=production` for prebuild and Gradle. APP_ENV controls applicationId; NODE_ENV alone still produces `com.mmn.zenocash.dev`.
+- Before install, verify `aapt dump badging` reports `com.mmn.zenocash`, the expected version, and the expected signing digest. A successful `adb install -r` alone does not prove an upgrade of the production package.
+- If switching variants leaves generated autolinking references to the previous namespace, regenerate ignored `android/build/generated/autolinking` and `android/app/build/generated/autolinking`, or clean the generated native project. Do not patch application source to resolve stale generated outputs.
+- On launch verify a distinctive new UI element (for example Config → Macros) before recording.
+
+### Macro fields and native alerts
+- For controlled native inputs, prefer visible Ctrl+A replacement followed by the keyboard Done button or an explicit blur. Long rapid ADB Delete sequences can race React Native controlled-input updates; verify the displayed value before treating input as successful.
+- Macro alerts run on transaction mutations. Changing a limit or only opening Home is not sufficient evidence of an alert check. Create a real expense or re-save an existing transaction through the UI.
+- Record notification UUIDs before and after unchanged saves. Force-stop removes displayed notifications, so counts alone after a cold restart are not a valid dedupe comparison.
+- To exercise a different month, preserve existing alert state, temporarily change the emulator clock, and save a transaction. Restore wall-clock time and `auto_time=1` afterward. Stored sent-key state retains only the checked month when a new alert is written.
+- Native local backup: Config → Dispositivo → Fazer Backup Agora creates a checkpointed DB in app-private ZenoCashBackups. Transporting that generated backup to Download with ADB is sufficient for selecting it through the restore UI; do not substitute a hand-built DB for the export-under-test.
+
+## Devin Secrets Needed
+None for local macro fixtures, release build, or local notification tests. Preserve the existing `.env` privately if the release expects its public Google client ID.

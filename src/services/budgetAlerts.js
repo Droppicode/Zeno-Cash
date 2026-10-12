@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../database/db';
 import { categories, settings, transactions } from '../database/schema';
 import { CurrencyUtils } from '../utils/currencyUtils';
-import { computeCategoryBudgets, monthKeyOf, newBudgetAlerts } from '../utils/CategoryBudgets';
+import { computeMacroBudgets, monthKeyOf, newBudgetAlerts } from '../utils/MacroBudgets';
 import { Logger } from '../utils/logger';
 
 const SENT_KEY = 'budgetAlertsSent';
@@ -25,7 +25,8 @@ export const checkBudgetAlerts = async () => {
       db.select().from(categories),
       db.select().from(transactions)
     ]);
-    const budgets = computeCategoryBudgets(categoryRows, txRows, [monthKey]);
+    const [macroBudgets, macroOptions] = await Promise.all([readSetting('macroBudgets'), readSetting('macroOptions')]);
+    const budgets = computeMacroBudgets(categoryRows, txRows, [monthKey], macroBudgets || {}, macroOptions || []);
     const sent = (await readSetting(SENT_KEY) || []).filter(key => key.startsWith(monthKey));
     const alerts = newBudgetAlerts(budgets, sent, monthKey);
     if (alerts.length === 0) return [];
@@ -35,7 +36,7 @@ export const checkBudgetAlerts = async () => {
         const percent = Math.round(alert.threshold * 100);
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: alert.threshold >= 1 ? `Orçamento de ${alert.category.name} estourado` : `${alert.category.name} chegou a ${percent}% do orçamento`,
+            title: alert.threshold >= 1 ? `Limite de ${alert.macro} estourado` : `${alert.macro} chegou a ${percent}% do limite`,
             body: `R$ ${CurrencyUtils.formatDisplay(alert.spent)} de R$ ${CurrencyUtils.formatDisplay(alert.limit)} neste mês.`
           },
           trigger: null

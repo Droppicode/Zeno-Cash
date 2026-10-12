@@ -7,16 +7,15 @@ import { SettingsContext } from '../context/SettingsContext';
 import { useCategories } from '../hooks/useCategories';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import { CurrencyUtils } from '../utils/currencyUtils';
+import { listMacros } from '../utils/MacroBudgets';
 import BaseModalBottom from '../components/ui/BaseModalBottom';
 import ListCard from '../components/ui/ListCard';
 
 const CATEGORY_ICONS = ['cash', 'car', 'restaurant', 'cart', 'play-circle', 'medkit', 'home', 'book', 'fitness', 'airplane', 'bulb', 'gift', 'game-controller'];
 const CATEGORY_COLORS = ['#4CAF50', '#FF9800', '#F44336', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548', '#607D8B', '#3F51B5'];
-const MACRO_OPTIONS = ['Essenciais', 'Estilo de Vida', 'Investimento', 'Outros'];
 
 export default function CategoriesConfigScreen({ onBack }) {
-  const { activeTheme } = useContext(SettingsContext);
+  const { activeTheme, macroOptions } = useContext(SettingsContext);
   const { categoryList, loadCategories, saveCategory: saveCat, deleteCategory: delCat, reorderCategories } = useCategories();
   const scrollableRef = useAnimatedRef();
   const [showEditor, setShowEditor] = useState(false);
@@ -27,8 +26,8 @@ export default function CategoriesConfigScreen({ onBack }) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState(CATEGORY_ICONS[0]);
   const [color, setColor] = useState(CATEGORY_COLORS[0]);
-  const [macro, setMacro] = useState(MACRO_OPTIONS[0]);
-  const [budget, setBudget] = useState('');
+  const macros = useMemo(() => listMacros(macroOptions, categoryList), [macroOptions, categoryList]);
+  const [macro, setMacro] = useState(macros[0]);
 
   const z = getZoomFactor(activeTheme);
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
@@ -42,8 +41,7 @@ export default function CategoriesConfigScreen({ onBack }) {
     setName('');
     setIcon(CATEGORY_ICONS[0]);
     setColor(CATEGORY_COLORS[0]);
-    setMacro(MACRO_OPTIONS[0]);
-    setBudget('');
+    setMacro(macros[0]);
     setErrorMsg('');
     setShowEditor(true);
   };
@@ -53,8 +51,7 @@ export default function CategoriesConfigScreen({ onBack }) {
     setName(cat.name);
     setIcon(cat.icon || CATEGORY_ICONS[0]);
     setColor(cat.color || CATEGORY_COLORS[0]);
-    setMacro(cat.macro || MACRO_OPTIONS[0]);
-    setBudget(cat.monthlyBudget > 0 ? CurrencyUtils.formatDisplay(cat.monthlyBudget) : '');
+    setMacro(cat.macro || 'Outros');
     setErrorMsg('');
     setShowEditor(true);
   };
@@ -70,8 +67,7 @@ export default function CategoriesConfigScreen({ onBack }) {
       name: name.trim(),
       icon,
       color,
-      macro,
-      monthlyBudget: CurrencyUtils.parseCurrency(budget) > 0 ? CurrencyUtils.parseCurrency(budget) : null
+      macro
     });
     
     setShowEditor(false);
@@ -117,7 +113,7 @@ export default function CategoriesConfigScreen({ onBack }) {
                   </View>
                   <View style={{ marginLeft: 12 }}>
                     <Text style={[styles.catName, { color: activeTheme.text }]}>{cat.name}</Text>
-                    <Text style={[styles.catMacro, { color: activeTheme.textSecondary }]}>Grupo: {cat.macro || 'Outros'}{cat.monthlyBudget > 0 ? ` · Limite R$ ${CurrencyUtils.formatDisplay(cat.monthlyBudget)}/mês` : ''}</Text>
+                    <Text style={[styles.catMacro, { color: activeTheme.textSecondary }]}>Macro: {cat.macro || 'Outros'}</Text>
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row' }}>
@@ -155,19 +151,9 @@ export default function CategoriesConfigScreen({ onBack }) {
           placeholderTextColor={activeTheme.textSecondary}
         />
 
-        <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Limite mensal (opcional)</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: activeTheme.cardSecondary, color: activeTheme.text }]}
-          value={budget}
-          onChangeText={setBudget}
-          keyboardType="decimal-pad"
-          placeholder="Ex: 500,00"
-          placeholderTextColor={activeTheme.textSecondary}
-        />
-
         <Text style={[styles.label, { color: activeTheme.textSecondary }]}>Grupo Principal (Macro)</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-          {MACRO_OPTIONS.map(m => (
+          {macros.map(m => (
             <TouchableOpacity 
               key={m}
               style={[styles.pill, { backgroundColor: activeTheme.cardSecondary }, macro === m && { backgroundColor: activeTheme.accent }]}

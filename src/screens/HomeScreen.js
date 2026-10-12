@@ -19,13 +19,13 @@ import HomeCreditCardsList from '../components/home/HomeCreditCardsList';
 import HomePendingTx from '../components/home/HomePendingTx';
 import HomeRecentTx from '../components/home/HomeRecentTx';
 import HomeDebts from '../components/home/HomeDebts';
-import HomeInsights from '../components/home/HomeInsights';
 import HomeGroups from '../components/home/HomeGroups';
 import HomeBudgets from '../components/home/HomeBudgets';
 import { useGroups } from '../hooks/useGroups';
+import { resolveHomeOrder } from '../utils/ModuleOrder';
 
 export default function HomeScreen({ route, navigation }) {
-  const { activeTheme, uiConfig, saveSetting } = React.useContext(SettingsContext);
+  const { activeTheme, uiConfig } = React.useContext(SettingsContext);
   const hideSettlements = uiConfig.hideDebtSettlements !== false;
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -110,18 +110,7 @@ export default function HomeScreen({ route, navigation }) {
         && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
   }, [txList, hideSettlements]);
-  const knownHomeModules = ['insights', 'accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
-  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
-  let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
-  if (!homeOrder.includes('insights')) homeOrder.unshift('insights');
-  if (!homeOrder.includes('debts')) homeOrder.push('debts');
-  if (!homeOrder.includes('groups')) homeOrder.push('groups');
-  if (!homeOrder.includes('budgets')) homeOrder.push('budgets');
-  if (!homeOrder.includes('creditCards')) {
-    const idx = homeOrder.indexOf('accounts');
-    if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
-    else homeOrder.push('creditCards');
-  }
+  const homeOrder = resolveHomeOrder(uiConfig.homeModulesOrder);
 
   const saveTransaction = async (data) => {
     data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente
@@ -221,27 +210,12 @@ export default function HomeScreen({ route, navigation }) {
             );
           }
 
-          if (modKey === 'insights' && uiConfig.homeShowInsights !== false) {
-            return (
-              <HomeInsights
-                key="insights"
-                txList={txList}
-                categoryList={categoryList}
-                debtsList={debtsList}
-                activeTheme={activeTheme}
-                styles={styles}
-                navigation={navigation}
-                saveSetting={saveSetting}
-              />
-            );
-          }
-
           if (modKey === 'debts' && uiConfig.homeShowDebts !== false) {
             return <HomeDebts key="debts" debtsList={debtsList} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
 
           if (modKey === 'budgets' && uiConfig.homeShowBudgets !== false) {
-            return <HomeBudgets key="budgets" categoryList={categoryList} txList={txList} selectedMonths={selectedMonths} activeTheme={activeTheme} styles={styles} />;
+            return <HomeBudgets key="budgets" categoryList={categoryList} txList={txList} selectedMonths={selectedMonths} activeTheme={activeTheme} styles={styles} navigation={navigation} />;
           }
 
           if (modKey === 'groups' && uiConfig.homeShowGroups !== false) {
