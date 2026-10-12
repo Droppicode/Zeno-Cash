@@ -139,6 +139,7 @@ export default function ModuleConfigScreen({ onBack }) {
               scrollableRef={scrollableRef}
               activeItemScale={1.04}
               dragActivationDelay={150}
+              enableActiveItemSnap={false}
               onDragEnd={({ data }) => saveOrder(data.map(mod => mod.key))}
               renderItem={renderModule}
             />
