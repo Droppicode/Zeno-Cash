@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo, useCallback } from 'react';
+import React, { useState, useContext, useMemo, useCallback, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, BackHandler, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import ThemeConfigScreen from './ThemeConfigScreen';
 import ModuleConfigScreen from './ModuleConfigScreen';
 import AccountsConfigScreen from './AccountsConfigScreen';
 import CategoriesConfigScreen from './CategoriesConfigScreen';
+import MacrosConfigScreen from './MacrosConfigScreen';
 import GroupsConfigScreen from './GroupsConfigScreen';
 import AutomationsConfigScreen from './AutomationsConfigScreen';
 import AssistantConfigScreen from './AssistantConfigScreen';
@@ -19,10 +20,19 @@ import { CloudBackupButtons, DangerZoneButtons } from '../components/settings/Se
 import AppLockSettings from '../components/settings/AppLockSettings';
 import { isLockSupported } from '../services/AppLock';
 
-export default function SettingsScreen({ navigation }) {
+export default function SettingsScreen({ navigation, route }) {
   const { activeTheme, defaultPeriod, backupLimit, backupFrequency, saveSetting } = useContext(SettingsContext);
   
-  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'groups', 'automations', 'extraction'
+  const [currentScreen, setCurrentScreen] = useState('hub'); // 'hub', 'theme', 'module', 'accounts', 'categories', 'macros', 'groups', 'automations', 'extraction'
+  const openParam = route?.params?.open;
+  const openAt = route?.params?.at;
+
+  useEffect(() => {
+    if (openParam) {
+      setCurrentScreen(openParam);
+      navigation.setParams({ open: undefined, at: undefined });
+    }
+  }, [openParam, openAt, navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +81,14 @@ export default function SettingsScreen({ navigation }) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
         <CategoriesConfigScreen onBack={() => setCurrentScreen('hub')} />
+      </SafeAreaView>
+    );
+  }
+
+  if (currentScreen === 'macros') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>
+        <MacrosConfigScreen onBack={() => setCurrentScreen('hub')} />
       </SafeAreaView>
     );
   }
@@ -127,6 +145,12 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="pricetags" size={32} color={activeTheme.accent} />
             <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Categorias</Text>
             <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Regras e cores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('macros')}>
+            <Ionicons name="pie-chart" size={32} color={activeTheme.accent} />
+            <Text style={[styles.menuTitle, { color: activeTheme.text }]}>Macros</Text>
+            <Text style={[styles.menuDesc, { color: activeTheme.textSecondary }]}>Limites mensais</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.menuCard, { backgroundColor: activeTheme.card }]} onPress={() => setCurrentScreen('groups')}>
