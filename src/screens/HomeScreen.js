@@ -22,6 +22,7 @@ import HomeDebts from '../components/home/HomeDebts';
 import HomeGroups from '../components/home/HomeGroups';
 import HomeBudgets from '../components/home/HomeBudgets';
 import { useGroups } from '../hooks/useGroups';
+import { resolveHomeOrder } from '../utils/ModuleOrder';
 
 export default function HomeScreen({ route, navigation }) {
   const { activeTheme, uiConfig } = React.useContext(SettingsContext);
@@ -109,17 +110,7 @@ export default function HomeScreen({ route, navigation }) {
         && !(hideSettlements && InvoiceUtils.getSettlementDebtId(t.note) !== null))
     };
   }, [txList, hideSettlements]);
-  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
-  const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
-  let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
-  if (!homeOrder.includes('debts')) homeOrder.push('debts');
-  if (!homeOrder.includes('groups')) homeOrder.push('groups');
-  if (!homeOrder.includes('budgets')) homeOrder.push('budgets');
-  if (!homeOrder.includes('creditCards')) {
-    const idx = homeOrder.indexOf('accounts');
-    if (idx !== -1) homeOrder.splice(idx + 1, 0, 'creditCards');
-    else homeOrder.push('creditCards');
-  }
+  const homeOrder = resolveHomeOrder(uiConfig.homeModulesOrder);
 
   const saveTransaction = async (data) => {
     data.isPending = 0; // Ao salvar/aprovar, tira a flag de pendente

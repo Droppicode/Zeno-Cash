@@ -21,6 +21,7 @@ import AccountAnalysis from '../components/analytics/AccountAnalysis';
 import RecurrenceAnalysis from '../components/analytics/RecurrenceAnalysis';
 import TopVillains from '../components/analytics/TopVillains';
 import SmartInsights from '../components/analytics/SmartInsights';
+import { resolveAnalyticsOrder } from '../utils/ModuleOrder';
 
 export default function AnalyticsScreen() {
   const { 
@@ -92,7 +93,7 @@ export default function AnalyticsScreen() {
     }
   };
 
-  const modulesOrder = uiConfig.analyticsModulesOrder || ['kpis', 'heatmap', 'composition', 'recurrence', 'monthly', 'cashflow', 'ranking', 'accounts', 'villains', 'insights'];
+  const modulesOrder = resolveAnalyticsOrder(uiConfig.analyticsModulesOrder);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: activeTheme.background }]}>

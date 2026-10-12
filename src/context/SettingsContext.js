@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import { DEFAULT_ASSISTANT_PERMISSIONS, resolvePermissions } from '../services/ai/permissions';
 import { DEFAULT_MODEL_PRICES } from '../services/ai/usage';
 import webKeyStore from '../services/ai/webKeyStore';
+import { DEFAULT_ANALYTICS_ORDER } from '../utils/ModuleOrder';
 
 export const SettingsContext = createContext();
 
@@ -170,7 +171,7 @@ export const SettingsProvider = ({ children }) => {
     analyticsShowCharts: true,
     transactionsShowFilters: true,
     showInvestmentsTab: false,
-    analyticsModulesOrder: ['kpis', 'monthly', 'composition', 'cashflow', 'heatmap', 'ranking', 'accounts', 'recurrence', 'villains', 'insights'],
+    analyticsModulesOrder: DEFAULT_ANALYTICS_ORDER,
   });
 
   const [backupLimit, setBackupLimit] = useState('5');

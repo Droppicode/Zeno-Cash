@@ -145,8 +145,8 @@ verify everything returns to the baseline.
 - [ ] Search text (if present) combined with filters.
 - [ ] Swipe on pending item → accept; swipe delete → confirm and removed.
 - [ ] Tap item → modal opens pre-filled; edit persists.
-- [ ] Acertos hidden when Config → Módulos → "[Geral] Esconder Acertos de Dívidas nas
-      Transações" is ON (default); visible when OFF. Same for Home recent list.
+- [ ] Acertos hidden when Config → Módulos → Geral → "Esconder acertos de dívidas" is ON
+      (default); visible when OFF. Same for Home recent list.
 - [ ] Extraction button (Transactions tab) without API key → "Chave API Ausente" alert.
 
 ## 5. Debts (Controle de Dívidas)
@@ -218,9 +218,12 @@ verify everything returns to the baseline.
       export a backup, restore it, and verify both orders again.
 - [ ] Android drag: use `adb shell input draganddrop x1 y1 x2 y2 1500`, or a long-duration
       `swipe` if `draganddrop` is unavailable.
-- [ ] Módulos: toggle every switch ([Geral] Investimentos tab, hide Acertos, [Home]
-      Pendências/Contas/Cartões/Últimas/Dívidas) and verify effect; reorder Home and
-      Análise modules; macro groups + category→macro mapping + targets.
+- [ ] Módulos: tabs Tela Inicial / Análise / Geral. Home and Análise tabs are one list per
+      tab: each row has a drag handle, icon, name and switch (switch hides/shows the module,
+      disabled rows dim but stay in the list). Hold and drag to reorder; "Padrão" appears once
+      the order differs from the default and restores it. Default Home order: Contas, Cartões,
+      Pendentes, Últimas, Dívidas, Limites por Macro, Grupos. Geral tab: Investimentos tab and
+      hide Acertos. Verify each effect and that order/toggles persist after reload.
 - [ ] Automações: notification listener toggle (Android only; web simulate via panel:
       Pix Nubank, Compra Itaú, Salário, Netflix cartão → transactions created and
       categorised).
@@ -417,7 +420,7 @@ Notas da Fase 4:
 - The "Categorias" list on that screen shows each category with a macro pill; tapping cycles it through the macros (saved to `categories.macro`). Config → Categorias' editor offers the same macros. Renaming a macro moves its categories, limit and %; removing it moves its categories to Outros.
 - Home: the "Limites por Macro" module lists only macros with a limit, in macro order. Bar is the macro color under 80%, amber with a warning icon from 80%, red with an alert icon from 100% ("R$ X acima"). With no limits it shows a hint that opens Config → Macros.
 - Spending sums approved expenses of every category in the macro for the selected month(s). Pending and ignored transactions don't count, and a debt settlement ("Acerto") subtracts. With several months selected, the limit is multiplied by the number of months.
-- Config → Módulos: "[Home] Mostrar Limites por Macro" hides/shows the module, and "Limites por Macro" can be reordered. Both persist after reload.
+- Config → Módulos → Tela Inicial: the "Limites por Macro" switch hides/shows the module, and dragging reorders it. Both persist after reload. By default it sits right below Controle de Dívidas, also for saved orders from older versions that don't include it yet.
 - Android: a transaction that pushes a macro past 80% and then 100% posts one local notification per threshold per month ("Essenciais chegou a 80% do limite" / "Limite de Essenciais estourado"). Disabling the Home module also disables the alerts.
 - Limits are stored in the `macroBudgets` setting, so backup/restore keeps them.
 
