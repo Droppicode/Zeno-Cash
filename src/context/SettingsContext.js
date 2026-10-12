@@ -187,6 +187,7 @@ export const SettingsProvider = ({ children }) => {
 
   const [macroOptions, setMacroOptions] = useState(['Essenciais', 'Estilo de Vida', 'Investimento']);
   const [macroMapping, setMacroMapping] = useState({});
+  const [macroBudgets, setMacroBudgets] = useState({});
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -222,6 +223,7 @@ export const SettingsProvider = ({ children }) => {
           if (item.key === 'uiConfig') setUiConfig(JSON.parse(item.value));
           if (item.key === 'macroTargets') setMacroTargets(JSON.parse(item.value));
           if (item.key === 'macroMapping') setMacroMapping(JSON.parse(item.value));
+          if (item.key === 'macroBudgets') setMacroBudgets(JSON.parse(item.value));
           if (item.key === 'backupLimit') setBackupLimit(item.value);
           if (item.key === 'backupFrequency') setBackupFrequency(item.value);
         });
@@ -306,6 +308,7 @@ export const SettingsProvider = ({ children }) => {
     if (key === 'uiConfig') setUiConfig(value);
     if (key === 'macroTargets') setMacroTargets(value);
     if (key === 'macroMapping') setMacroMapping(value);
+    if (key === 'macroBudgets') setMacroBudgets(value || {});
     if (key === 'macroOptions') setMacroOptions(value);
     if (key === 'backupLimit') setBackupLimit(value);
     if (key === 'backupFrequency') setBackupFrequency(value);
@@ -334,7 +337,7 @@ export const SettingsProvider = ({ children }) => {
   const contextValue = useMemo(() => ({
     activeTheme, customThemes, defaultPeriod, assistantMemory, assistantPermissions, assistantUsage, assistantPrices,
     llmProvider, llmModel, llmKey, uiConfig,
-    macroTargets, macroOptions, macroMapping, backupLimit, backupFrequency,
+    macroTargets, macroOptions, macroMapping, macroBudgets, backupLimit, backupFrequency,
     autoBackupEnabled, autoBackupDestination,
     isLoaded,
     saveSetting,
@@ -343,7 +346,7 @@ export const SettingsProvider = ({ children }) => {
   }), [
     activeTheme, customThemes, defaultPeriod, assistantMemory, assistantPermissions, assistantUsage, assistantPrices,
     llmProvider, llmModel, llmKey, uiConfig, macroTargets,
-    macroOptions, macroMapping, backupLimit, backupFrequency, autoBackupEnabled, autoBackupDestination, isLoaded,
+    macroOptions, macroMapping, macroBudgets, backupLimit, backupFrequency, autoBackupEnabled, autoBackupDestination, isLoaded,
     saveSetting, getSecureKey, saveSecureKey
   ]);
 

@@ -1,96 +1,16 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
+import React, { useState, useContext, useMemo } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingsContext } from '../context/SettingsContext';
 import { getZoomFactor } from '../utils/scaler';
 import { getSharedStyles } from '../utils/StyleHub';
-import BaseModalBottom from '../components/ui/BaseModalBottom';
-import { CategoryRepository } from '../services/CategoryRepository';
-import { useCategories } from '../hooks/useCategories';
-
-const COLORS_PALETTE = ['#F44336', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63', '#00BCD4', '#FFC107', '#8BC34A', '#795548'];
-
-const MacroRow = ({ macro, target, onUpdateName, onUpdateTarget, onRemove, theme }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempName, setTempName] = useState(macro);
-
-  const styles = useMemo(() => ({ ...getSharedStyles(theme), ...getLocalStyles(theme) }), [theme]);
-
-  const handleSaveName = () => {
-    if (tempName.trim() === '') {
-      setTempName(macro);
-      setIsEditing(false);
-      return;
-    }
-    onUpdateName(macro, tempName.trim());
-    setIsEditing(false);
-  };
-
-  return (
-    <View style={[styles.goalInputRow, { backgroundColor: theme.cardSecondary }]}>
-      {isEditing ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <TextInput 
-            style={[styles.goalInput, { flex: 1, textAlign: 'left', backgroundColor: theme.card, color: theme.text }]} 
-            value={tempName} 
-            onChangeText={setTempName} 
-            autoFocus 
-          />
-          <TouchableOpacity onPress={handleSaveName} style={{ marginLeft: 8 }}>
-            <Ionicons name="checkmark-circle" size={24} color={theme.income} />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <TouchableOpacity onPress={() => setIsEditing(true)} style={{ padding: 4, marginRight: 4 }}>
-            <Ionicons name="pencil" size={16} color={theme.textSecondary} />
-          </TouchableOpacity>
-          <Text style={[styles.goalLabel, { color: theme.text }]} numberOfLines={1}>{macro}</Text>
-        </View>
-      )}
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 16 }}>
-        <TextInput
-          style={[styles.goalInput, { backgroundColor: theme.card, color: theme.text }]}
-          keyboardType="numeric"
-          value={String(target)}
-          onChangeText={(val) => onUpdateTarget(macro, val)}
-        />
-        <Text style={{ color: theme.text, marginLeft: 8 }}>%</Text>
-        
-        <TouchableOpacity onPress={() => onRemove(macro)} style={{ marginLeft: 16, padding: 4 }}>
-          <Ionicons name="trash-outline" size={20} color={theme.expense} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
 
 export default function ModuleConfigScreen({ onBack }) {
-  const { 
-    activeTheme, uiConfig, saveSetting,
-    macroTargets, macroMapping, macroOptions 
-  } = useContext(SettingsContext);
-  const { categoryList, loadCategories } = useCategories();
-
-  const [newMacroName, setNewMacroName] = useState('');
-  const [showMappingModal, setShowMappingModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'analytics' | 'macros'
+  const { activeTheme, uiConfig, saveSetting } = useContext(SettingsContext);
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'analytics'
 
   const styles = useMemo(() => ({ ...getSharedStyles(activeTheme), ...getLocalStyles(activeTheme) }), [activeTheme]);
   const z = getZoomFactor(activeTheme);
-  const macroCategoryNames = useMemo(() => {
-    const categoryNames = new Set(categoryList.map(category => category.name));
-    return [
-      ...categoryList.map(category => category.name).filter(name => Object.prototype.hasOwnProperty.call(macroMapping, name)),
-      ...Object.keys(macroMapping).filter(name => !categoryNames.has(name))
-    ];
-  }, [categoryList, macroMapping]);
-
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
-
   const handleToggleUi = (key) => {
     const newConfig = { ...uiConfig, [key]: !uiConfig[key] };
     saveSetting('uiConfig', newConfig);
@@ -107,10 +27,9 @@ export default function ModuleConfigScreen({ onBack }) {
     saveSetting('uiConfig', { ...uiConfig, analyticsDisabledModules: newDisabled });
   };
 
-  const knownHomeModules = ['insights', 'accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
+  const knownHomeModules = ['accounts', 'creditCards', 'pending', 'recent', 'debts', 'groups', 'budgets'];
   const homeOrderRaw = uiConfig.homeModulesOrder || ['accounts', 'creditCards', 'pending', 'recent'];
   let homeOrder = homeOrderRaw.filter(key => knownHomeModules.includes(key));
-  if (!homeOrder.includes('insights')) homeOrder.unshift('insights');
   if (!homeOrder.includes('debts')) homeOrder.push('debts');
   if (!homeOrder.includes('groups')) homeOrder.push('groups');
   if (!homeOrder.includes('budgets')) homeOrder.push('budgets');
@@ -146,8 +65,7 @@ export default function ModuleConfigScreen({ onBack }) {
     if (key === 'recent') return 'Últimas Transações';
     if (key === 'debts') return 'Controle de Dívidas';
     if (key === 'groups') return 'Grupos';
-    if (key === 'budgets') return 'Orçamento por Categoria';
-    if (key === 'insights') return 'Assistente Proativo';
+    if (key === 'budgets') return 'Limites por Macro';
     return key;
   };
 
@@ -167,91 +85,25 @@ export default function ModuleConfigScreen({ onBack }) {
     return map[key] || key;
   };
 
-  // Mutações de Macros Dinâmicos (agora salvam no Contexto/DB)
-  const updateMacroName = (oldName, newName) => {
-    if (oldName === newName) return;
-    if (macroOptions.includes(newName)) return;
-    
-    const newOptions = macroOptions.map(m => m === oldName ? newName : m);
-    saveSetting('macroOptions', newOptions);
-    
-    const newTargets = { ...macroTargets };
-    newTargets[newName] = newTargets[oldName];
-    delete newTargets[oldName];
-    saveSetting('macroTargets', newTargets);
-
-    const newMapping = { ...macroMapping };
-    Object.keys(newMapping).forEach(micro => {
-      if (newMapping[micro] === oldName) newMapping[micro] = newName;
-    });
-    saveSetting('macroMapping', newMapping);
-  };
-
-  const updateTarget = (cat, val) => {
-    saveSetting('macroTargets', { ...macroTargets, [cat]: Number(val) });
-  };
-
-  const removeMacro = (macro) => {
-    const newOptions = macroOptions.filter(m => m !== macro);
-    saveSetting('macroOptions', newOptions);
-    
-    const newTargets = { ...macroTargets };
-    delete newTargets[macro];
-    saveSetting('macroTargets', newTargets);
-    
-    const newMapping = { ...macroMapping };
-    Object.keys(newMapping).forEach(micro => {
-      if (newMapping[micro] === macro) newMapping[micro] = 'Outros';
-    });
-    saveSetting('macroMapping', newMapping);
-  };
-
-  const addMacro = () => {
-    const name = newMacroName.trim();
-    if (name && !macroOptions.includes(name) && name !== 'Outros') {
-      saveSetting('macroOptions', [...macroOptions, name]);
-      saveSetting('macroTargets', { ...macroTargets, [name]: 0 });
-      setNewMacroName('');
-    }
-  };
-
-  const cycleMacroMapping = async (microCat) => {
-    const availableMacros = [...macroOptions, 'Outros'];
-    const current = macroMapping[microCat] || 'Outros';
-    const nextIdx = (availableMacros.indexOf(current) + 1) % availableMacros.length;
-    const newMacro = availableMacros[nextIdx];
-    saveSetting('macroMapping', { ...macroMapping, [microCat]: newMacro });
-    
-    try {
-      const allCats = await CategoryRepository.getAll();
-      const cat = allCats.find(c => c.name === microCat);
-      if (cat) {
-        await CategoryRepository.update(cat.id, { macro: newMacro });
-      }
-    } catch (e) {
-      console.log('Erro ao sincronizar macro no BD', e);
-    }
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
       <View style={[styles.header, { borderBottomColor: activeTheme.cardSecondary }]}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={activeTheme.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: activeTheme.text }]}>Módulos e Macros</Text>
+        <Text style={[styles.title, { color: activeTheme.text }]}>Módulos</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={{ flexDirection: 'row', backgroundColor: activeTheme.card, borderBottomWidth: 1, borderBottomColor: activeTheme.cardSecondary }}>
-         {['home', 'analytics', 'macros'].map(tab => (
+         {['home', 'analytics'].map(tab => (
             <TouchableOpacity 
                key={tab}
                style={{ flex: 1, paddingVertical: 12 * z, borderBottomWidth: activeTab === tab ? 2 : 0, borderBottomColor: activeTheme.accent, alignItems: 'center' }}
                onPress={() => setActiveTab(tab)}
             >
                <Text style={{ color: activeTab === tab ? activeTheme.text : activeTheme.textSecondary, fontWeight: 'bold', fontSize: 13 * z }}>
-                 {tab === 'home' ? 'Tela Inicial' : tab === 'analytics' ? 'Análise' : 'Macros'}
+                 {tab === 'home' ? 'Tela Inicial' : 'Análise'}
                </Text>
             </TouchableOpacity>
          ))}
@@ -297,12 +149,8 @@ export default function ModuleConfigScreen({ onBack }) {
             <Switch value={uiConfig.homeShowGroups !== false} onValueChange={() => handleToggleUi('homeShowGroups')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
           <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
-            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Orçamento</Text>
+            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Limites por Macro</Text>
             <Switch value={uiConfig.homeShowBudgets !== false} onValueChange={() => handleToggleUi('homeShowBudgets')} trackColor={{ false: '#333', true: activeTheme.accent }} />
-          </View>
-          <View style={[styles.switchRow, { borderBottomColor: activeTheme.cardSecondary }]}>
-            <Text style={[styles.switchLabel, { color: activeTheme.text }]}>[Home] Mostrar Assistente Proativo</Text>
-            <Switch value={uiConfig.homeShowInsights !== false} onValueChange={() => handleToggleUi('homeShowInsights')} trackColor={{ false: '#333', true: activeTheme.accent }} />
           </View>
 
           <Text style={[styles.sectionTitle, { color: activeTheme.text, marginTop: 24 * z }]}>Ordem na Tela Inicial</Text>
@@ -380,76 +228,9 @@ export default function ModuleConfigScreen({ onBack }) {
         </View>
         )}
 
-        {activeTab === 'macros' && (
-        <View style={[styles.section, { backgroundColor: activeTheme.card }]}>
-          <Text style={[styles.sectionTitle, { color: activeTheme.text }]}>Metas e Macros</Text>
-          <Text style={[styles.sectionDesc, { color: activeTheme.textSecondary }]}>Crie grandes grupos de categorias e defina uma meta % para o orçamento.</Text>
-          
-          <View style={{ marginBottom: 16 }}>
-            {macroOptions.map(cat => (
-              <MacroRow 
-                key={cat} 
-                macro={cat} 
-                target={macroTargets[cat] || 0} 
-                onUpdateName={updateMacroName}
-                onUpdateTarget={updateTarget}
-                onRemove={removeMacro}
-                theme={activeTheme}
-              />
-            ))}
-            
-            <View style={[styles.addMacroRow, { backgroundColor: activeTheme.cardSecondary }]}>
-              <TextInput
-                style={[styles.goalInput, { flex: 1, textAlign: 'left', marginRight: 12, backgroundColor: activeTheme.card, color: activeTheme.text }]}
-                placeholder="Novo Grupo Macro..."
-                placeholderTextColor={activeTheme.textSecondary}
-                value={newMacroName}
-                onChangeText={setNewMacroName}
-              />
-              <TouchableOpacity style={[styles.iconBtnAdd, { backgroundColor: activeTheme.accent }]} onPress={addMacro}>
-                <Ionicons name="add" size={24} color="#121212" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity style={[styles.outlineBtn, { borderColor: activeTheme.accent }]} onPress={() => setShowMappingModal(true)}>
-            <Text style={[styles.outlineBtnText, { color: activeTheme.accent }]}>Mapear Categorias para Macros</Text>
-          </TouchableOpacity>
-        </View>
-        )}
-
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* MODAL MAPEAMENTO DE CATEGORIAS */}
-      <BaseModalBottom
-        visible={showMappingModal}
-        title="Mapeamento Macro"
-        onClose={() => setShowMappingModal(false)}
-        cancelText="Voltar"
-      >
-        <Text style={[styles.modalSub, { color: activeTheme.textSecondary }]}>Toque no botão à direita para trocar o grupo macro da categoria.</Text>
-        
-        <ScrollView style={{ maxHeight: 400, marginBottom: 16 }}>
-          {macroCategoryNames.map(microCat => {
-            const currentMacro = macroMapping[microCat];
-            const macroIdx = macroOptions.indexOf(currentMacro);
-            const macroColor = currentMacro === 'Outros' ? activeTheme.textSecondary : COLORS_PALETTE[macroIdx % COLORS_PALETTE.length] || activeTheme.textSecondary;
-
-            return (
-              <View key={microCat} style={[styles.mapRow, { borderBottomColor: activeTheme.card }]}>
-                <Text style={[styles.mapMicro, { color: activeTheme.text }]}>{microCat}</Text>
-                <TouchableOpacity 
-                  style={[styles.mapToggleBtn, { borderColor: macroColor }]}
-                  onPress={() => cycleMacroMapping(microCat)}
-                >
-                  <Text style={[styles.mapToggleText, { color: macroColor }]}>{currentMacro}</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </ScrollView>
-      </BaseModalBottom>
 
     </View>
   );
@@ -467,21 +248,5 @@ const getLocalStyles = (theme) => {
     orderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 * z, borderRadius: 6 * z, marginBottom: 8 * z },
     orderLabel: { fontSize: 16 * z, fontFamily: f, fontWeight: 'bold' },
     orderBtn: { padding: 4 * z, marginLeft: 8 * z },
-    
-    goalInputRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 * z, padding: 8 * z, borderRadius: 6 * z },
-    addMacroRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 * z, padding: 8 * z, borderRadius: 6 * z },
-    goalLabel: { fontSize: 14 * z, fontWeight: 'bold', flexShrink: 1, fontFamily: f },
-    goalInput: { borderRadius: 4 * z, paddingHorizontal: 12 * z, paddingVertical: 8 * z, width: 60 * z, textAlign: 'center', fontFamily: f },
-    iconBtnAdd: { padding: 8 * z, borderRadius: 4 * z },
-
-    outlineBtn: { borderWidth: 1, padding: 12 * z, borderRadius: 6 * z, alignItems: 'center', marginTop: 8 * z },
-    outlineBtnText: { fontWeight: 'bold', fontSize: 14 * z, fontFamily: f },
-
-    modalSub: { fontSize: 14 * z, marginBottom: 24 * z, fontFamily: f },
-    
-    mapRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 * z, borderBottomWidth: 1 },
-    mapMicro: { fontSize: 14 * z, fontFamily: f },
-    mapToggleBtn: { borderWidth: 1, borderRadius: 6 * z, paddingHorizontal: 10 * z, paddingVertical: 4 * z },
-    mapToggleText: { fontSize: 12 * z, fontWeight: 'bold', fontFamily: f }
   });
 };
