@@ -467,3 +467,20 @@ account. Home debt totals == Debts screen totals. Card invoice totals == CreditC
 - For each failure: steps, expected vs actual, screenshot, suspected file.
 - Known non-bugs: emulator-only notification-listener crash, Google Sign-In failing when
   `EXPO_PUBLIC_WEB_CLIENT_ID` is not set.
+
+## Release APK identity and macro alert tips
+- Select Node with `source ~/.nvm/nvm.sh`.
+- Set **both** `APP_ENV=production` and `NODE_ENV=production` for prebuild and Gradle. APP_ENV controls applicationId; NODE_ENV alone still produces `com.mmn.zenocash.dev`.
+- Before install, verify `aapt dump badging` reports `com.mmn.zenocash`, the expected version, and the expected signing digest. A successful `adb install -r` alone does not prove an upgrade of the production package.
+- If switching variants leaves generated autolinking references to the previous namespace, regenerate ignored `android/build/generated/autolinking` and `android/app/build/generated/autolinking`, or clean the generated native project. Do not patch application source to resolve stale generated outputs.
+- On launch verify a distinctive new UI element (for example Config → Macros) before recording.
+
+### Macro fields and native alerts
+- For controlled native inputs, prefer visible Ctrl+A replacement followed by the keyboard Done button or an explicit blur. Long rapid ADB Delete sequences can race React Native controlled-input updates; verify the displayed value before treating input as successful.
+- Macro alerts run on transaction mutations. Changing a limit or only opening Home is not sufficient evidence of an alert check. Create a real expense or re-save an existing transaction through the UI.
+- Record notification UUIDs before and after unchanged saves. Force-stop removes displayed notifications, so counts alone after a cold restart are not a valid dedupe comparison.
+- To exercise a different month, preserve existing alert state, temporarily change the emulator clock, and save a transaction. Restore wall-clock time and `auto_time=1` afterward. Stored sent-key state retains only the checked month when a new alert is written.
+- Native local backup: Config → Dispositivo → Fazer Backup Agora creates a checkpointed DB in app-private ZenoCashBackups. Transporting that generated backup to Download with ADB is sufficient for selecting it through the restore UI; do not substitute a hand-built DB for the export-under-test.
+
+## Devin Secrets Needed
+None for local macro fixtures, release build, or local notification tests. Preserve the existing `.env` privately if the release expects its public Google client ID.
